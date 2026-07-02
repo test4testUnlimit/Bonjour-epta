@@ -1,0 +1,296 @@
+# reference: public-apis catalog part-H-P
+meta: project=general | room=public-apis | type=reference | author=Grok(4.5) | machine=CORP | date=2026-07-02 | status=active | tags=public-apis,catalog,part-H-P
+---
+Upstream: https://github.com/public-apis/public-apis
+Format each line: Name | key:AUTH | URL | description
+AUTH: No | apiKey | OAuth | other
+
+## Health (36)
+- Clinical Trials Directory | key:No | https://trials.starfile.org/api | Every clinical trial registered with ClinicalTrials.gov, indexed by condition and sponsor
+- CMS.gov | key:`apiKey` | https://data.cms.gov/provider-data/ | Access to the data from the CMS - medicare.gov
+- Coronavirus | key:No | https://pipedream.com/@pravin/http-api-for-latest-wuhan-coronavirus-data-2019-ncov-p_G6CLVM/readme | HTTP API for Latest Covid-19 Data
+- Coronavirus in the UK | key:No | https://coronavirus.data.gov.uk/details/developers-guide | UK Government coronavirus data, including deaths and cases by region
+- Covid Tracking Project | key:No | https://covidtracking.com/data/api/version-2 | Covid-19  data for the US
+- Covid-19 | key:No | https://covid19api.com/ | Covid 19 spread, infection and recovery
+- Covid-19 | key:No | https://github.com/M-Media-Group/Covid-19-API | Covid 19 cases, deaths and recovery per country
+- Covid-19 Datenhub | key:No | https://npgeo-corona-npgeo-de.hub.arcgis.com | Maps, datasets, applications and more in the context of COVID-19
+- Covid-19 Government Response | key:No | https://covidtracker.bsg.ox.ac.uk | Government measures tracker to fight against the Covid-19 pandemic
+- Covid-19 India | key:No | https://data.covid19india.org/ | Covid 19 statistics state and district wise about cases, vaccinations, recovery within India
+- Covid-19 JHU CSSE | key:No | https://nuttaphat.com/covid19-api/ | Open-source API for exploring Covid19 cases based on JHU CSSE
+- Covid-19 Live Data | key:No | https://github.com/mathdroid/covid-19-api | Global and countrywise data of Covid 19 daily Summary, confirmed cases, recovered and deaths
+- Covid-19 Philippines | key:No | https://github.com/Simperfy/Covid-19-API-Philippines-DOH | Unofficial Covid-19 Web API for Philippines from data collected by DOH
+- COVID-19 Tracker Canada | key:No | https://api.covid19tracker.ca/docs/1.0/overview | Details on Covid-19 cases across Canada
+- COVID-19 Tracker Sri Lanka | key:No | https://www.hpb.health.gov.lk/en/api-documentation | Provides situation of the COVID-19 patients reported in Sri Lanka
+- COVID-ID | key:No | https://data.covid19.go.id/public/api/prov.json | Indonesian government Covid data per province
+- Cure Cancer With AI | key:`apiKey` | https://www.curecancerwithai.com/developers | Oncology research, clinical trials, FDA approvals, news, and MAMMAL predictions
+- Dataflow Kit COVID-19 | key:No | https://covid-19.dataflowkit.com | COVID-19 live statistics into sites per hour
+- Edamam | key:`apiKey` | https://developer.edamam.com/ | Food and nutrition data API with recipe search
+- FoodData Central | key:`apiKey` | https://fdc.nal.usda.gov/ | National Nutrient Database for Standard Reference
+- Healthcare.gov | key:No | https://www.healthcare.gov/developers/ | Educational content about the US Health Insurance Marketplace
+- Humanitarian Data Exchange | key:No | https://data.humdata.org/ | Humanitarian Data Exchange (HDX) is open platform for sharing data across crises and organisations
+- Infermedica | key:`apiKey` | https://developer.infermedica.com/docs/ | NLP based symptom checker and patient triage API for health diagnosis from text
+- LAPIS | key:No | https://cov-spectrum.ethz.ch/public | SARS-CoV-2 genomic sequences from public sources
+- Lexigram | key:`apiKey` | https://docs.lexigram.io/ | NLP that extracts mentions of clinical concepts from text, gives access to clinical ontology
+- Longevity World Cup | key:No | https://longevityworldcup.com/api/data/athletes | Public biological age competition data with biomarkers and rankings
+- Makeup | key:No | http://makeup-api.herokuapp.com/ | Makeup Information
+- MedlinePlus Genetics | key:No | https://medlineplus.gov/about/developers/geneticsdatafilesapi/ | Genetic conditions, genes, chromosomes and mtDNA data
+- MyVaccination | key:No | https://documenter.getpostman.com/view/16605343/Tzm8GG7u | Vaccination data for Malaysia
+- NPPES | key:No | https://npiregistry.cms.hhs.gov/registry/help-api | National Plan & Provider Enumeration System, info on healthcare providers registered in US
+- Nutritionix | key:`apiKey` | https://developer.nutritionix.com/ | Worlds largest verified nutrition database
+- Open Data NHS Scotland | key:No | https://www.opendata.nhs.scot | Medical reference data and statistics by Public Health Scotland
+- Open Disease | key:No | https://disease.sh/ | API for Current cases and more stuff about COVID-19 and Influenza
+- openFDA | key:`apiKey` | https://open.fda.gov | Public FDA data about drugs, devices and foods
+- Orion Health | key:`OAuth` | https://developer.orionhealth.io/ | Medical platform which allows the development of applications for different healthcare scenarios
+- Quarantine | key:No | https://quarantine.country/coronavirus/api/ | Coronavirus API with free COVID-19 live updates
+
+## Jobs (20)
+- AI Dev Jobs | key:No | https://aidevboard.com/openapi.yaml | AI/ML engineering job aggregator with REST, RSS, and MCP endpoints
+- Adzuna | key:`apiKey` | https://developer.adzuna.com/overview | Job board aggregator
+- Arbeitnow | key:No | https://documenter.getpostman.com/view/18545278/UVJbJdKh | API for Job board aggregator in Europe / Remote
+- Arbeitsamt | key:`OAuth` | https://jobsuche.api.bund.dev/ | API for the "Arbeitsamt", which is a german Job board aggregator
+- Careerjet | key:`apiKey` | https://www.careerjet.com/partners/api/ | Job search engine
+- DevITjobs UK | key:No | https://devitjobs.uk/job_feed.xml | Jobs with GraphQL
+- Findwork | key:`apiKey` | https://findwork.dev/developers/ | Job board
+- GraphQL Jobs | key:No | https://graphql.jobs/docs/api/ | Jobs with GraphQL
+- HeroHunt People Search | key:`apiKey` | https://www.herohunt.ai/people-search-api | Search 1 billion people profiles across LinkedIn and GitHub for talent sourcing
+- Jobs2Careers | key:`apiKey` | http://api.jobs2careers.com/api/spec.pdf | Job aggregator
+- Jooble | key:`apiKey` | https://jooble.org/api/about | Job search engine
+- Juju | key:`apiKey` | http://www.juju.com/publisher/spec/ | Job search engine
+- JobDataLake | key:`apiKey` | https://www.jobdatalake.com/docs | 1M+ enriched job listings from 20,000+ companies with salary, skills, seniority
+- Open Skills | key:No | https://github.com/workforce-data-initiative/skills-api/wiki/API-Overview | Job titles, skills and related jobs data
+- Reed | key:`apiKey` | https://www.reed.co.uk/developers | Job board aggregator
+- The Muse | key:`apiKey` | https://www.themuse.com/developers/api/v2 | Job board and company profiles
+- Upwork | key:`OAuth` | https://developers.upwork.com/ | Freelance job board and management system
+- USAJOBS | key:`apiKey` | https://developer.usajobs.gov/ | US government job board
+- WhatJobs | key:`apiKey` | https://www.whatjobs.com/affiliates | Job search engine
+- ZipRecruiter | key:`apiKey` | https://www.ziprecruiter.com/publishers | Job search app and website
+
+## Machine Learning (30)
+- AI For Thai | key:`apiKey` | https://aiforthai.in.th/index.php | Free Various Thai AI API
+- Clarifai | key:`OAuth` | https://docs.clarifai.com/api-guide/api-overview | Computer Vision
+- Cloudmersive | key:`apiKey` | https://www.cloudmersive.com/image-recognition-and-processing-api | Image captioning, face recognition, NSFW classification
+- DeepAI | key:`apiKey` | https://deepai.org/ | Provides AI-powered APIs for text generation, image processing, and more
+- Deepcode | key:No | https://www.deepcode.ai | AI for code review
+- Dialogflow | key:`apiKey` | https://cloud.google.com/dialogflow/docs/ | Natural Language Processing
+- EXUDE-API | key:No | http://uttesh.com/exude-api/ | Used for the primary ways for filtering the stopping, stemming words from the text data
+- GoldBean | key:`apiKey` | https://goldbean-api.xyz/docs | OCR, Translation, NLP & ERNIE LLM via Baidu AI (free tier available)
+- Groq | key:`apiKey` | https://console.groq.com/docs/quickstart | Fast AI inference API with free tier, supports Llama, Mixtral, Gemma models
+- Hirak FaceAPI | key:`apiKey` | https://faceapi.hirak.site/ | Face detection, face recognition with age estimation/gender estimation, accurate, no quota limits
+- Hugging Face | key:`apiKey` | https://huggingface.co | AI model hub with inference API for NLP, computer vision, and audio
+- Imagga | key:`apiKey` | https://imagga.com/ | Image Recognition Solutions like Tagging, Visual Search, NSFW moderation
+- Inferdo | key:`apiKey` | https://rapidapi.com/user/inferdo | Computer Vision services like Facial detection, Image labeling, NSFW classification
+- IPS Online | key:`apiKey` | https://docs.identity.ps/docs | Face and License Plate Anonymization
+- Irisnet | key:`apiKey` | https://irisnet.de/api/ | Realtime content moderation API that blocks or blurs unwanted images in real-time
+- Jina AI | key:`apiKey` | https://jina.ai | Free AI API for embeddings, reranking, and text processing
+- Keen IO | key:`apiKey` | https://keen.io/ | Data Analytics
+- Machinetutors | key:`apiKey` | https://www.machinetutors.com/portfolio/MT_api.html | AI Solutions: Video/Image Classification & Tagging, NSFW, Icon/Image/Audio Search, NLP
+- MediaCraft AI | key:`apiKey` | https://mediacraft-x402-api.onrender.com | Chinese content compliance review (17 platforms), EN↔CN translation, and SEO optimization. Pay-per-call via x402 (Solana USDC).
+- MessengerX.io | key:`apiKey` | https://messengerx.rtfd.io | A FREE API for developers to build and monetize personalized ML based chat apps
+- NLP Cloud | key:`apiKey` | https://nlpcloud.io | NLP API using spaCy and transformers for NER, sentiments, classification, summarization, and more
+- Not Human Search | key:No | https://nothumansearch.ai/openapi.yaml | AI tool discovery with agentic scoring for 8,600+ tools and MCP servers
+- OpenVisionAPI | key:No | https://openvisionapi.com | Open source computer vision API based on open source models
+- Perspective | key:`apiKey` | https://perspectiveapi.com | NLP API to return probability that if text is toxic, obscene, insulting or threatening
+- Roboflow Universe | key:`apiKey` | https://universe.roboflow.com | Pre-trained computer vision models
+- SkyBiometry | key:`apiKey` | https://skybiometry.com/documentation/ | Face Detection, Face Recognition and Face Grouping
+- TensorFeed | key:No | https://tensorfeed.ai/developers | Real-time AI news, model pricing, service status, and agent activity feeds
+- Time Door | key:`apiKey` | https://timedoor.io | A time series analysis API
+- Unplugg | key:`apiKey` | https://unplu.gg/test_api.html | Forecasting API for timeseries data
+- WolframAlpha | key:`apiKey` | https://products.wolframalpha.com/api/ | Provides specific answers to questions using data and algorithms
+
+## Music (35)
+- 7digital | key:`OAuth` | https://docs.7digital.com/reference | Api of Music store 7digital
+- AI Mastering | key:`apiKey` | https://aimastering.com/api_docs/ | Automated Music Mastering
+- Audiomack | key:`OAuth` | https://www.audiomack.com/data-api/docs | Api of the streaming music hub Audiomack
+- Bandcamp | key:`OAuth` | https://bandcamp.com/developer | API of Music store Bandcamp
+- Bandsintown | key:No | https://app.swaggerhub.com/apis/Bandsintown/PublicAPI/3.0.0 | Music Events
+- Deezer | key:`OAuth` | https://developers.deezer.com/api | Music
+- Discogs | key:`OAuth` | https://www.discogs.com/developers/ | Music
+- Freesound | key:`apiKey` | https://freesound.org/docs/api/ | Music Samples
+- Gaana | key:No | https://github.com/cyberboysumanjay/GaanaAPI | API to retrieve song information from Gaana
+- Genius | key:`OAuth` | https://docs.genius.com/ | Crowdsourced lyrics and music knowledge
+- Genrenator | key:No | https://binaryjazz.us/genrenator-api/ | Music genre generator
+- iTunes Search | key:No | https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/ | Software products
+- Jamendo | key:`OAuth` | https://developer.jamendo.com/v3.0/docs | Music
+- JioSaavn | key:No | https://github.com/cyberboysumanjay/JioSaavnAPI | API to retrieve song information, album meta data and many more from JioSaavn
+- KKBOX | key:`OAuth` | https://developer.kkbox.com | Get music libraries, playlists, charts, and perform out of KKBOX's platform
+- KSoft.Si Lyrics | key:`apiKey` | https://docs.ksoft.si/api/lyrics-api | API to get lyrics for songs
+- LastFm | key:`apiKey` | https://www.last.fm/api | Music
+- Lyrics.ovh | key:No | https://lyricsovh.docs.apiary.io | Simple API to retrieve the lyrics of a song
+- Mixcloud | key:`OAuth` | https://www.mixcloud.com/developers/ | Music
+- MusicBrainz | key:No | https://musicbrainz.org/doc/Development/XML_Web_Service/Version_2 | Music
+- Musixmatch | key:`apiKey` | https://developer.musixmatch.com/ | Music
+- Napster | key:`apiKey` | https://developer.napster.com/api/v2.2 | Music
+- Openwhyd | key:No | https://openwhyd.github.io/openwhyd/API | Download curated playlists of streaming tracks (YouTube, SoundCloud, etc...)
+- Phishin | key:`apiKey` | https://phish.in/api-docs | A web-based archive of legal live audio recordings of the improvisational rock band Phish
+- Radio Browser | key:No | https://api.radio-browser.info/ | List of internet radio stations
+- Songkick | key:`apiKey` | https://www.songkick.com/developer/ | Music Events
+- Songlink / Odesli | key:`apiKey` | https://www.notion.so/API-d0ebe08a5e304a55928405eb682f6741 | Get all the services on which a song is available
+- Songsterr | key:No | https://www.songsterr.com/a/wa/api/ | Provides guitar, bass and drums tabs and chords
+- SoundCloud | key:`OAuth` | https://developers.soundcloud.com/docs/api/guide | With SoundCloud API you can build applications that will give more power to control your content
+- Spotify | key:`OAuth` | https://beta.developer.spotify.com/documentation/web-api/ | View Spotify music catalog, manage users' libraries, get recommendations and more
+- Sunor | key:`apiKey` | https://docs.sunor.cc | AI music generation API via Suno, with pay-as-you-go credits
+- TasteDive | key:`apiKey` | https://tastedive.com/read/api | Similar artist API (also works for movies and TV shows)
+- TheAudioDB | key:`apiKey` | https://www.theaudiodb.com/api_guide.php | Music
+- Vagalume | key:`apiKey` | https://api.vagalume.com.br/docs/ | Crowdsourced lyrics and music knowledge
+- Verome | key:No | https://github.com/Kirazul/Verome-API | Music API for searching, streaming and exploring music data from YouTube Music, YouTube, and Last.fm
+
+## News (21)
+- Mediastack | key:`apiKey` | https://mediastack.com?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | Free, Simple REST API for Live News & Blog Articles
+- Associated Press | key:`apiKey` | https://developer.ap.org/ | Search for news and metadata from Associated Press
+- Chronicling America | key:No | http://chroniclingamerica.loc.gov/about/api/ | Provides access to millions of pages of historic US newspapers from the Library of Congress
+- Currents | key:`apiKey` | https://currentsapi.services/ | Real-time and historical global news with multilingual support
+- Feedbin | key:`OAuth` | https://github.com/feedbin/feedbin-api | RSS reader
+- Florida Man | key:No | https://github.com/juliayxhuang/florida-man-api#readme | Static JSON dataset of 10,000+ Florida Man headlines by date
+- GNews | key:`apiKey` | https://gnews.io/ | Search for news from various sources
+- Graphs for Coronavirus | key:No | https://corona.dnsforfamily.com/api.txt | Each Country separately and Worldwide Graphs for Coronavirus. Daily updates
+- Inshorts News | key:No | https://github.com/cyberboysumanjay/Inshorts-News-API | Provides news from inshorts
+- MarketAux | key:`apiKey` | https://www.marketaux.com/ | Live stock market news with tagged tickers + sentiment and stats JSON API
+- New York Times | key:`apiKey` | https://developer.nytimes.com/ | The New York Times Developer Network
+- News | key:`apiKey` | https://newsapi.org/ | Headlines currently published on a range of news sources and blogs
+- NewsData | key:`apiKey` | https://newsdata.io/docs | News data API for live-breaking news and headlines from reputed  news sources
+- NewsX | key:`apiKey` | https://rapidapi.com/machaao-inc-machaao-inc-default/api/newsx/ | Get or Search Latest Breaking News with ML Powered Summaries 🤖
+- Noozra | key:No | https://noozra.com/api | Free news headlines from 200+ curated RSS sources
+- NPR One | key:`OAuth` | http://dev.npr.org/api/ | Personalized news listening experience from NPR
+- Spaceflight News | key:No | https://spaceflightnewsapi.net | Spaceflight related news 🚀
+- The Guardian | key:`apiKey` | http://open-platform.theguardian.com/ | Access all the content the Guardian creates, categorised by tags and section
+- The Old Reader | key:`apiKey` | https://github.com/theoldreader/api | RSS reader
+- TheNews | key:`apiKey` | https://www.thenewsapi.com/ | Aggregated headlines, top story and live news JSON API
+- Trove | key:`apiKey` | https://trove.nla.gov.au/about/create-something/using-api | Search through the National Library of Australia collection of 1000s of digitised newspapers
+
+## Open Data (45)
+- 18F | key:No | http://18f.github.io/API-All-the-X/ | Unofficial US Federal Government API Development
+- AcreLens | key:`apiKey` | https://www.acrelens.com | Land suitability scoring API for any US property: off-grid, rural, recreational, investment
+- API Setu | key:No | https://www.apisetu.gov.in/ | An Indian Government platform that provides a lot of APIS for KYC, business, education & employment
+- Archive.org | key:No | https://archive.readme.io/docs | The Internet Archive
+- Black History Facts | key:`apiKey` | https://www.blackhistoryapi.io/docs | Contribute or search one of the largest black history fact databases on the web
+- BotsArchive | key:No | https://botsarchive.com/docs.html | JSON formatted details about Telegram Bots available in database
+- Callook.info | key:No | https://callook.info | United States ham radio callsigns
+- CARTO | key:`apiKey` | https://carto.com/ | Location Information Prediction
+- CollegeScoreCard.ed.gov | key:No | https://collegescorecard.ed.gov/data/ | Data on higher education institutions in the United States
+- Enigma Public | key:`apiKey` | https://developers.enigma.com/docs | Broadest collection of public data
+- French Address Search | key:No | https://geo.api.gouv.fr/adresse | Address search via the French Government
+- GENESIS | key:`OAuth` | https://www.destatis.de/EN/Service/OpenData/api-webservice.html | Federal Statistical Office Germany
+- InfraNode | key:`apiKey` | https://infranode.dev | Unified German city open data: weather, air quality, EV chargers, transit, demographics
+- Joshua Project | key:`apiKey` | https://api.joshuaproject.net/ | People groups of the world with the fewest followers of Christ
+- K-Data Gate | key:`apiKey` | https://kdata-gate.vercel.app/docs | Korean market data: K-beauty/K-food products, Naver trends, stocks, real estate, weather
+- Kaggle | key:`apiKey` | https://www.kaggle.com/docs/api | Create and interact with Datasets, Notebooks, and connect with Kaggle
+- LinkPreview | key:`apiKey` | https://www.linkpreview.net | Get JSON formatted summary with title, description and preview image for any requested URL
+- Lowy Asia Power Index | key:No | https://github.com/0x0is1/lowy-index-api-docs | Get measure resources and influence to rank the relative power of states in Asia
+- Microlink.io | key:No | https://microlink.io | Extract structured data from any website
+- ModelPartFinder Error Codes | key:No | https://modelpartfinder.com/docs/api | Lookup appliance and equipment error codes by brand and code, with recommended replacement parts
+- Nasdaq Data Link | key:`apiKey` | https://docs.data.nasdaq.com/ | Stock market data
+- Nobel Prize | key:No | https://www.nobelprize.org/about/developer-zone-2/ | Open data about nobel prizes and events
+- Onyx Bazaar | key:No | https://onyx-actions.onrender.com/bazaar | Free public leaderboard of x402 paid HTTP services indexed from Coinbase CDP discovery API
+- Open Data Minneapolis | key:No | https://opendata.minneapolismn.gov/ | Spatial (GIS) and non-spatial city data for Minneapolis
+- Open Scholarships | key:No | https://scholarships.grudged.io | Free, openly-licensed directory of US scholarships and student aid from official sources
+- openAFRICA | key:No | https://africaopendata.org/ | Large datasets repository of African open data
+- OpenCorporates | key:`apiKey` | http://api.opencorporates.com/documentation/API-Reference | Data on corporate entities and directors in many countries
+- OpenSanctions | key:No | https://www.opensanctions.org/docs/api/ | Data on international sanctions, crime and politically exposed persons
+- Pan Africa Data | key:`apiKey` | https://panafricadata.com | Macroeconomic and subnational income distribution data for all 54 African countries
+- PeakMetrics | key:`apiKey` | https://rapidapi.com/peakmetrics-peakmetrics-default/api/peakmetrics-news | News articles and public datasets
+- Recreation Information Database | key:`apiKey` | https://ridb.recreation.gov/ | Recreational areas, federal lands, historic sites, museums, and other attractions/resources(US)
+- Scoop.it | key:`apiKey` | http://www.scoop.it/dev | Content Curation Service
+- Socrata | key:`OAuth` | https://dev.socrata.com/ | Access to Open Data from Governments, Non-profits and NGOs around the world
+- Statistics of the World | key:No | https://statisticsoftheworld.com/api-docs | Economic data for 218 countries — GDP, population, inflation, and 440+ indicators from IMF and World Bank
+- Teleport | key:No | https://developers.teleport.org/ | Quality of Life Data
+- Umeå Open Data | key:No | https://opendata.umea.se/api/ | Open data of the city Umeå in northen Sweden
+- Universities List | key:No | https://github.com/Hipo/university-domains-list | University names, countries and domains
+- University of Oslo | key:No | https://data.uio.no/ | Courses, lecture videos, detailed information for courses etc. for the University of Oslo (Norway)
+- UPC database | key:`apiKey` | https://upcdatabase.org/api | More than 1.5 million barcode numbers from all around the world
+- Urban Observatory | key:No | https://urbanobservatory.ac.uk | The largest set of publicly available real time urban data in the UK
+- Voidly | key:No | https://voidly.ai/api-docs | Internet censorship measurements, incidents, and ISP-level blocking data across 126 countries
+- Warnely | key:No | https://warnely.com/developers | Composite travel-safety scores for 180 countries (FCDO + US State + GPI + WGI + live incident wire), OpenAPI 3.1 spec, CC BY 4.0
+- Wikidata | key:`OAuth` | https://www.wikidata.org/w/api.php?action=help | Collaboratively edited knowledge base operated by the Wikimedia Foundation
+- Wikipedia | key:No | https://www.mediawiki.org/wiki/API:Main_page | Mediawiki Encyclopedia
+- Yelp | key:`OAuth` | https://www.yelp.com/developers/documentation/v3 | Find Local Business
+
+## Open Source Projects (9)
+- Countly | key:No | https://api.count.ly/reference | Countly web analytics
+- Creative Commons Catalog | key:`OAuth` | https://api.creativecommons.engineering/ | Search among openly licensed and public domain works
+- Datamuse | key:No | https://www.datamuse.com/api/ | Word-finding query engine
+- Drupal.org | key:No | https://www.drupal.org/drupalorg/docs/api | Drupal.org
+- Evil Insult Generator | key:No | https://evilinsult.com/api | Evil Insults
+- GitHub Contribution Chart Generator | key:No | https://github-contributions.vercel.app | Create an image of your GitHub contributions
+- GitHub ReadMe Stats | key:No | https://github.com/anuraghazra/github-readme-stats | Add dynamically generated statistics to your GitHub profile ReadMe
+- Metabase | key:No | https://www.metabase.com/ | An open source Business Intelligence server to share data and analytics inside your company
+- Shields | key:No | https://shields.io/ | Concise, consistent, and legible badges in SVG and raster format
+
+## Patent (4)
+- EPO | key:`OAuth` | https://developers.epo.org/ | European patent search system api
+- PatentsView  | key:No | https://patentsview.org/apis/purpose | API is intended to explore and visualize trends/patterns across the US innovation landscape
+- TIPO | key:`apiKey` | https://tiponet.tipo.gov.tw/Gazette/OpenData/OD/OD05.aspx?QryDS=API00 | Taiwan patent search system api
+- USPTO | key:No | https://www.uspto.gov/learning-and-resources/open-data-and-mobility | USA patent api services
+
+## Personality (25)
+- Advice Slip | key:No | http://api.adviceslip.com/ | Generate random advice slips
+- AstroWay | key:`apiKey` | https://api.astroway.info/docs/ | Astrology, natal charts, Human Design, Vedic and horoscopes on the Swiss Ephemeris
+- Biriyani As A Service | key:No | https://biriyani.anoram.com/ | Biriyani images placeholder
+- Dev.to | key:`apiKey` | https://developers.forem.com/api | Access Forem articles, users and other resources via API
+- Dictum | key:No | https://github.com/fisenkodv/dictum | API to get access to the collection of the most inspiring expressions of mankind
+- FavQs.com | key:`apiKey` | https://favqs.com/api | FavQs allows you to collect, discover and share your favorite quotes
+- FOAAS | key:No | http://www.foaas.com/ | Fuck Off As A Service
+- Forismatic | key:No | http://forismatic.com/en/api/ | Inspirational Quotes
+- icanhazdadjoke | key:No | https://icanhazdadjoke.com/api | The largest selection of dad jokes on the internet
+- Inspiration | key:No | https://inspiration.goprogram.ai/docs/ | Motivational and Inspirational quotes
+- kanye.rest | key:No | https://kanye.rest | REST API for random Kanye West quotes
+- kimiquotes | key:No | https://kimiquotes.herokuapp.com/doc | Team radio and interview quotes by Finnish F1 legend Kimi Räikkönen
+- Medium | key:`OAuth` | https://github.com/Medium/medium-api-docs | Community of readers and writers offering unique perspectives on ideas
+- Personality.fyi | key:No | https://personality.fyi/api | Free MBTI personality types and OEJTS test scoring
+- Programming Quotes | key:No | https://github.com/skolakoda/programming-quotes-api | Programming Quotes API for open source projects
+- Quotable Quotes | key:No | https://github.com/lukePeavey/quotable | Quotable is a free, open source quotations API
+- Quote Garden | key:No | https://pprathameshmore.github.io/QuoteGarden/ | REST API for more than 5000 famous quotes
+- quoteclear | key:No | https://quoteclear.web.app/ | Ever-growing list of James Clear quotes from the 3-2-1 Newsletter
+- Quotes on Design | key:No | https://quotesondesign.com/api/ | Inspirational Quotes
+- Stoicism Quote | key:No | https://github.com/tlcheah2/stoic-quote-lambda-public-api | Quotes about Stoicism
+- They Said So Quotes | key:No | https://theysaidso.com/api/ | Quotes Trusted by many fortune brands around the world
+- Traitify | key:No | https://app.traitify.com/developer | Assess, collect and analyze Personality
+- Udemy(instructor) | key:`apiKey` | https://www.udemy.com/developers/instructor/ | API for instructors on Udemy
+- Vadivelu HTTP Codes | key:No | https://vadivelu.anoram.com/ | On demand HTTP Codes with images
+- Zen Quotes | key:No | https://zenquotes.io/ | Large collection of Zen quotes for inspiration
+
+## Phone (7)
+- Numlookup | key:`apiKey` | https://numlookupapi.com | Phone number validation and carrier lookup API with global coverage
+- Numverify | key:`apiKey` | https://numverify.com?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | Phone number validation
+- Cloudmersive Validate | key:`apiKey` | https://cloudmersive.com/phone-number-validation-API | Validate international phone numbers
+- Phone Specification | key:No | https://github.com/azharimm/phone-specs-api | Rest Api for Phone specifications
+- Phone Validation | key:`apiKey` | https://www.abstractapi.com/phone-validation-api | Validate phone numbers globally
+- Veriphone | key:`apiKey` | https://veriphone.io | Phone number validation & carrier lookup
+- VeriRoute Intel | key:`apiKey` | https://verirouteintel.com | CNAM caller ID, carrier/LRN lookup and spam scoring for North American phone numbers
+
+## Photography (29)
+- Screenshotlayer | key:No | https://screenshotlayer.com?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | URL to screenshot
+- APITemplate.io | key:`apiKey` | https://apitemplate.io | Dynamically generate images and PDFs from templates with a simple API
+- Bruzu | key:`apiKey` | https://docs.bruzu.com | Image generation with query string
+- CheetahO | key:`apiKey` | https://cheetaho.com/docs/getting-started/ | Photo optimization and resize
+- Dagpi | key:`apiKey` | https://dagpi.xyz | Image manipulation and processing
+- Duply | key:`apiKey` | https://duply.co/docs#getting-started-api | Generate, Edit, Scale and Manage Images and Videos Smarter & Faster
+- DynaPictures | key:`apiKey` | https://dynapictures.com/docs/ | Generate Hundreds of Personalized Images in Minutes
+- Flickr | key:`OAuth` | https://www.flickr.com/services/api/ | Flickr Services
+- Getty Images | key:`OAuth` | http://developers.gettyimages.com/en/ | Build applications using the world's most powerful imagery
+- Gfycat | key:`OAuth` | https://developers.gfycat.com/api/ | Jiffier GIFs
+- Giphy | key:`apiKey` | https://developers.giphy.com/docs/ | Get all your gifs
+- Google Photos | key:`OAuth` | https://developers.google.com/photos | Integrate Google Photos with your apps or devices
+- Image Upload | key:`apiKey` | https://apilayer.com/marketplace/image_upload-api | Image Optimization
+- Imgur | key:`OAuth` | https://apidocs.imgur.com/ | Images
+- Imsea | key:No | https://imsea.herokuapp.com/ | Free image search
+- Lorem Picsum | key:No | https://picsum.photos/ | Images from Unsplash
+- ObjectCut | key:`apiKey` | https://objectcut.com/ | Image Background removal
+- Pexels | key:`apiKey` | https://www.pexels.com/api/ | Free Stock Photos and Videos
+- PhotoRoom | key:`apiKey` | https://www.photoroom.com/api/ | Remove background from images
+- Pixabay | key:`apiKey` | https://pixabay.com/sk/service/about/api/ | Photography
+- PlaceKeanu | key:No | https://placekeanu.com/ | Resizable Keanu Reeves placeholder images with grayscale and young Keanu options
+- Readme typing SVG | key:No | https://github.com/DenverCoder1/readme-typing-svg | Customizable typing and deleting text SVG
+- Remove.bg | key:`apiKey` | https://www.remove.bg/api | Image Background removal
+- ReSmush.it | key:No | https://resmush.it/api | Photo optimization
+- shutterstock | key:`OAuth` | https://api-reference.shutterstock.com/ | Stock Photos and Videos
+- Sirv | key:`apiKey` | https://apidocs.sirv.com/ | Image management solutions like optimization, manipulation, hosting
+- Unsplash | key:`OAuth` | https://unsplash.com/developers | Photography
+- Wallhaven | key:`apiKey` | https://wallhaven.cc/help/api | Wallpapers
+- Webdam | key:`OAuth` | https://www.damsuccess.com/hc/en-us/articles/202134055-REST-API | Images
+
+## Programming (5)
+- Codeforces | key:`apiKey` | https://codeforces.com/apiHelp | Get access to Codeforces data
+- Hackerearth | key:`apiKey` | https://www.hackerearth.com/docs/wiki/developers/v4/ | For compiling and running code in several languages
+- Judge0 CE | key:`apiKey` | https://ce.judge0.com/ | Online code execution system
+- KONTESTS | key:No | https://kontests.net/api | For upcoming and ongoing competitive coding contests
+- Mintlify | key:`apiKey` | https://docs.mintlify.com | For programmatically generating documentation for code

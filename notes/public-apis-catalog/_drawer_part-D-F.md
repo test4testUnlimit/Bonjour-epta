@@ -1,0 +1,354 @@
+# reference: public-apis catalog part-D-F
+meta: project=general | room=public-apis | type=reference | author=Grok(4.5) | machine=CORP | date=2026-07-02 | status=active | tags=public-apis,catalog,part-D-F
+---
+Upstream: https://github.com/public-apis/public-apis
+Format each line: Name | key:AUTH | URL | description
+AUTH: No | apiKey | OAuth | other
+
+## Data Validation (7)
+- VATlayer | key:`apiKey` | https://vatlayer.com/?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | VAT number validation
+- Lob.com | key:`apiKey` | https://lob.com/ | US Address Verification
+- Postman Echo | key:No | https://www.postman-echo.com | Test api server to receive and return value from HTTP method
+- PurgoMalum | key:No | http://www.purgomalum.com | Content validator against profanity & obscenity
+- US Autocomplete | key:`apiKey` | https://www.smarty.com/docs/cloud/us-autocomplete-pro-api | Enter address data quickly with real-time address suggestions
+- US Extract | key:`apiKey` | https://www.smarty.com/products/apis/us-extract-api | Extract postal addresses from any text including emails
+- US Street Address | key:`apiKey` | https://www.smarty.com/docs/cloud/us-street-api | Validate and append data for any US postal address
+
+## Development (135)
+- Userstack | key:`OAuth` | https://userstack.com/?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | Secure User-Agent String Lookup JSON API
+- 24 Pull Requests | key:No | https://24pullrequests.com/api | Project to promote open source collaboration during December
+- Agify.io | key:No | https://agify.io | Estimates the age from a first name
+- Amazonscraperapi | key:`apiKey` | https://amazonscraperapi.com | Amazon product, search & batch scraping API with residential proxies (1000 free)
+- API Grátis | key:No | https://apigratis.com.br/ | Multiples services and public APIs
+- ApicAgent | key:No | https://www.apicagent.com | Extract device details from user-agent string
+- ApiFlash | key:`apiKey` | https://apiflash.com/ | Chrome based screenshot API for developers
+- APIs.guru | key:No | https://apis.guru/api-doc/ | Wikipedia for Web APIs, OpenAPI/Swagger specs for public APIs
+- Azure DevOps | key:`apiKey` | https://docs.microsoft.com/en-us/rest/api/azure/devops | The Azure DevOps basic components of a REST API request/response pair
+- Base | key:`apiKey` | https://www.base-api.io/ | Building quick backends
+- Beeceptor | key:No | https://beeceptor.com/ | Build a mock Rest API endpoint in seconds
+- Bitbucket | key:`OAuth` | https://developer.atlassian.com/bitbucket/api/2/reference/ | Bitbucket API
+- Blague.xyz | key:`apiKey` | https://blague.xyz/ | La plus grande API de Blagues FR/The biggest FR jokes API
+- Blitapp | key:`apiKey` | https://blitapp.com/api/ | Schedule screenshots of web pages and sync them to your cloud
+- Blynk-Cloud | key:`apiKey` | https://blynkapi.docs.apiary.io/# | Control IoT Devices from Blynk IoT Cloud
+- Bored | key:No | https://www.boredapi.com/ | Find random activities to fight boredom
+- Brainshop.ai | key:`apiKey` | https://brainshop.ai/ | Make A Free A.I Brain
+- BrewPage | key:No | https://brewpage.app | Free hosting for HTML, JSON, key-value, files, multi-file sites with short URLs and TTL retention
+- Browshot | key:`apiKey` | https://browshot.com/api/documentation | Easily make screenshots of web pages in any screen size, as any device
+- CDNJS | key:No | https://api.cdnjs.com/libraries/jquery | Library info on CDNJS
+- Changelogs.md | key:No | https://changelogs.md | Structured changelog metadata from open source projects
+- Ciprand | key:No | https://github.com/polarspetroll/ciprand | Secure random string generator
+- Cloudflare Trace | key:No | https://github.com/fawazahmed0/cloudflare-trace-api | Get IP Address, Timestamp, User Agent, Country Code, IATA, HTTP Version, TLS/SSL Version & More
+- Codex | key:No | https://github.com/Jaagrav/CodeX | Online Compiler for Various Languages
+- Contentful Images | key:`apiKey` | https://www.contentful.com/developers/docs/references/images-api/ | Used to retrieve and apply transformations to images
+- CORS Proxy | key:No | https://github.com/burhanuday/cors-proxy | Get around the dreaded CORS error by using this proxy as a middle man
+- CountAPI | key:No | https://countapi.xyz | Free and simple counting service. You can use it to track page hits and specific events
+- Databricks | key:`apiKey` | https://docs.databricks.com/dev-tools/api/latest/index.html | Service to manage your databricks account,clusters, notebooks, jobs and workspaces
+- DigitalOcean Status | key:No | https://status.digitalocean.com/api | Status of all DigitalOcean services
+- Docker Hub | key:`apiKey` | https://docs.docker.com/docker-hub/api/latest/ | Interact with Docker Hub
+- DomainDb Info | key:No | https://api.domainsdb.info/ | Domain name search to find all domains containing particular words/phrases/etc
+- DownStatus | key:No | https://isitdownstatus.com | Real-time status for GitHub, AWS, Discord and 90+ services
+- ExtendsClass JSON Storage | key:No | https://extendsclass.com/json-storage.html | A simple JSON store API
+- GeekFlare | key:`apiKey` | https://apidocs.geekflare.com/docs/geekflare-api | Provide numerous capabilities for important testing and monitoring methods for websites
+- Genderize.io | key:No | https://genderize.io | Estimates a gender from a first name
+- GETPing | key:`apiKey` | https://www.getping.info | Trigger an email notification with a simple GET request
+- Ghost | key:`apiKey` | https://ghost.org/ | Get Published content into your Website, App or other embedded media
+- GitHub | key:`OAuth` | https://docs.github.com/en/free-pro-team@latest/rest | Make use of GitHub repositories, code and user info programmatically
+- Gitlab | key:`OAuth` | https://docs.gitlab.com/ee/api/ | Automate GitLab interaction programmatically
+- Gitter | key:`OAuth` | https://developer.gitter.im/docs/welcome | Chat for Developers
+- Glitterly | key:`apiKey` | https://developers.glitterly.app | Image generation API
+- Google Docs | key:`OAuth` | https://developers.google.com/docs/api/reference/rest | API to read, write, and format Google Docs documents
+- Google Firebase | key:`apiKey` | https://firebase.google.com/docs | Google's mobile application development platform that helps build, improve, and grow app
+- Google Fonts | key:`apiKey` | https://developers.google.com/fonts/docs/developer_api | Metadata for all families served by Google Fonts
+- Google Keep | key:`OAuth` | https://developers.google.com/keep/api/reference/rest | API to read, write, and format Google Keep notes
+- Google Sheets | key:`OAuth` | https://developers.google.com/sheets/api/reference/rest | API to read, write, and format Google Sheets data
+- Google Slides | key:`OAuth` | https://developers.google.com/slides/api/reference/rest | API to read, write, and format Google Slides presentations
+- Gorest | key:`OAuth` | https://gorest.co.in/ | Online REST API for Testing and Prototyping
+- Hasura | key:`apiKey` | https://hasura.io/opensource/ | GraphQL and REST API Engine with built in Authorization
+- Heroku | key:`OAuth` | https://devcenter.heroku.com/articles/platform-api-reference/ | REST API to programmatically create apps, provision add-ons and perform other task on Heroku
+- host-t.com | key:No | https://host-t.com | Basic DNS query via HTTP GET request
+- Host.io | key:`apiKey` | https://host.io | Domains Data API for Developers
+- HTTP2.Pro | key:No | https://http2.pro/doc/api | Test endpoints for client and server HTTP/2 protocol support
+- Httpbin | key:No | https://httpbin.org/ | A Simple HTTP Request & Response Service
+- Httpbin Cloudflare | key:No | https://cloudflare-quic.com/b/ | A Simple HTTP Request & Response Service with HTTP/3 Support by Cloudflare
+- Hipsum | key:No | https://hipsum.co | Hipster-themed lorem ipsum generator for placeholder text
+- Hunter | key:`apiKey` | https://hunter.io/api | API for domain search, professional email finder, author finder and email verifier
+- IBM Text to Speech | key:`apiKey` | https://cloud.ibm.com/docs/text-to-speech/getting-started.html | Convert text to speech
+- Icanhazepoch | key:No | https://icanhazepoch.com | Get Epoch time
+- Icanhazip | key:No | https://major.io/icanhazip-com-faq/ | IP Address API
+- IFTTT | key:No | https://platform.ifttt.com/docs/connect_api | IFTTT Connect API
+- Image-Charts | key:No | https://documentation.image-charts.com/ | Generate charts, QR codes and graph images
+- import.io | key:`apiKey` | http://api.docs.import.io/ | Retrieve structured data from a website or RSS feed
+- ip-fast.com | key:No | https://ip-fast.com/docs/ | IP address, country and city
+- IP2WHOIS Information Lookup | key:`apiKey` | https://www.ip2whois.com/ | WHOIS domain name lookup
+- ipfind.io | key:`apiKey` | https://ipfind.io | Geographic location of an IP address or any domain name along with some other useful information
+- IPify | key:No | https://www.ipify.org/ | A simple IP Address API
+- IPinfo | key:No | https://ipinfo.io/developers | Another simple IP Address API
+- isitdownstatus | key:No | https://isitdownstatus.com | Check if websites and online services are currently down
+- jsDelivr | key:No | https://github.com/jsdelivr/data.jsdelivr.com | Package info and download stats on jsDelivr CDN
+- JSON 2 JSONP | key:No | https://json2jsonp.com/ | Convert JSON to JSONP (on-the-fly) for easy cross-domain data requests using client-side JavaScript
+- JSONbin.io | key:`apiKey` | https://jsonbin.io | Free JSON storage service. Ideal for small scale Web apps, Websites and Mobile apps
+- JSONPlaceholder | key:No | https://jsonplaceholder.typicode.com | Fake REST API for testing and prototyping
+- Keyvalue | key:No | https://keyvalue.immanuel.co/ | Simple key-value storage REST API for quick prototyping
+- Kroki | key:No | https://kroki.io | Creates diagrams from textual descriptions
+- License-API | key:No | https://github.com/cmccandless/license-api/blob/master/README.md | Unofficial REST API for choosealicense.com
+- Logs.to | key:`apiKey` | https://logs.to/ | Generate logs
+- Lua Decompiler | key:No | https://lua-decompiler.ferib.dev/ | Online Lua 5.1 Decompiler
+- MAC address vendor lookup | key:`apiKey` | https://macaddress.io/api | Retrieve vendor details and other information regarding a given MAC address or an OUI
+- Micro DB | key:`apiKey` | https://m3o.com/db | Simple database service
+- MicroENV | key:No | https://microenv.com/ | Fake Rest API for developers
+- Mocky | key:No | https://designer.mocky.io/ | Mock user defined test JSON for REST API endpoints
+- MY IP | key:No | https://www.myip.com/api-docs/ | Get IP address information
+- Nationalize.io | key:No | https://nationalize.io | Estimate the nationality of a first name
+- Netlify | key:`OAuth` | https://docs.netlify.com/api/get-started/ | Netlify is a hosting service for the programmable web
+- NetworkCalc | key:No | https://networkcalc.com/api/docs | Network calculators, including subnets, DNS, binary, and security tools
+- npm Registry | key:No | https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md | Query information about your favorite Node.js libraries programatically
+- OneSignal | key:`apiKey` | https://documentation.onesignal.com/docs/onesignal-api | Self-serve customer engagement solution for Push Notifications, Email, SMS & In-App
+- Open Page Rank | key:`apiKey` | https://www.domcop.com/openpagerank/ | API for calculating and comparing metrics of different websites using Page Rank algorithm
+- OpenAPIHub | key:`X-Mashape-Key` | https://hub.openapihub.com/ | The All-in-one API Platform
+- OpenGraphr | key:`apiKey` | https://opengraphr.com/docs/1.0/overview | Really simple API to retrieve Open Graph data from an URL
+- OpenQR | key:`apiKey` | https://openqr.uk/api | Generate QR codes and manage dynamic (editable) QR codes with scan analytics
+- oyyi | key:No | https://oyyi.xyz/docs/1.0 | API for Fake Data, image/video conversion, optimization, pdf optimization and thumbnail generation
+- PageCDN | key:`apiKey` | https://pagecdn.com/docs/public-api | Public API for javascript, css and font libraries on PageCDN
+- Postman | key:`apiKey` | https://www.postman.com/postman/workspace/postman-public-workspace/documentation/12959542-c8142d51-e97c-46b6-bd77-52bb66712c9a | Tool for testing APIs
+- ProxyCrawl | key:`apiKey` | https://proxycrawl.com | Scraping and crawling anticaptcha service
+- ProxyKingdom | key:`apiKey` | https://proxykingdom.com | Rotating Proxy API that produces a working proxy on every request
+- Pusher Beams | key:`apiKey` | https://pusher.com/beams | Push notifications for Android & iOS
+- QR & Barcode | key:No | https://solsigs.com/qrapi/ | QR codes and barcodes (Code 128, EAN-13, Data Matrix, PDF417 + more). SVG or PNG output
+- QR code | key:No | https://www.qrtag.net/api/ | Create an easy to read QR code and URL shortener
+- QR code | key:No | http://goqr.me/api/ | Generate and decode / read QR code graphics
+- Qrcode Monkey | key:No | https://www.qrcode-monkey.com/qr-code-api-with-logo/ | Integrate custom and unique looking QR codes into your system or workflow
+- QuickChart | key:No | https://quickchart.io/ | Generate chart and graph images
+- Random Stuff | key:`apiKey` | https://api-docs.pgamerx.com/ | Can be used to get AI Response, jokes, memes, and much more at lightning-fast speed
+- Rejax | key:`apiKey` | https://rejax.io/ | Reverse AJAX service to notify clients
+- ReqRes | key:No | https://reqres.in/ | A hosted REST-API ready to respond to your AJAX requests
+- RSS feed to JSON | key:No | https://rss-to-json-serverless-api.vercel.app | Returns RSS feed in JSON format using feed URL
+- SavePage.io | key:`apiKey` | https://www.savepage.io | A free, RESTful API used to screenshot any desktop, or mobile website
+- ScrapeNinja | key:`apiKey` | https://scrapeninja.net | Scraping API with Chrome fingerprint and residential proxies
+- ScraperApi | key:`apiKey` | https://www.scraperapi.com | Easily build scalable web scrapers
+- scraperBox | key:`apiKey` | https://scraperbox.com/ | Undetectable web scraping API
+- scrapestack | key:`apiKey` | https://scrapestack.com/ | Real-time, Scalable Proxy & Web Scraping REST API
+- ScrapingAnt | key:`apiKey` | https://scrapingant.com | Headless Chrome scraping with a simple API
+- ScrapingDog | key:`apiKey` | https://www.scrapingdog.com/ | Proxy API for Web scraping
+- Screenshot | key:`apiKey` | https://www.abstractapi.com/website-screenshot-api | Take programmatic screenshots of web pages from any website
+- ScreenshotAPI.net | key:`apiKey` | https://screenshotapi.net/ | Create pixel-perfect website screenshots
+- Serialif Color | key:No | https://color.serialif.com/ | Color conversion, complementary, grayscale and contrasted text
+- serpstack | key:`apiKey` | https://serpstack.com/ | Real-Time & Accurate Google Search Results API
+- Sheetsu | key:`apiKey` | https://sheetsu.com/ | Easy google sheets integration
+- SHOUTCLOUD | key:No | http://shoutcloud.io/ | ALL-CAPS AS A SERVICE
+- SiteIntel | key:`apiKey` | https://siteintel.duckdns.org | Extract metadata, tech stack, emails, and screenshots from any URL
+- Sonar | key:No | https://github.com/Cgboal/SonarSearch | Project Sonar DNS Enumeration API
+- SonarQube | key:`OAuth` | https://sonarcloud.io/web_api | SonarQube REST APIs to detect bugs, code smells & security vulnerabilities
+- StackExchange | key:`OAuth` | https://api.stackexchange.com/ | Q&A forum for developers
+- Statically | key:No | https://statically.io/ | A free CDN for developers
+- Supportivekoala | key:`apiKey` | https://developers.supportivekoala.com/ | Autogenerate images with template
+- Suprsonic | key:`apiKey` | https://suprsonic.ai | Unified agent API: search, scrape, enrich, image gen, TTS, STT, messaging. One key, 20+ capabilities
+- Talordata | key:`apiKey` | https://docs.talordata.com/ | SERP data from major search engines with a free trial
+- Thunder Client | key:No | https://www.thunderclient.com/ | API testing tool
+- Thunderbit | key:`apiKey` | https://thunderbit.com/docs/introduction | Extract web pages as Markdown or structured data for AI apps
+- Tyk | key:`apiKey` | https://tyk.io/open-source/ | Api and service management platform
+- Wandbox | key:No | https://github.com/melpon/wandbox/blob/master/kennel2/API.rst | Code compiler supporting 35+ languages mentioned at wandbox.org
+- Webclaw | key:`apiKey` | https://webclaw.io/docs/api | Web content extraction for LLMs with scrape, crawl, search, and summarize
+- WebScraping.AI | key:`apiKey` | https://webscraping.ai/ | Web Scraping API with built-in proxies and JS rendering
+- ZenRows | key:`apiKey` | https://www.zenrows.com/ | Web Scraping API that bypasses anti-bot solutions while offering JS rendering, and rotating proxies
+
+## Dictionaries (13)
+- Chinese Character Web | key:No | http://ccdb.hemiola.com/ | Chinese character definitions and pronunciations
+- Chinese Text Project | key:No | https://ctext.org/tools/api | Online open-access digital library for pre-modern Chinese texts
+- Collins | key:`apiKey` | https://api.collinsdictionary.com/api/v1/documentation/html/ | Bilingual Dictionary and Thesaurus Data
+- Free Dictionary | key:No | https://dictionaryapi.dev/ | Definitions, phonetics, pronounciations, parts of speech, examples, synonyms
+- Indonesia Dictionary | key:No | https://new-kbbi-api.herokuapp.com/ | Indonesia dictionary many words
+- Lingua Robot | key:`apiKey` | https://www.linguarobot.io | Word definitions, pronunciations, synonyms, antonyms and others
+- Merriam-Webster | key:`apiKey` | https://dictionaryapi.com/ | Dictionary and Thesaurus Data
+- OwlBot | key:`apiKey` | https://owlbot.info/ | Definitions with example sentence and photo if available
+- Oxford | key:`apiKey` | https://developer.oxforddictionaries.com/ | Dictionary Data
+- Synonyms | key:`apiKey` | https://www.synonyms.com/synonyms_api.php | Synonyms, thesaurus and antonyms information for any given word
+- Wiktionary | key:No | https://en.wiktionary.org/w/api.php | Collaborative dictionary data
+- Wordnik | key:`apiKey` | https://developer.wordnik.com | Dictionary Data
+- Words | key:`apiKey` | https://www.wordsapi.com/docs/ | Definitions and synonyms for more than 150,000 words
+
+## Documents & Productivity (36)
+- Airtable | key:`apiKey` | https://airtable.com/api | Integrate with Airtable
+- Api2Convert | key:`apiKey` | https://www.api2convert.com/ | Online File Conversion API
+- apilayer pdflayer | key:`apiKey` | https://pdflayer.com | HTML/URL to PDF
+- Asana | key:`apiKey` | https://developers.asana.com/docs | Programmatic access to all data in your asana system
+- BuildPDF | key:`apiKey` | https://buildpdf.co/api/docs | Convert HTML, images, and text to PDF
+- ClickUp | key:`OAuth` | https://clickup.com/api | ClickUp is a robust, cloud-based project management tool for boosting productivity
+- Clockify | key:`apiKey` | https://clockify.me/developers-api | Clockify's REST-based API can be used to push/pull data to/from it & integrate it with other systems
+- CloudConvert | key:`apiKey` | https://cloudconvert.com/api/v2 | Online file converter for audio, video, document, ebook, archive, image, spreadsheet, presentation
+- Cloudmersive Document and Data Conversion | key:`apiKey` | https://cloudmersive.com/convert-api | HTML/URL to PDF/PNG, Office documents to PDF, image conversion
+- Code::Stats | key:`apiKey` | https://codestats.net/api-docs | Automatic time tracking for programmers
+- CraftMyPDF | key:`apiKey` | https://craftmypdf.com | Generate PDF documents from templates with a drop-and-drop editor and a simple API
+- Flowdash | key:`apiKey` | https://docs.flowdash.com/docs/api-introduction | Automate business workflows
+- Html2PDF | key:`apiKey` | https://html2pdf.app/ | HTML/URL to PDF
+- iLovePDF | key:`apiKey` | https://developer.ilovepdf.com/ | Convert, merge, split, extract text and add page numbers for PDFs. Free for 250 documents/month
+- JIRA | key:`OAuth` | https://developer.atlassian.com/server/jira/platform/rest-apis/ | JIRA is a proprietary issue tracking product that allows bug tracking and agile project management
+- Mattermost | key:`OAuth` | https://api.mattermost.com/ | An open source platform for developer collaboration
+- Mercury | key:`apiKey` | https://mercury.postlight.com/web-parser/ | Web parser
+- Monday | key:`apiKey` | https://api.developer.monday.com/docs | Programmatically access and update data inside a monday.com account
+- Notion | key:`OAuth` | https://developers.notion.com/docs/getting-started | Integrate with Notion
+- OCR.Space | key:`apiKey` | https://ocr.space/ocrapi | OCR text extraction from images and PDFs with a free tier
+- PandaDoc | key:`apiKey` | https://developers.pandadoc.com | DocGen and eSignatures API
+- PDFFleet | key:`apiKey` | https://pdffleet.com | HTML and URL to PDF API with templates and a free tier
+- Pocket | key:`OAuth` | https://getpocket.com/developer/ | Bookmarking service
+- Podio | key:`OAuth` | https://developers.podio.com | File sharing and productivity
+- PolyDoc | key:`apiKey` | https://polydoc.tech | HTML/URL to PDF and screenshots, plus Factur-X/ZUGFeRD e-invoices; free tier
+- PrexView | key:`apiKey` | https://prexview.com | Data from XML or JSON to PDF, HTML or Image
+- Renderly | key:`apiKey` | https://renderlyapi.com | HTML to PDF conversion API built on Chromium
+- Rendex | key:`apiKey` | https://rendex.dev | Render HTML, Markdown, or URLs to PNG/JPEG/WebP/PDF, with extraction and templating
+- Restpack | key:`apiKey` | https://restpack.io/ | Provides screenshot, HTML to PDF and content extraction APIs
+- Todoist | key:`OAuth` | https://developer.todoist.com | Todo Lists
+- Smart Image Enhancement | key:`apiKey` | https://apilayer.com/marketplace/image_enhancement-api | Performs image upscaling by adding detail to images through multiple super-resolution algorithms
+- staffSign | key:`apiKey` | https://staffsign.de/docs | Digital employment contract API with QES/eIDAS support for HR and staffing
+- Vector Express v2.0 | key:No | https://vector.express | Free vector file converting API
+- WakaTime | key:No | https://wakatime.com/developers | Automated time tracking leaderboards for programmers
+- Zube | key:`OAuth` | https://zube.io/docs/api | Full stack project management
+- Zero Retention PDF | key:`apiKey` | https://xeropdf.com | Zero-retention HTML to PDF conversion
+
+## Email (20)
+- mailboxlayer | key:`apiKey` | https://mailboxlayer.com?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | Email address validation
+- Cloudmersive Validate | key:`apiKey` | https://cloudmersive.com/validate-api | Validate email addresses, phone numbers, VAT numbers and domain names
+- Disify | key:No | https://www.disify.com/ | Validate and detect disposable and temporary email addresses
+- DropMail | key:No | https://dropmail.me/api/#live-demo | GraphQL API for creating and managing ephemeral e-mail inboxes
+- EmailJS | key:`apiKey` | https://www.emailjs.com/docs/ | Send emails directly from client-side JavaScript without a backend server
+- Email Validation | key:`apiKey` | https://www.abstractapi.com/email-verification-validation-api | Validate email addresses for deliverability and spam
+- EVA | key:No | https://eva.pingutil.com/ | Validate email addresses
+- Guerrilla Mail | key:No | https://www.guerrillamail.com/GuerrillaMailAPI.html | Disposable temporary Email addresses
+- ImprovMX | key:`apiKey` | https://improvmx.com/api | API for free email forwarding service
+- Kickbox | key:No | https://open.kickbox.com/ | Email verification API
+- Kiprio Email Validate | key:`apiKey` | https://kiprio.com/v1/email-validate | Free email validation: MX check, disposable detection, syntax
+- mail.gw | key:No | https://docs.mail.gw | 10 Minute Mail
+- mail.tm | key:No | https://docs.mail.tm | Temporary Email Service
+- MailboxValidator | key:`apiKey` | https://www.mailboxvalidator.com/api-email-free | Validate email address to improve deliverability
+- MailCheck.ai | key:No | https://www.mailcheck.ai/#documentation | Prevent users to sign up with temporary email addresses
+- Mailtrap | key:`apiKey` | https://mailtrap.docs.apiary.io/# | A service for the safe testing of emails sent from the development and staging environments
+- PostStack | key:`apiKey` | https://poststack.dev/docs | EU-hosted email API for transactional and marketing email, with contacts, broadcasts, and analytics
+- Sendgrid | key:`apiKey` | https://docs.sendgrid.com/api-reference/ | A cloud-based SMTP provider that allows you to send emails without having to maintain email servers
+- Sendinblue | key:`apiKey` | https://developers.sendinblue.com/docs | A service that provides solutions relating to marketing and/or transactional email and/or SMS
+- Verifier | key:`apiKey` | https://verifier.meetchopra.com/docs#/ | Verifies that a given email is real
+
+## Entertainment (16)
+- Anycrap | key:`apiKey` | https://anycrap.shop/developers | 35,000+ absurdist AI-generated product concepts with names, descriptions, and images
+- chucknorris.io | key:No | https://api.chucknorris.io | JSON API for hand curated Chuck Norris jokes
+- Corporate Buzz Words | key:No | https://github.com/sameerkumar18/corporate-bs-generator-api | REST API for Corporate Buzz Words
+- Excuser | key:No | https://excuser.herokuapp.com/ | Get random excuses for various situations
+- Fun Fact | key:No | https://api.aakhilv.me | A simple HTTPS api that can randomly select and return a fact from the FFA database
+- Imgflip | key:No | https://imgflip.com/api | Gets an array of popular memes
+- JokeAPI | key:No | https://v2.jokeapi.dev/ | Programmable jokes in multiple languages with filtering options
+- justmeme.wtf | key:No | https://justmeme.wtf/api-docs | Free meme API with 2400+ templates, search, trending, and AI generation
+- Meme Maker | key:No | https://mememaker.github.io/API/ | REST API for create your own meme
+- Memesio | key:No | https://memesio.com/developers/api | Meme creation API with templates, editable captions and hosted share links
+- NaMoMemes | key:No | https://github.com/theIYD/NaMoMemes | Memes on Narendra Modi
+- PotterDB | key:No | https://docs.potterdb.com/ | Harry Potter universe database with characters, spells, potions and more
+- Random Useless Facts | key:No | https://uselessfacts.jsph.pl/ | Get useless, but true facts
+- TasteDive | key:`apiKey` | https://tastedive.com/read/api | Content-based recommendations for movies, music, TV shows, books, games, and podcasts
+- Techy | key:No | https://techy-api.vercel.app/ | JSON and Plaintext API for tech-savvy sounding phrases
+- Yo Momma Jokes | key:No | https://github.com/beanboi7/yomomma-apiv2 | REST API for Yo Momma Jokes
+
+## Environment (19)
+- BreezoMeter Pollen | key:`apiKey` | https://docs.breezometer.com/api-documentation/pollen-api/v2/ | Daily Forecast pollen conditions data for a specific location
+- Carbon Interface | key:`apiKey` | https://docs.carboninterface.com/ | API to calculate carbon (C02) emissions estimates for common C02 emitting activities
+- Climatiq | key:`apiKey` | https://docs.climatiq.io | Calculate the environmental footprint created by a broad range of emission-generating activities
+- Cloverly | key:`apiKey` | https://www.cloverly.com/carbon-offset-documentation | API calculates the impact of common carbon-intensive activities in real time
+- CO2 Offset | key:No | https://co2offset.io/api.html | API calculates and validates the carbon footprint
+- Danish data service Energi | key:No | https://www.energidataservice.dk/ | Open energy data from Energinet to society
+- GrünstromIndex | key:No | https://gruenstromindex.de/ | Green Power Index for Germany (Grünstromindex/GSI)
+- IQAir | key:`apiKey` | https://www.iqair.com/air-pollution-data-api | Air quality and weather data
+- Luchtmeetnet | key:No | https://api-docs.luchtmeetnet.nl/ | Predicted and actual air quality components for The Netherlands (RIVM)
+- National Grid ESO | key:No | https://data.nationalgrideso.com/ | Open data from Great Britain’s Electricity System Operator
+- OpenAQ | key:`apiKey` | https://docs.openaq.org/ | Open air quality data
+- PM2.5 Open Data Portal | key:No | https://pm25.lass-net.org/#apis | Open low-cost PM2.5 sensor data
+- PM25.in | key:`apiKey` | http://www.pm25.in/api_doc | Air quality of China
+- PVWatts | key:`apiKey` | https://developer.nrel.gov/docs/solar/pvwatts/v6/ | Energy production photovoltaic (PV) energy systems
+- Solematica | key:No | https://www.solematica.it/sviluppatori | Compare Italian solar (photovoltaic) installer offers, energy prices (PUN/ARERA) and satellite roof data
+- Srp Energy | key:`apiKey` | https://srpenergy-api-client-python.readthedocs.io/en/latest/api.html | Hourly usage energy report for Srp customers
+- SustainMetrics | key:`apiKey` | https://www.sustainmetrics.net/api | 18,000+ GHG emission factors from DEFRA, EPA, ADEME, Ember
+- UK Carbon Intensity | key:No | https://carbon-intensity.github.io/api-definitions/#carbon-intensity-api-v1-0-0 | The Official Carbon Intensity API for Great Britain developed by National Grid
+- Website Carbon | key:No | https://api.websitecarbon.com/ | API to estimate the carbon footprint of loading web pages
+
+## Events (3)
+- Eventbrite | key:`OAuth` | https://www.eventbrite.com/platform/api/ | Find events
+- SeatGeek | key:`apiKey` | https://platform.seatgeek.com/ | Search events, venues and performers
+- Ticketmaster | key:`apiKey` | http://developer.ticketmaster.com/products-and-docs/apis/getting-started/ | Search events, attractions, or venues
+
+## Finance (54)
+- Marketstack | key:`apiKey` | https://marketstack.com/?utm_source=Github&utm_medium=Referral&utm_campaign=Public-apis-repo-Best-sellers | Real-Time, Intraday & Historical Market Data API
+- Aletheia | key:`apiKey` | https://aletheiaapi.com/ | Insider trading data, earnings call analysis, financial statements, and more
+- Alpaca | key:`apiKey` | https://alpaca.markets/docs/api-documentation/api-v2/market-data/alpaca-data-api-v2/ | Realtime and historical market data on all US equities and ETFs
+- Alpha Vantage | key:`apiKey` | https://www.alphavantage.co/ | Realtime and historical stock data
+- Banco do Brasil | key:`OAuth` | https://developers.bb.com.br/home | All Banco do Brasil financial transaction APIs
+- Bank Data | key:`apiKey` | https://apilayer.com/marketplace/bank_data-api | Instant IBAN and SWIFT number validation across the globe
+- Billplz | key:`apiKey` | https://www.billplz.com/api | Payment platform
+- Binlist | key:No | https://binlist.net/ | Public access to a database of IIN/BIN information
+- Boleto.Cloud | key:`apiKey` | https://boleto.cloud/ | A api to generate boletos in Brazil
+- BriefTape | key:`apiKey` | https://brieftape.com | Real-time AI-summarized SEC filings, Fed, FDA and BLS data, ticker-tagged
+- Citi | key:`apiKey` | https://sandbox.developerhub.citi.com/api-catalog-list | All Citigroup account and statement data APIs
+- CongressInvests | key:`apiKey` | https://congressinvests.com | Real-time U.S. congressional stock trade disclosures from Senate EFD and House Clerk
+- Econdb | key:No | https://www.econdb.com/api/ | Global macroeconomic data
+- EconPulse | key:`apiKey` | https://econpulse.io | Live economic data — CPI, PPI, energy, treasury rates, BTC premium
+- Edgrapi | key:`apiKey` | https://edgrapi.com | Clean SEC EDGAR company financials, ratios, filings and 10-K/10-Q sections as normalized JSON
+- Fed Treasury | key:No | https://fiscaldata.treasury.gov/api-documentation/ | U.S. Department of the Treasury Data
+- Finage | key:`apiKey` | https://finage.co.uk | Finage is a stock, currency, cryptocurrency, indices, and ETFs real-time & historical data provider
+- Financial Modeling Prep | key:`apiKey` | https://site.financialmodelingprep.com/developer/docs | Realtime and historical stock data
+- Finnhub | key:`apiKey` | https://finnhub.io/docs/api | Real-Time RESTful APIs and Websocket for Stocks, Currencies, and Crypto
+- FRED | key:`apiKey` | https://fred.stlouisfed.org/docs/api/fred/ | Economic data from the Federal Reserve Bank of St. Louis
+- Front Accounting APIs | key:`OAuth` | https://frontaccounting.com/fawiki/index.php?n=Devel.SimpleAPIModule | Front accounting is multilingual and multicurrency software for small businesses
+- Goldprice.dev | key:No | https://goldprice.dev/docs | Cross-validated gold, silver & copper spot, futures & 30-year history in 13 currencies
+- Helium | key:No | https://heliumtrades.com/mcp-page/ | News with media bias scoring, balanced news synthesis, live market data, AI options pricing
+- Hotstoks | key:`apiKey` | https://hotstoks.com?utm_source=public-apis | Stock market data powered by SQL
+- IBANforge | key:No | https://api.ibanforge.com | IBAN validation and BIC/SWIFT lookup for 75+ countries with 121K+ bank entries
+- IEX Cloud | key:`apiKey` | https://iexcloud.io/docs/api/ | Realtime & Historical Stock and Market Data
+- IG | key:`apiKey` | https://labs.ig.com/gettingstarted | Spreadbetting and CFD Market Data
+- Indian Mutual Fund | key:No | https://www.mfapi.in/ | Get complete history of India Mutual Funds Data
+- Intrinio | key:`apiKey` | https://intrinio.com/ | A wide selection of financial data feeds
+- Klarna | key:`apiKey` | https://docs.klarna.com/klarna-payments/api/payments-api/ | Klarna payment and shopping service
+- MercadoPago | key:`apiKey` | https://www.mercadopago.com.br/developers/es/reference | Mercado Pago API reference - all the information you need to develop your integrations
+- Mono | key:`apiKey` | https://mono.co/ | Connect with users’ bank accounts and access transaction data in Africa
+- Moov | key:`apiKey` | https://docs.moov.io/api/ | The Moov API makes it simple for platforms to send, receive, and store money
+- Nordigen | key:`apiKey` | https://nordigen.com/en/account_information_documenation/integration/quickstart_guide/ | Connect to bank accounts using official bank APIs and get raw transaction data
+- OpenFIGI | key:`apiKey` | https://www.openfigi.com/api | Equity, index, futures, options symbology from Bloomberg LP
+- Plaid | key:`apiKey` | https://www.plaid.com/docs | Connect with user's bank accounts and access transaction data
+- Polygon | key:`apiKey` | https://polygon.io/ | Historical stock market data
+- Portfolio Optimizer | key:No | https://portfoliooptimizer.io/ | Portfolio analysis and optimization
+- Razorpay IFSC | key:No | https://razorpay.com/docs/ | Indian Financial Systems Code (Bank Branch Codes)
+- Real Time Finance | key:`apiKey` | https://github.com/Real-time-finance/finance-websocket-API/ | Websocket API to access realtime stock data
+- SEC EDGAR Data | key:No | https://www.sec.gov/edgar/sec-api-documentation | API to access annual reports of public US companies
+- SmartAPI | key:`apiKey` | https://smartapi.angelbroking.com/ | Gain access to set of <SmartAPI> and create end-to-end broking services
+- StockData | key:`apiKey` | https://www.StockData.org | Real-Time, Intraday & Historical Market Data, News and Sentiment API
+- StockFit | key:`apiKey` | https://api.stockfit.io/docs | SEC filings, financial statements, earnings, ETF holdings and ownership data
+- Styvio | key:`apiKey` | https://www.Styvio.com | Realtime and historical stock data and current stock sentiment
+- Sugra | key:`apiKey` | https://sugra.ai | One API for market data, economics, commodities, climate, and global news. LLM-ready JSON
+- Tax Data | key:`apiKey` | https://apilayer.com/marketplace/tax_data-api | Instant VAT number and tax validation across the globe
+- Tradier | key:`OAuth` | https://developer.tradier.com | US equity/option market data (delayed, intraday, historical)
+- Twelve Data | key:`apiKey` | https://twelvedata.com/ | Stock market data (real-time & historical)
+- VAT Validation | key:`apiKey` | https://www.abstractapi.com/vat-validation-rates-api | Validate VAT numbers and calculate VAT rates
+- WallstreetBets | key:No | https://dashboard.nbshare.io/apps/reddit/api/ | WallstreetBets Stock Comments Sentiment Analysis
+- Yahoo Finance | key:`apiKey` | https://www.yahoofinanceapi.com/ | Real time low latency Yahoo Finance API for stock market, crypto currencies, and currency exchange
+- YNAB | key:`OAuth` | https://api.youneedabudget.com/ | Budgeting & Planning
+- Zoho Books | key:`OAuth` | https://www.zoho.com/books/api/v3/ | Online accounting software, built for your business
+
+## Food & Drink (25)
+- BaconMockup | key:No | https://baconmockup.com/ | Resizable bacon placeholder images
+- Chomp | key:`apiKey` | https://chompthis.com/api/ | Data about various grocery products and foods
+- Coffee | key:No | https://coffee.alexflipnote.dev/ | Random pictures of coffee
+- Edamam nutrition | key:`apiKey` | https://developer.edamam.com/edamam-docs-nutrition-api | Nutrition Analysis
+- Edamam recipes | key:`apiKey` | https://developer.edamam.com/edamam-docs-recipe-api | Recipe Search
+- Foodish | key:No | https://github.com/surhud004/Foodish#readme | Random pictures of food dishes
+- Fruityvice | key:No | https://www.fruityvice.com | Data about all kinds of fruit
+- Kroger | key:`apiKey` | https://developer.kroger.com/reference | Supermarket Data
+- LCBO | key:`apiKey` | https://lcboapi.com/ | Alcohol
+- Open Brewery DB | key:No | https://www.openbrewerydb.org | Breweries, Cideries and Craft Beer Bottle Shops
+- Open Food Facts | key:No | https://world.openfoodfacts.org/data | Food Products Database
+- PunkAPI | key:No | https://punkapi.com/ | Brewdog Beer Recipes
+- RecipeAPI | key:`apiKey` | https://recipeapi.io | Recipes, ingredients, nutrition data and cooking instructions
+- Rustybeer | key:No | https://rustybeer.herokuapp.com/ | Beer brewing tools
+- Spoonacular | key:`apiKey` | https://spoonacular.com/food-api | Recipes, Food Products, and Meal Planning
+- Systembolaget | key:`apiKey` | https://api-portal.systembolaget.se | Govornment owned liqour store in Sweden
+- TacoFancy | key:No | https://github.com/evz/tacofancy-api | Community-driven taco database
+- Tasty | key:`apiKey` | https://rapidapi.com/apidojo/api/tasty/ | API to query data about recipe, plan, ingredients
+- The Report of the Week | key:No | https://github.com/andyklimczak/TheReportOfTheWeek-API | Food & Drink Reviews
+- TheCocktailDB | key:`apiKey` | https://www.thecocktaildb.com/api.php | Cocktail Recipes
+- TheMealDB | key:`apiKey` | https://www.themealdb.com/api.php | Meal Recipes
+- Untappd | key:`OAuth` | https://untappd.com/api/docs | Social beer sharing
+- What's on the menu? | key:`apiKey` | http://nypl.github.io/menus-api/ | NYPL human-transcribed historical menu collection
+- WhiskyHunter | key:No | https://whiskyhunter.net/api/ | Past online whisky auctions statistical data
+- Zestful | key:`apiKey` | https://zestfuldata.com/ | Parse recipe ingredients

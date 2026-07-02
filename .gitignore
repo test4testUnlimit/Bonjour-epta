@@ -1,33 +1,12 @@
-﻿# OS
-Thumbs.db
-Desktop.ini
-.DS_Store
-
-# IDE / AI local
-.vs/
-.idea/
-.vscode/
-*.user
-*.suo
-
-# Build / deps (стек ещё не выбран)
-bin/
-obj/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
 dist/
 build/
-out/
-node_modules/
-.venv/
-__pycache__/
-*.pyc
-target/
-*.exe
-*.dll
-*.pdb
-
-# Secrets
-.env
-.env.*
-*.pem
-*.key
-secrets/
+*.spec
+.idea/
+.vscode/
+*.log
