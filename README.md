@@ -2,7 +2,12 @@
 
 Продукт: глобальный онлайн-переводчик выделенного текста (desktop), автодетект языка.
 
-Память проекта: только MemPalace (wing=projects, rooms: bonjur-epta, bonjur-epta-decisions, bonjur-epta-worklog, bonjur-epta-questions).
-Код/репо — здесь. Канон/решения/лог — во дворце (git C:\Projects\mempalace).
+- **Repo (private):** https://github.com/test4testUnlimit/Bonjur-epta
+- **Local:** `C:\Projects\Bonjur-epta` · branch `main`
 
-Следующий шаг: задача «описание продукта» (product brief) → drawer type=status в room=bonjur-epta.
+Память проекта: только MemPalace (`wing=projects`, rooms: `bonjur-epta`, `bonjur-epta-decisions`, `bonjur-epta-worklog`, `bonjur-epta-questions`).
+Код — здесь. Канон / decisions / worklog — во дворце. Wake-up: search `AGENT BRIEFING` room=`bonjur-epta` + `kg_query` entity=`Bonjur-epta`.
+
+Сырая vision: `notes/vision-raw.txt` (зеркало в дворце type=reference).
+
+Следующий шаг: product brief → drawer `type=status` в room=`bonjur-epta`.
