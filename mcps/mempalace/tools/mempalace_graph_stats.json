@@ -1,0 +1,8 @@
+{
+  "name": "mempalace_graph_stats",
+  "description": "Palace graph overview: total rooms, tunnel connections, edges between wings.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

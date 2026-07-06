@@ -1,0 +1,28 @@
+{
+  "name": "mempalace_update_drawer",
+  "description": "Update an existing drawer's content and/or metadata (wing, room). Fetches existing drawer first; returns error if not found.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "drawer_id": {
+        "type": "string",
+        "description": "ID of the drawer to update"
+      },
+      "content": {
+        "type": "string",
+        "description": "New content (optional — omit to keep existing)"
+      },
+      "wing": {
+        "type": "string",
+        "description": "New wing (optional — omit to keep existing)"
+      },
+      "room": {
+        "type": "string",
+        "description": "New room (optional — omit to keep existing)"
+      }
+    },
+    "required": [
+      "drawer_id"
+    ]
+  }
+}

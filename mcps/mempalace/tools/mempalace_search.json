@@ -1,0 +1,39 @@
+{
+  "name": "mempalace_search",
+  "description": "Semantic search. Returns verbatim drawer content with similarity scores. IMPORTANT: 'query' must contain ONLY search keywords. Use 'context' for background. Results with cosine distance > max_distance are filtered out.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "Short search query ONLY — keywords or a question. Max 250 chars.",
+        "maxLength": 250
+      },
+      "limit": {
+        "type": "integer",
+        "description": "Max results (default 5)",
+        "minimum": 1,
+        "maximum": 100
+      },
+      "wing": {
+        "type": "string",
+        "description": "Filter by wing (optional)"
+      },
+      "room": {
+        "type": "string",
+        "description": "Filter by room (optional)"
+      },
+      "max_distance": {
+        "type": "number",
+        "description": "Max cosine distance threshold (0=identical, 2=opposite). Results further than this are dropped. Lower = stricter. Default 1.5. Set to 0 to disable."
+      },
+      "context": {
+        "type": "string",
+        "description": "Background context for the search (optional). NOT used for embedding — only for future re-ranking."
+      }
+    },
+    "required": [
+      "query"
+    ]
+  }
+}

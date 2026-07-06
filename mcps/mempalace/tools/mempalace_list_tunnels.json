@@ -1,0 +1,13 @@
+{
+  "name": "mempalace_list_tunnels",
+  "description": "List all explicit cross-wing tunnels. Optionally filter by wing.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "wing": {
+        "type": "string",
+        "description": "Filter tunnels by wing (shows tunnels where wing is source or target)"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "mempalace_sync",
+  "description": "Prune drawers whose source files are gitignored, deleted, or moved. Returns dry-run report by default; pass apply=true to commit deletions.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "project_dir": {
+        "type": "string",
+        "description": "Project root to scope the sync (optional; auto-detected from drawer metadata if omitted)"
+      },
+      "wing": {
+        "type": "string",
+        "description": "Limit to one wing (optional)"
+      },
+      "apply": {
+        "type": "boolean",
+        "description": "Actually delete drawers; default is dry-run preview"
+      }
+    }
+  }
+}

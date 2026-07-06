@@ -1,0 +1,8 @@
+{
+  "name": "mempalace_kg_stats",
+  "description": "Knowledge graph overview: entities, triples, current vs expired facts, relationship types.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

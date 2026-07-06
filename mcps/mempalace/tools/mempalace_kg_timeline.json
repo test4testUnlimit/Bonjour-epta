@@ -1,0 +1,13 @@
+{
+  "name": "mempalace_kg_timeline",
+  "description": "Chronological timeline of facts. Shows the story of an entity (or everything) in order.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "entity": {
+        "type": "string",
+        "description": "Entity to get timeline for (optional — omit for full timeline)"
+      }
+    }
+  }
+}

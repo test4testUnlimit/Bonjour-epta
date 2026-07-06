@@ -1,0 +1,8 @@
+{
+  "name": "mempalace_memories_filed_away",
+  "description": "Check if a recent palace checkpoint was saved. Returns message count and timestamp.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

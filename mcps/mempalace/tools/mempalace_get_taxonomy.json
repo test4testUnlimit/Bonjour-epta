@@ -1,0 +1,8 @@
+{
+  "name": "mempalace_get_taxonomy",
+  "description": "Full taxonomy: wing → room → drawer count",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "mempalace_get_aaak_spec",
+  "description": "Get the AAAK dialect specification — the compressed memory format MemPalace uses. Call this if you need to read or write AAAK-compressed memories.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {}
+  }
+}

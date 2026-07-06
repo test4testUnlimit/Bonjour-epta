@@ -1,0 +1,21 @@
+{
+  "name": "mempalace_follow_tunnels",
+  "description": "Follow tunnels from a room to see what it connects to in other wings. Returns connected rooms with drawer previews.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "wing": {
+        "type": "string",
+        "description": "Wing to start from"
+      },
+      "room": {
+        "type": "string",
+        "description": "Room to follow tunnels from"
+      }
+    },
+    "required": [
+      "wing",
+      "room"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "mempalace_add_drawer",
+  "description": "File verbatim content into the palace. Checks for duplicates first.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "wing": {
+        "type": "string",
+        "description": "Wing (project name)"
+      },
+      "room": {
+        "type": "string",
+        "description": "Room (aspect: backend, decisions, meetings...)"
+      },
+      "content": {
+        "type": "string",
+        "description": "Verbatim content to store — exact words, never summarized"
+      },
+      "source_file": {
+        "type": "string",
+        "description": "Where this came from (optional)"
+      },
+      "added_by": {
+        "type": "string",
+        "description": "Who is filing this (default: mcp)"
+      }
+    },
+    "required": [
+      "wing",
+      "room",
+      "content"
+    ]
+  }
+}
