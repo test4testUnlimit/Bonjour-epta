@@ -1,13 +1,17 @@
 """Registry of translation providers.
 
-Sources (reliable / well-known):
-- Google gtx: translate.googleapis.com (unofficial client endpoint, no key) — default, fastest free path
-- MyMemory: api.mymemory.translated.net (official free public API)
-- LibreTranslate: libretranslate.com (open-source; public instance flaky)
-- DeepL: api-free.deepl.com / api.deepl.com (official, API key)
-- Yandex: translate.api.cloud.yandex.net (official Yandex Cloud, API key)
+Free paths (same idea as Crow Translate / QOnlineTranslator):
+- Google gtx: translate.googleapis.com client=gtx — no key (default)
+- Yandex web: translate.yandex.net/api/v1/tr.json/translate ucid+srv=android — no key
+- MyMemory / LibreTranslate / Lingva-style public instances — no key (Libre public flaky)
+- Bing web (Crow): scrape token from bing.com/translator → ttranslatev3 — not ported yet
 
-DuckDuckGo: no stable public translate API; historically proxies Bing — skipped for v0.1.
+NOT free without key:
+- DeepL official API (Crow never shipped free DeepL; needs pro-api key)
+- DuckDuckGo: no own translate API (was Bing proxy historically) — use Bing or Google
+
+Cloud optional:
+- Yandex Cloud / DeepL when api_key passed
 """
 
 from __future__ import annotations
@@ -19,14 +23,15 @@ from .libretranslate import LibreTranslateTranslator
 from .mymemory import MyMemoryTranslator
 from .yandex import YandexTranslator
 
+# Order = UI order. Google first (max free payload). Key engines last.
 PROVIDERS: dict[str, Translator] = {
     p.id: p
     for p in (
         GoogleGtxTranslator(),
         MyMemoryTranslator(),
+        YandexTranslator(),
         LibreTranslateTranslator(),
         DeepLTranslator(),
-        YandexTranslator(),
     )
 }
 

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Bonjur-epta entrypoint — dual-pane translator + hotkey + «чивобля?»."""
+"""Bonjur-epta — Crow-style: hotkey → grab selection → open window with text.
+
+Crow default: Ctrl+Alt+E translates selection (no floating chip required).
+We keep optional «чивобля?» chip; click uses cached text (no second Ctrl+C).
+"""
 
 from __future__ import annotations
 
@@ -9,60 +13,166 @@ import traceback
 
 
 def main() -> int:
-    from app.hotkey import DoubleTapHotkey
+    from app import dpi
+    from app import logutil
+    from app import settings as cfg
+    from app.hotkey import TranslateHotkey
     from app.popup import ChivoblyaPopup
     from app.selection import get_selected_text
     from app.selection_watch import SelectionWatcher
     from app.ui import run_app
+    from app.win_hotkeys import HotkeySpec
+
+    dpi_mode = dpi.enable()
+    log = logutil.setup()
+    log.info("main() start dpi=%s", dpi_mode)
+
+    # Prefer Crow default hotkey if still on bare double-OEM3 and user never customized
+    # (sanitize already fixed Ctrl+Z). Offer Ctrl+Alt+E as product default for new installs.
+    s0 = cfg.load()
+    safe = s0.hotkey_spec()
+    # migrate only the broken/default double-ё if settings file never set combo
+    # keep user's `/ё ×2 if they want — but force-write Crow default for reliability first run
+    # Only auto-migrate when hotkey was illegal (already sanitized) or empty dict edge
+    if safe.to_dict() != (s0.hotkey or {}):
+        log.warning("hotkey sanitized → %s", safe.label())
+        cfg.update(hotkey=safe.to_dict())
 
     app = run_app()
-    hotkey_holder: list[DoubleTapHotkey] = []
+    hotkey_holder: list[TranslateHotkey] = []
     watcher_holder: list[SelectionWatcher] = []
+    last_selection: list[str] = [""]
 
-    popup = ChivoblyaPopup(app, on_click=lambda text: app.bring_with_selection(text))
+    def on_open_main(text: str) -> None:
+        # mini card «в окно» → full dual-pane (Crow-style fill)
+        payload = (text or last_selection[0] or "").strip()
+        log.info("mini → main len=%s", len(payload))
+        if payload:
+            app.bring_with_selection(payload)
+        else:
+            app._status.set("нет текста")
+
+    # while chip/card open — pause watcher (prevents re-fire & "app feels broken")
+    popup_open = {"on": False}
+
+    def on_popup_vis(on: bool) -> None:
+        popup_open["on"] = on
+        for sw in watcher_holder:
+            try:
+                if on:
+                    sw.pause()
+                else:
+                    sw.resume()
+            except Exception:  # noqa: BLE001
+                pass
+
+    # Google-style pill; style chosen in «стиль чипа» window (numbered gallery)
+    popup = ChivoblyaPopup(
+        app,
+        on_open_main=on_open_main,
+        on_visibility=on_popup_vis,
+    )
+    app.on_chip_style_changed = lambda _sid: popup.apply_style_now()
 
     def point_over_own_ui(x: int, y: int) -> bool:
         if popup.contains_screen_point(x, y):
             return True
         try:
-            # winfo_containing only sees Tk widgets of this process
-            w = app.winfo_containing(x, y)
-            if w is not None:
+            if app.winfo_containing(x, y) is not None:
                 return True
         except Exception:  # noqa: BLE001
             pass
         return False
 
     def on_selection_detected(text: str, x: int, y: int) -> None:
-        # marshal to UI thread
-        app.after(0, lambda: popup.show(text, x, y))
+        log.info("selection cache len=%s at=%s,%s head=%r", len(text), x, y, text[:80])
+        last_selection[0] = text or ""
+        if not cfg.get().chivoblya_enabled:
+            return
+        # do not flash a new chip over an open translation card
+        if popup.visible and popup.mode == "card":
+            log.debug("skip chip — card already open")
+            return
 
-    def on_double_tap() -> None:
+        def show() -> None:
+            try:
+                popup.show(text, x, y)
+            except Exception:  # noqa: BLE001
+                logutil.exc("popup.show")
+
+        app.after(0, show)
+
+    def on_hotkey_fire() -> None:
+        """Crow path: hotkey → requestSelection → fill window."""
+        log.info("HOTKEY FIRE (Crow path) spec=%s", cfg.get().hotkey_spec().label())
+        for sw in watcher_holder:
+            try:
+                sw.pause()
+            except Exception:  # noqa: BLE001
+                pass
         try:
-            popup.hide()
-            selected = get_selected_text()
+            try:
+                popup.hide()
+            except Exception:  # noqa: BLE001
+                pass
+
+            # Crow: grab NOW via Ctrl+C (mods must be released — handled inside)
+            selected = get_selected_text(
+                restore_clipboard=True,
+                settle_s=1.0,  # Crow maxSelectionDelay = 1000ms
+                clipboard_fallback=True,
+            )
+            log.info(
+                "hotkey grab len=%s cache_len=%s head=%r",
+                len(selected or ""),
+                len(last_selection[0] or ""),
+                (selected or "")[:100],
+            )
+            if not selected and last_selection[0]:
+                selected = last_selection[0]
+                log.info("hotkey fallback cache len=%s", len(selected))
+
             if not selected:
+                log.warning("hotkey: nothing to translate")
                 app.after(
                     0,
                     lambda: (
                         app.deiconify(),
                         app.lift(),
-                        app._status.set("Нет выделения"),
+                        app._status.set("нет выделения — выдели текст и нажми хоткей"),
                     ),
                 )
                 return
+
+            last_selection[0] = selected
             app.bring_with_selection(selected)
         except Exception:  # noqa: BLE001
+            logutil.exc("on_hotkey_fire")
             traceback.print_exc()
+        finally:
+            # delay resume so chip click isn't stolen by watcher
+            def resume() -> None:
+                for sw in watcher_holder:
+                    try:
+                        sw.resume()
+                    except Exception:  # noqa: BLE001
+                        pass
+
+            try:
+                app.after(400, resume)
+            except Exception:  # noqa: BLE001
+                resume()
 
     def start_hooks() -> None:
         status_bits: list[str] = []
         try:
-            hk = DoubleTapHotkey(on_double=on_double_tap)
+            hk = TranslateHotkey(on_fire=on_hotkey_fire, spec=cfg.get().hotkey_spec())
             hk.start()
             hotkey_holder.append(hk)
-            status_bits.append("hotkey ` / ё")
+            status_bits.append(cfg.get().hotkey_spec().label())
+            log.info("hotkey started: %s", cfg.get().hotkey_spec().label())
         except Exception as exc:  # noqa: BLE001
+            logutil.exc("hotkey start failed")
             print(f"Hotkey off: {exc}", file=sys.stderr)
             status_bits.append("hotkey off")
 
@@ -74,19 +184,39 @@ def main() -> int:
             sw.start()
             watcher_holder.append(sw)
             status_bits.append("чивобля")
+            log.info("selection watcher started")
         except Exception as exc:  # noqa: BLE001
+            logutil.exc("watcher start failed")
             print(f"Selection watch off: {exc}", file=sys.stderr)
             status_bits.append("чивобля off")
 
-        msg = "Готов · " + " · ".join(status_bits)
-        app.after(0, lambda: app._status.set(msg))
+        from pathlib import Path
 
+        log_path = Path.home() / ".bonjur-epta" / "bonjur.log"
+        msg = "готов · " + " · ".join(status_bits)
+        app.after(0, lambda: app._status.set(msg))
+        log.info("hooks ready %s log=%s", msg, log_path)
+        log.info(
+            "Crow usage: select text → press hotkey (now %s) → window fills. "
+            "Chip click uses cache only.",
+            cfg.get().hotkey_spec().label(),
+        )
+
+    def on_settings_live(s: cfg.AppSettings) -> None:
+        log.info("settings live hotkey=%s", s.hotkey_spec().label())
+        for hk in list(hotkey_holder):
+            try:
+                hk.reconfigure(s.hotkey_spec())
+            except Exception:  # noqa: BLE001
+                logutil.exc("hotkey reconfig")
+
+    cfg.on_change(on_settings_live)
     threading.Thread(target=start_hooks, daemon=True).start()
 
     def on_destroy(event=None) -> None:
-        # only react to root destroy
         if event is not None and event.widget is not app:
             return
+        log.info("app destroy")
         popup.destroy()
         for hk in hotkey_holder:
             try:
@@ -100,7 +230,9 @@ def main() -> int:
                 pass
 
     app.bind("<Destroy>", on_destroy)
+    log.info("entering mainloop")
     app.mainloop()
+    log.info("mainloop exit")
     return 0
 
 

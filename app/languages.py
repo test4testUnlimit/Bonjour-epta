@@ -39,3 +39,35 @@ def codes_for_target() -> list[str]:
 
 def label_of(code: str) -> str:
     return LANG_LABELS.get(code, code)
+
+
+# short RU names for mini-popup header: (английский)
+SHORT_RU: dict[str, str] = {
+    "auto": "авто",
+    "en": "английский",
+    "ru": "русский",
+    "uk": "украинский",
+    "de": "немецкий",
+    "fr": "французский",
+    "es": "испанский",
+    "it": "итальянский",
+    "pt": "португальский",
+    "pl": "польский",
+    "tr": "турецкий",
+    "zh": "китайский",
+    "ja": "японский",
+    "ko": "корейский",
+    "ar": "арабский",
+    "hi": "хинди",
+    "nl": "нидерландский",
+    "sv": "шведский",
+    "cs": "чешский",
+    "fi": "финский",
+}
+
+
+def short_ru(code: str | None) -> str:
+    if not code:
+        return "авто"
+    c = str(code).lower().split("-")[0]
+    return SHORT_RU.get(c, c)

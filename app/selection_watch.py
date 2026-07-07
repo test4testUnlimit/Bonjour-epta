@@ -7,6 +7,7 @@ import threading
 import time
 from collections.abc import Callable
 
+from . import logutil
 from .selection import get_selected_text
 
 try:
@@ -21,8 +22,8 @@ MIN_CHARS = 1
 MAX_CHARS = 8000
 # ignore identical selection re-pops for a short window
 DEDUP_MS = 900
-# settle after mouse-up before Ctrl+C (apps need a tick to finalize selection)
-SETTLE_S = 0.07
+# settle after mouse-up before Ctrl+C (browsers need a longer tick to finalize selection)
+SETTLE_S = 0.12
 
 
 class SelectionWatcher:
@@ -134,19 +135,32 @@ class SelectionWatcher:
         self._enabled = False
         try:
             time.sleep(SETTLE_S)
-            text = get_selected_text(restore_clipboard=True, settle_s=0.06)
+            # no clipboard_fallback: chip must show *selection*, not stale clipboard
+            try:
+                # Crow-style grab for chip cache (mods usually already up after mouse-up)
+                text = get_selected_text(
+                    restore_clipboard=True,
+                    settle_s=0.6,
+                    clipboard_fallback=False,
+                )
+            except Exception:  # noqa: BLE001 — never kill watcher thread
+                logutil.exc("watcher get_selected_text")
+                return
             text = (text or "").strip()
             if not text or len(text) < MIN_CHARS or len(text) > MAX_CHARS:
+                logutil.get().debug("watcher skip empty/short/long len=%s", len(text or ""))
                 return
             now = time.perf_counter()
             if text == self._last_text and (now - self._last_fire_ts) * 1000 < DEDUP_MS:
+                logutil.get().debug("watcher dedup")
                 return
             self._last_text = text
             self._last_fire_ts = now
+            logutil.get().info("watcher fire len=%s at=%s,%s", len(text), x, y)
             try:
                 self.on_selection(text, x, y)
             except Exception:  # noqa: BLE001
-                pass
+                logutil.exc("watcher on_selection")
         finally:
             self._busy = False
             self._enabled = was_enabled

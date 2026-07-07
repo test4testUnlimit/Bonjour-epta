@@ -3,7 +3,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+
+@dataclass(slots=True)
+class ExampleItem:
+    """One alternative / synonym chip (Google-style under the pane)."""
+
+    word: str
+    pos: str = ""  # part of speech / group label
+    meanings: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -12,6 +21,10 @@ class TranslateResult:
     detected_source: str | None = None
     provider: str = ""
     error: str | None = None
+    # Google-style extras (when engine provides them)
+    alternatives: list[str] = field(default_factory=list)
+    examples: list[ExampleItem] = field(default_factory=list)
+    translit: str | None = None
 
     @property
     def ok(self) -> bool:
