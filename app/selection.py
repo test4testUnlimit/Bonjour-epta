@@ -2,25 +2,31 @@
 
 Crow (GPL-3, Hennadii Chernyshchyk):
   1) snapshot clipboard
-  2) wait until Win/Shift/Alt/Ctrl are ALL unpressed  (avoid shortcut conflict)
+  2) wait until Win/Shift/Alt/Ctrl are ALL unpressed
   3) SendInput Ctrl+C
-  4) wait for clipboard change (signal / poll, up to ~1s)
-  5) read text, restore clipboard on next event-loop tick
+  4) wait for clipboard change (up to ~1s)
+  5) read text, restore clipboard
 
-We mirror that. No marker dance (marker caused empty captures when app
-didn't actually copy).
+Extra (bonjur): unique marker on clipboard before Ctrl+C so re-selecting
+the same string still registers a change. Without marker, if selection
+== previous clipboard (common in Nova / Electron fields), we got empty.
+
+Global lock: concurrent watcher threads must not interleave Ctrl+C/restore.
 """
 
 from __future__ import annotations
 
 import sys
+import threading
 import time
+import uuid
 
 import pyperclip
 
 from . import logutil
 
-MARKER_PREFIX = "__bonjur_"  # legacy; not used for primary path
+MARKER_PREFIX = "__bonjur_"
+_CLIP_LOCK = threading.Lock()
 
 
 def _mods_down_win() -> bool:
@@ -28,7 +34,6 @@ def _mods_down_win() -> bool:
     import ctypes
 
     user32 = ctypes.windll.user32
-    # high bit set => key down
     keys = (
         0x5B,  # VK_LWIN
         0x5C,  # VK_RWIN
@@ -54,7 +59,7 @@ def _wait_mods_up(timeout_s: float = 2.0) -> bool:
     while time.perf_counter() - t0 < timeout_s:
         if not _mods_down_win():
             log.debug("modifiers up after %.0fms", (time.perf_counter() - t0) * 1000)
-            time.sleep(0.03)  # settle after release
+            time.sleep(0.03)
             return True
         time.sleep(0.01)
     log.warning("modifiers still down after %.1fs — proceed anyway", timeout_s)
@@ -156,6 +161,10 @@ def _clip_set(text: str) -> bool:
     return False
 
 
+def _is_marker(text: str) -> bool:
+    return bool(text) and text.startswith(MARKER_PREFIX) and text.endswith("__")
+
+
 def get_selected_text(
     restore_clipboard: bool = True,
     settle_s: float = 1.0,
@@ -163,9 +172,30 @@ def get_selected_text(
     clipboard_fallback: bool = False,
 ) -> str:
     """
-    Crow-style selection grab. Never raises.
+    Crow-style selection grab + marker (same-text reselect safe). Never raises.
     settle_s: max wait for clipboard change after Ctrl+C (Crow uses 1000ms).
     """
+    log = logutil.get()
+    # serialize: dual mouse-up / hotkey+chip must not interleave Ctrl+C
+    if not _CLIP_LOCK.acquire(timeout=3.0):
+        log.warning("get_selected_text: clip lock busy")
+        return ""
+    try:
+        return _get_selected_text_locked(
+            restore_clipboard=restore_clipboard,
+            settle_s=settle_s,
+            clipboard_fallback=clipboard_fallback,
+        )
+    finally:
+        _CLIP_LOCK.release()
+
+
+def _get_selected_text_locked(
+    *,
+    restore_clipboard: bool,
+    settle_s: float,
+    clipboard_fallback: bool,
+) -> str:
     log = logutil.get()
     log.debug(
         "get_selected_text CROW restore=%s settle=%.2f fallback=%s",
@@ -179,20 +209,34 @@ def get_selected_text(
         previous = _clip_get()
     except Exception:  # noqa: BLE001
         logutil.exc("clip previous")
+    if _is_marker(previous):
+        previous = ""
     log.debug("clip previous len=%s head=%r", len(previous), previous[:80])
 
+    marker = f"{MARKER_PREFIX}{uuid.uuid4().hex}__"
     try:
-        # Crow step: wait until modifiers are up (critical for Ctrl+Alt+E style)
+        if not _clip_set(marker):
+            log.warning("marker set failed")
+        else:
+            # wait until marker is visible (clipboard APIs are racy)
+            for _ in range(30):
+                if _clip_get() == marker:
+                    break
+                time.sleep(0.01)
+            else:
+                log.warning("marker not confirmed on clipboard")
+
         _wait_mods_up(2.0)
 
         if not _send_ctrl_c():
             log.warning("Ctrl+C send failed")
+            if restore_clipboard:
+                _clip_set(previous)
             if clipboard_fallback and previous:
                 return previous.strip()
             return ""
 
-        # Crow: connect to clipboard dataChanged; we poll until text != previous
-        # or empty+timeout. Max ~settle_s (default 1s like Crow timer).
+        # wait until clipboard leaves the marker (real selection or app copy)
         deadline = time.perf_counter() + max(settle_s, 0.25)
         polls = 0
         selected = ""
@@ -203,24 +247,20 @@ def get_selected_text(
                 got = _clip_get()
             except Exception:  # noqa: BLE001
                 continue
-            # Crow: if empty and timer still active, keep waiting
-            if not got:
+            if not got or got == marker or _is_marker(got):
                 continue
-            # changed from pre-copy snapshot → treat as selection
-            if got != previous:
-                selected = got.strip()
-                log.debug("clip changed after %s polls len=%s", polls, len(selected))
-                break
+            selected = got.strip()
+            log.debug("clip left marker after %s polls len=%s", polls, len(selected))
+            break
 
         if restore_clipboard:
-            # Crow restores on next event-loop tick; we restore immediately after read
             _clip_set(previous)
 
         if selected:
             log.info("selected ok len=%s head=%r", len(selected), selected[:100])
             return selected
 
-        if clipboard_fallback and previous and not previous.startswith(MARKER_PREFIX):
+        if clipboard_fallback and previous and not _is_marker(previous):
             log.info("empty selection → fallback previous len=%s", len(previous))
             return previous.strip()
 
@@ -229,10 +269,10 @@ def get_selected_text(
     except Exception:  # noqa: BLE001
         logutil.exc("get_selected_text fatal")
         try:
-            if restore_clipboard and previous:
+            if restore_clipboard:
                 _clip_set(previous)
         except Exception:  # noqa: BLE001
             pass
-        if clipboard_fallback and previous:
+        if clipboard_fallback and previous and not _is_marker(previous):
             return previous.strip()
         return ""

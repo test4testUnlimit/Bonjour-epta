@@ -2,6 +2,9 @@
 
 Fonts: Segoe UI (Windows) — full Cyrillic, UTF-8 source files.
 Brand: latin «epta» = russian «ёпта» (meme safety for mixed keyboards).
+
+Layout rhythm (Lebedev: proximity + common air):
+  one scale → equal gaps between equals, same inset in both panes.
 """
 
 from __future__ import annotations
@@ -11,7 +14,7 @@ import customtkinter as ctk
 # paper studio
 BG = "#f2f2ef"
 SURFACE = "#ffffff"
-FIELD = "#ffffff"
+FIELD = "#fafaf8"
 LINE = "#e2e2dc"
 LINE_STRONG = "#cecec6"
 INK = "#141414"
@@ -30,19 +33,34 @@ TITLE_BTN_HOVER = "#e0e0da"
 TITLE_CLOSE_HOVER = "#e81123"
 TITLE_CLOSE_HOVER_FG = "#ffffff"
 
-# layout rhythm (px)
-PAD = 16
-GAP = 12
-ROW_H = 34
-PANE_GAP = 12
-BAR_H = 40
-TITLE_H = 40
+# ── layout rhythm (px) — one air unit everywhere ─────────────
+# outer margin == inter-pane gap == vertical stack gap (Lebedev common air)
+AIR = 12
+PAD = AIR         # shell → content / foot (L/R/B)
+GAP = AIR         # toolbar ↔ panes, panes ↔ foot
+MID_W = AIR       # between source/target cards (⇄ lives on toolbar only)
+INSET = AIR       # pane internal padding (all sides of bar/field)
+BAR_GAP = AIR     # language bar → text field
+CTRL_H = 32       # base control height (load-bearing equality below)
+BAR_H = CTRL_H    # pane language bar
+ROW_H = CTRL_H    # toolbar / chip buttons
+ICON_W = 32       # clear (✕) width
+COPY_W = 72       # «копир.» width
+SWAP_W = 40       # ⇄ button on toolbar (centered over pane gap)
+DOT_SIZE = 18     # provider ● — proportional to ROW_H icons
+CORNER = 12       # card radius
+CORNER_SM = 8     # field / chip radius
+TITLE_H = 36
+FOOT_H = 28       # tagline + version
+TEXT_BORDER_SPACING = 10  # CTkTextbox inner text pad
+HEAD_H = 40       # top toolbar row
+ON_ACCENT = "#ffffff"  # text on ACCENT buttons
 
 # UTF-8 / Cyrillic-safe UI font (Segoe UI ships with full Cyrillic on Win)
 FONT_UI = "Segoe UI"
 FONT_UI_SIZE = 13
 
-APP_VERSION = "1.3.2"
+APP_VERSION = "1.3.5"
 # short OS/taskbar name — no version (version lives in custom chrome only)
 APP_NAME = "bonjour epta"
 BRAND_LATIN = "epta"  # latin spelling

@@ -22,8 +22,10 @@ MIN_CHARS = 1
 MAX_CHARS = 8000
 # ignore identical selection re-pops for a short window
 DEDUP_MS = 900
-# settle after mouse-up before Ctrl+C (browsers need a longer tick to finalize selection)
-SETTLE_S = 0.12
+# settle after mouse-up before Ctrl+C (Electron/Nova needs a bit more than browsers)
+SETTLE_S = 0.18
+# max wait for clipboard to leave marker after Ctrl+C
+CAPTURE_SETTLE_S = 0.9
 
 
 class SelectionWatcher:
@@ -46,6 +48,7 @@ class SelectionWatcher:
         self._last_text = ""
         self._last_fire_ts = 0.0
         self._busy = False
+        self._cap_lock = threading.Lock()
         self._enabled = True
         self._handlers: list = []
 
@@ -127,20 +130,20 @@ class SelectionWatcher:
         self._enabled = True
 
     def _capture_and_fire(self, x: int, y: int) -> None:
-        if self._busy:
+        # non-blocking: drop duplicate mouse-up while a capture is in flight
+        if not self._cap_lock.acquire(blocking=False):
+            logutil.get().debug("watcher skip — capture already running")
             return
-        self._busy = True
-        # prevent re-entry while we synthesize Ctrl+C
         was_enabled = self._enabled
         self._enabled = False
+        self._busy = True
         try:
             time.sleep(SETTLE_S)
             # no clipboard_fallback: chip must show *selection*, not stale clipboard
             try:
-                # Crow-style grab for chip cache (mods usually already up after mouse-up)
                 text = get_selected_text(
                     restore_clipboard=True,
-                    settle_s=0.6,
+                    settle_s=CAPTURE_SETTLE_S,
                     clipboard_fallback=False,
                 )
             except Exception:  # noqa: BLE001 — never kill watcher thread
@@ -164,6 +167,7 @@ class SelectionWatcher:
         finally:
             self._busy = False
             self._enabled = was_enabled
+            self._cap_lock.release()
 
 
 def _dist(a: tuple[int, int], b: tuple[int, int]) -> float:

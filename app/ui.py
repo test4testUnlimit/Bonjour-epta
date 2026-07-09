@@ -159,54 +159,43 @@ class TranslatorApp(ctk.CTk):
 
     def _build(self, parent: ctk.CTkFrame) -> None:
         """
-        One top line above panes (same 3 columns as body):
-          [ brand · status ]  |  [ ⇄ ]  |  [ Google● · перевести · очистить · … ]
-        ⇄ sits on the center line between the two pane edges — not mid-height of panes.
+        Full-width toolbar (pack) + 3-col pane grid:
+          [ brand ………… ⇄ ………… Google · перевести · … ]   ← whole content width
+          [ source pane ] | MID_W | [ target pane ]         ← mirror panes
+        Tools must not live only in the right pane column (overflow → paint-over).
         """
         content = ctk.CTkFrame(parent, fg_color=T.BG)
         content.pack(fill="both", expand=True, padx=T.PAD, pady=(T.GAP, 0))
-        content.grid_columnconfigure(0, weight=1, uniform="pane")
-        content.grid_columnconfigure(1, weight=0, minsize=48)
-        content.grid_columnconfigure(2, weight=1, uniform="pane")
-        content.grid_rowconfigure(0, weight=0)
-        content.grid_rowconfigure(1, weight=1)
 
-        # ── row 0: single toolbar line ───────────────────────
-        left_head = ctk.CTkFrame(content, fg_color="transparent", height=48)
-        left_head.grid(row=0, column=0, sticky="ew", pady=(0, T.GAP))
-        left_head.grid_propagate(False)
+        # ── toolbar one line: brand | ⇄ (true center over panes) | tools ──
+        toolbar = ctk.CTkFrame(content, fg_color="transparent", height=T.HEAD_H)
+        toolbar.pack(fill="x", pady=(0, T.GAP))
+        toolbar.pack_propagate(False)
 
-        mark = ctk.CTkFrame(left_head, fg_color="transparent")
+        # tools right first so brand stays left; ⇄ placed on full toolbar center
+        tools = ctk.CTkFrame(toolbar, fg_color="transparent")
+        tools.pack(side="right")
+
+        mark = ctk.CTkFrame(toolbar, fg_color="transparent")
         mark.pack(side="left")
         ctk.CTkLabel(
             mark,
             text="bonjour",
-            font=ctk.CTkFont(family="Georgia", size=28, weight="normal"),
+            font=ctk.CTkFont(family="Georgia", size=26, weight="normal"),
             text_color=T.INK,
         ).pack(side="left")
         ctk.CTkLabel(
             mark,
             text=f" {T.BRAND_CYR}",
-            font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"),
+            font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
             text_color=T.INK,
         ).pack(side="left")
-        self._status_lbl = ctk.CTkLabel(
-            left_head,
-            textvariable=self._status,
-            text_color=T.INK_FAINT,
-            font=ui_font(11),
-            anchor="w",
-        )
-        self._status_lbl.pack(side="left", padx=(12, 0))
 
-        # ⇄ — same row, center column (between pane vertical edges)
-        mid_head = ctk.CTkFrame(content, fg_color="transparent", width=48, height=48)
-        mid_head.grid(row=0, column=1, sticky="nsew", pady=(0, T.GAP))
-        mid_head.grid_propagate(False)
+        # geometric center of toolbar = center between the two equal panes below
         self._btn_swap = ctk.CTkButton(
-            mid_head,
+            toolbar,
             text="⇄",
-            width=40,
+            width=T.SWAP_W,
             height=T.ROW_H,
             corner_radius=T.ROW_H // 2,
             font=ui_font(16),
@@ -219,14 +208,6 @@ class TranslatorApp(ctk.CTk):
         )
         self._btn_swap.place(relx=0.5, rely=0.5, anchor="center")
 
-        # right tools on same line: Google ● | перевести | очистить | стиль | ⚙
-        right_head = ctk.CTkFrame(content, fg_color="transparent", height=48)
-        right_head.grid(row=0, column=2, sticky="ew", pady=(0, T.GAP))
-        right_head.grid_propagate(False)
-
-        tools = ctk.CTkFrame(right_head, fg_color="transparent")
-        tools.pack(side="right")
-
         prov_wrap = ctk.CTkFrame(tools, fg_color="transparent")
         prov_wrap.pack(side="left", padx=(0, 8))
 
@@ -238,7 +219,7 @@ class TranslatorApp(ctk.CTk):
         self._provider_combo = ctk.CTkComboBox(
             prov_wrap,
             values=provider_labels,
-            width=120,
+            width=110,
             height=T.ROW_H,
             command=self._on_provider_ui,
             fg_color=T.SURFACE,
@@ -253,11 +234,13 @@ class TranslatorApp(ctk.CTk):
         self._provider_combo.set(default_label)
         self._provider_combo.pack(side="left")
 
+        # provider ● — larger, closer to control icon weight
         self._provider_dot = ctk.CTkLabel(
             prov_wrap,
             text="●",
-            width=18,
-            font=ui_font(14),
+            width=T.DOT_SIZE + 4,
+            height=T.ROW_H,
+            font=ui_font(T.DOT_SIZE),
             text_color=T.INK_FAINT,
         )
         self._provider_dot.pack(side="left", padx=(6, 0))
@@ -265,48 +248,69 @@ class TranslatorApp(ctk.CTk):
         self._btn_translate = ctk.CTkButton(
             tools,
             text="перевести",
-            width=104,
+            width=96,
             height=T.ROW_H,
             corner_radius=T.ROW_H // 2,
             fg_color=T.ACCENT,
             hover_color=T.ACCENT_HOVER,
-            text_color="#ffffff",
+            text_color=T.ON_ACCENT,
             font=ui_font(13, "bold"),
             command=self.translate_now,
         )
         self._btn_translate.pack(side="left", padx=(0, 6))
 
-        self._ghost(tools, "очистить", self.clear_all, w=88).pack(side="left", padx=(0, 6))
-        self._ghost(tools, "стиль чипа", self.open_style_picker, w=100).pack(
+        self._ghost(tools, "очистить", self.clear_all, w=80).pack(side="left", padx=(0, 6))
+        self._ghost(tools, "стиль", self.open_style_picker, w=64).pack(
             side="left", padx=(0, 6)
         )
         self._ghost(tools, "⚙", self.open_settings, w=36).pack(side="left")
 
-        # ── row 1: panes only (no mid control) ──────────────
-        self._left = self._make_pane(content, "source")
-        self._left.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
+        # ── panes: 3-col grid, gap = MID_W only ─────────────
+        panes = ctk.CTkFrame(content, fg_color=T.BG)
+        panes.pack(fill="both", expand=True)
+        panes.grid_columnconfigure(0, weight=1, uniform="pane")
+        panes.grid_columnconfigure(1, weight=0, minsize=T.MID_W)
+        panes.grid_columnconfigure(2, weight=1, uniform="pane")
+        panes.grid_rowconfigure(0, weight=1)
 
-        # thin spacer only — keeps columns aligned with ⇄ above
-        ctk.CTkFrame(content, fg_color=T.BG, width=48).grid(row=1, column=1, sticky="nsew")
+        self._left = self._make_pane(panes, "source")
+        self._left.grid(row=0, column=0, sticky="nsew")
 
-        self._right = self._make_pane(content, "target")
-        self._right.grid(row=1, column=2, sticky="nsew", padx=(4, 0))
+        ctk.CTkFrame(panes, fg_color=T.BG, width=T.MID_W).grid(
+            row=0, column=1, sticky="nsew"
+        )
 
-        foot = ctk.CTkFrame(parent, fg_color=T.BG)
-        foot.pack(fill="x", padx=T.PAD, pady=(4, T.PAD))
+        self._right = self._make_pane(panes, "target")
+        self._right.grid(row=0, column=2, sticky="nsew")
+
+        # footer: tagline left · version·hotkey right (status not on chrome)
+        foot = ctk.CTkFrame(parent, fg_color=T.BG, height=T.FOOT_H)
+        foot.pack(fill="x", padx=T.PAD, pady=(T.GAP, T.PAD))
+        foot.pack_propagate(False)
+
         ctk.CTkLabel(
             foot,
             text=T.TAGLINE,
             text_color=T.INK_FAINT,
             font=ui_font(11),
+            anchor="w",
         ).pack(side="left")
         self._hk_foot = ctk.CTkLabel(
             foot,
             text=self._hotkey_footer(),
             text_color=T.INK_FAINT,
             font=ui_font(11),
+            anchor="e",
         )
         self._hk_foot.pack(side="right")
+
+        # status kept for logic/color updates — not packed (was "готов CtrlAltE…")
+        self._status_lbl = ctk.CTkLabel(
+            foot,
+            textvariable=self._status,
+            text_color=T.INK_FAINT,
+            font=ui_font(11),
+        )
 
         self.bind("<Control-Return>", lambda _e: self.translate_now())
         self.bind("<Control-l>", lambda _e: self.clear_all())
@@ -319,15 +323,37 @@ class TranslatorApp(ctk.CTk):
             return f"v{APP_VERSION}"
 
     def _make_pane(self, parent: ctk.CTkFrame, side: str) -> ctk.CTkFrame:
+        """Identical card for source and target — same INSET, bar, field."""
         frame = ctk.CTkFrame(
-            parent, fg_color=T.SURFACE, corner_radius=14, border_width=1, border_color=T.LINE
+            parent,
+            fg_color=T.SURFACE,
+            corner_radius=T.CORNER,
+            border_width=1,
+            border_color=T.LINE,
         )
         frame.grid_rowconfigure(1, weight=1)
         frame.grid_columnconfigure(0, weight=1)
 
         bar = ctk.CTkFrame(frame, fg_color="transparent", height=T.BAR_H)
-        bar.grid(row=0, column=0, sticky="ew", padx=12, pady=(10, 4))
+        bar.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=T.INSET,
+            pady=(T.INSET, T.BAR_GAP),
+        )
         bar.grid_propagate(False)
+
+        combo_kw = dict(
+            width=168,
+            height=T.CTRL_H,
+            fg_color=T.FIELD,
+            border_color=T.LINE,
+            button_color=T.LINE_STRONG,
+            text_color=T.INK,
+            dropdown_fg_color=T.SURFACE,
+            font=ui_font(12),
+        )
 
         if side == "source":
             codes = langs.codes_for_source()
@@ -335,23 +361,23 @@ class TranslatorApp(ctk.CTk):
             self._src_combo = ctk.CTkComboBox(
                 bar,
                 values=[langs.label_of(c) for c in codes],
-                width=168,
-                height=32,
                 command=lambda v: self._on_src_lang(v),
-                fg_color=T.FIELD,
-                border_color=T.LINE,
-                button_color=T.LINE_STRONG,
-                text_color=T.INK,
-                dropdown_fg_color=T.SURFACE,
+                **combo_kw,
             )
             self._src_combo.set(langs.label_of(self._source_lang.get()))
-            self._src_combo.pack(side="left", pady=4)
-            self._icon(bar, "копир.", self.copy_source, 72).pack(side="right", pady=4)
-            self._icon(bar, "✕", self.clear_source, 32).pack(side="right", padx=(0, 6), pady=4)
+            self._src_combo.pack(side="left", pady=0)
+            # pack right-edge first so visual order is [✕] [копир.]
+            self._icon(bar, "копир.", self.copy_source, T.COPY_W).pack(
+                side="right", pady=0
+            )
+            self._icon(bar, "✕", self.clear_source, T.ICON_W).pack(
+                side="right", padx=(0, 6), pady=0
+            )
 
-            self._src_combo.configure(font=ui_font(12))
             self._src_box = self._textbox(frame)
-            self._src_box.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 12))
+            self._src_box.grid(
+                row=1, column=0, sticky="nsew", padx=T.INSET, pady=(0, T.INSET)
+            )
             self._src_box.bind("<<Paste>>", self._on_src_paste)
             self._src_box.bind("<Control-v>", self._on_src_paste)
             self._src_box.bind("<Control-V>", self._on_src_paste)
@@ -361,23 +387,22 @@ class TranslatorApp(ctk.CTk):
             self._tgt_combo = ctk.CTkComboBox(
                 bar,
                 values=[langs.label_of(c) for c in codes],
-                width=168,
-                height=32,
                 command=lambda v: self._on_tgt_lang(v),
-                fg_color=T.FIELD,
-                border_color=T.LINE,
-                button_color=T.LINE_STRONG,
-                text_color=T.INK,
-                dropdown_fg_color=T.SURFACE,
-                font=ui_font(12),
+                **combo_kw,
             )
             self._tgt_combo.set(langs.label_of(self._target_lang.get()))
-            self._tgt_combo.pack(side="left", pady=4)
-            self._icon(bar, "копир.", self.copy_target, 72).pack(side="right", pady=4)
-            self._icon(bar, "✕", self.clear_target, 32).pack(side="right", padx=(0, 6), pady=4)
+            self._tgt_combo.pack(side="left", pady=0)
+            self._icon(bar, "копир.", self.copy_target, T.COPY_W).pack(
+                side="right", pady=0
+            )
+            self._icon(bar, "✕", self.clear_target, T.ICON_W).pack(
+                side="right", padx=(0, 6), pady=0
+            )
 
             self._tgt_box = self._textbox(frame)
-            self._tgt_box.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 12))
+            self._tgt_box.grid(
+                row=1, column=0, sticky="nsew", padx=T.INSET, pady=(0, T.INSET)
+            )
 
         return frame
 
@@ -386,10 +411,12 @@ class TranslatorApp(ctk.CTk):
             parent,
             fg_color=T.FIELD,
             text_color=T.INK,
-            border_width=0,
+            border_width=1,
+            border_color=T.LINE,
+            border_spacing=T.TEXT_BORDER_SPACING,
             font=ui_font(15),
             wrap="word",
-            corner_radius=8,
+            corner_radius=T.CORNER_SM,
             scrollbar_button_color=T.LINE,
             scrollbar_button_hover_color=T.LINE_STRONG,
         )
@@ -415,8 +442,8 @@ class TranslatorApp(ctk.CTk):
             parent,
             text=text,
             width=w,
-            height=28,
-            corner_radius=8,
+            height=T.CTRL_H,
+            corner_radius=T.CORNER_SM,
             fg_color=T.CHIP_BG,
             border_width=1,
             border_color=T.LINE,
