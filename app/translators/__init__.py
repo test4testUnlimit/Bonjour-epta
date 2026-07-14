@@ -5,10 +5,10 @@ Free paths (same idea as Crow Translate / QOnlineTranslator):
 - Yandex web: translate.yandex.net/api/v1/tr.json/translate ucid+srv=android — no key
 - MyMemory / LibreTranslate / Lingva-style public instances — no key (Libre public flaky)
 - Bing web (Crow): scrape token from bing.com/translator → ttranslatev3 — not ported yet
+- DuckDuckGo: unofficial MS proxy via duckduckgo.com/translation.js — no key
 
 NOT free without key:
 - DeepL official API (Crow never shipped free DeepL; needs pro-api key)
-- DuckDuckGo: no own translate API (was Bing proxy historically) — use Bing or Google
 
 Cloud optional:
 - Yandex Cloud / DeepL when api_key passed
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from .base import TranslateResult, Translator
 from .deepl import DeepLTranslator
+from .duckduckgo import DuckDuckGoTranslator
 from .google_gtx import GoogleGtxTranslator
 from .libretranslate import LibreTranslateTranslator
 from .mymemory import MyMemoryTranslator
@@ -28,6 +29,7 @@ PROVIDERS: dict[str, Translator] = {
     p.id: p
     for p in (
         GoogleGtxTranslator(),
+        DuckDuckGoTranslator(),
         MyMemoryTranslator(),
         YandexTranslator(),
         LibreTranslateTranslator(),

@@ -22,6 +22,7 @@ class AppSettings:
     target_lang: str = "ru"
     show_examples: bool = False  # off by default; setting removed from UI
     chivoblya_enabled: bool = True
+    autostart: bool = False
     hotkey: dict = field(default_factory=lambda: HotkeySpec().to_dict())
     chip_style_id: int = 1  # see app/chip_styles.py — user picks in style window
 

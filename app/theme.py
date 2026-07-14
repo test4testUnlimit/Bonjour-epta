@@ -32,35 +32,49 @@ TITLE_BG = "#ecece8"
 TITLE_BTN_HOVER = "#e0e0da"
 TITLE_CLOSE_HOVER = "#e81123"
 TITLE_CLOSE_HOVER_FG = "#ffffff"
+CLEAR_TINT = "#faf3f2"
+CLEAR_BORDER = "#e8c4c0"
+CLEAR_HOVER = "#f3e8e6"
+SETTINGS_BG = "#eceae4"
+SETTINGS_CARD = SURFACE
 
 # ── layout rhythm (px) — one air unit everywhere ─────────────
-# outer margin == inter-pane gap == vertical stack gap (Lebedev common air)
-AIR = 12
-PAD = AIR         # shell → content / foot (L/R/B)
-GAP = AIR         # toolbar ↔ panes, panes ↔ foot
-MID_W = AIR       # between source/target cards (⇄ lives on toolbar only)
-INSET = AIR       # pane internal padding (all sides of bar/field)
-BAR_GAP = AIR     # language bar → text field
-CTRL_H = 32       # base control height (load-bearing equality below)
-BAR_H = CTRL_H    # pane language bar
-ROW_H = CTRL_H    # toolbar / chip buttons
-ICON_W = 32       # clear (✕) width
-COPY_W = 72       # «копир.» width
-SWAP_W = 40       # ⇄ button on toolbar (centered over pane gap)
-DOT_SIZE = 18     # provider ● — proportional to ROW_H icons
-CORNER = 12       # card radius
-CORNER_SM = 8     # field / chip radius
-TITLE_H = 36
-FOOT_H = 28       # tagline + version
-TEXT_BORDER_SPACING = 10  # CTkTextbox inner text pad
-HEAD_H = 40       # top toolbar row
-ON_ACCENT = "#ffffff"  # text on ACCENT buttons
+AIR = 10
+PAD = AIR
+GAP = AIR
+MID_W = AIR
+INSET = 10
+BAR_GAP = 8
+CTRL_H = 30
+BAR_H = CTRL_H
+ROW_H = CTRL_H
+ICON_W = 30
+COPY_W = 66
+BTN_GAP = 12
+LANG_COMBO_W = 118
+SWAP_W = 36
+DOT_SIZE = 14
+CORNER = 10
+CORNER_SM = 6
+TITLE_H = 32
+FOOT_H = 26
+TEXT_BORDER_SPACING = 6
+HEAD_H = 36
+ON_ACCENT = "#ffffff"
+PROVIDER_COMBO_W = 142
+TOOL_GAP = 8
+SETTINGS_RESERVE = 20
 
 # UTF-8 / Cyrillic-safe UI font (Segoe UI ships with full Cyrillic on Win)
 FONT_UI = "Segoe UI"
+FONT_MDL2 = "Segoe MDL2 Assets"
+GLYPH_SETTINGS = "\uE713"
 FONT_UI_SIZE = 13
+FONT_BODY_SIZE = 13
+FONT_BRAND_SIZE = 21
+FONT_BRAND_CYR_SIZE = 16
 
-APP_VERSION = "1.3.5"
+APP_VERSION = "1.5.0-beta.1"
 # short OS/taskbar name — no version (version lives in custom chrome only)
 APP_NAME = "bonjour epta"
 BRAND_LATIN = "epta"  # latin spelling
@@ -75,3 +89,7 @@ def apply_appearance() -> None:
 
 def ui_font(size: int = FONT_UI_SIZE, weight: str = "normal") -> ctk.CTkFont:
     return ctk.CTkFont(family=FONT_UI, size=size, weight=weight)
+
+
+def mdl2_font(size: int = 15) -> ctk.CTkFont:
+    return ctk.CTkFont(family=FONT_MDL2, size=size)

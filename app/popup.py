@@ -8,6 +8,7 @@ from __future__ import annotations
 import queue
 import threading
 import tkinter as tk
+import tkinter.font as tkfont
 from collections.abc import Callable
 
 import pyperclip
@@ -15,6 +16,8 @@ import pyperclip
 from . import dpi
 from . import logutil
 from . import settings as cfg
+from . import theme as T
+from .app_icon import apply as apply_app_icon
 from . import translators as tr
 from .chip_styles import get_style
 from .screen import clamp_popup
@@ -23,15 +26,22 @@ from .screen import clamp_popup
 CHIP_W, CHIP_H = 120, 36
 CHIP_W_SPLIT = 148
 
-CARD_W = 360
+CARD_W = 480
 CARD_MIN_H = 140
-CARD_MAX_H = 360
-CARD_BG = "#ffffff"
-CARD_BORDER = "#dadce0"
-CARD_INK = "#202124"
-CARD_MUTED = "#5f6368"
-CARD_FOOT = "#f8f9fa"
-ERR = "#c5221f"
+CARD_MAX_H = 560
+CARD_BODY_FONT_SIZE = 12
+CARD_WRAP_CHARS = 54
+CARD_LINE_H = 18
+CARD_FOOT_H = 44
+CARD_CHROME_H = 132  # header + footer + paddings
+CARD_BODY_MAX_H = CARD_MAX_H - CARD_CHROME_H
+READ_BG = "#ebeae4"  # experimental: already-scrolled text
+CARD_BG = T.SURFACE
+CARD_BORDER = T.LINE
+CARD_INK = T.INK
+CARD_MUTED = T.INK_SOFT
+CARD_FOOT = T.CHIP_BG
+ERR = T.ERR
 
 
 class ChivoblyaPopup:
@@ -54,8 +64,11 @@ class ChivoblyaPopup:
         self._chip_frame: tk.Frame | None = None
         self._card_frame: tk.Frame | None = None
         self._src_lbl: tk.Label | None = None
-        self._tgt_lbl: tk.Label | None = None
+        self._tgt_text: tk.Text | None = None
+        self._tgt_scroll: tk.Scrollbar | None = None
+        self._tgt_font: tkfont.Font | None = None
         self._status_lbl: tk.Label | None = None
+        self._scroll_mode = False
 
         self._hide_after_id: str | None = None
         self._visible = False
@@ -167,51 +180,84 @@ class ChivoblyaPopup:
         body = tk.Frame(card_outer, bg=CARD_BG)
         body.pack(fill="both", expand=True, padx=1, pady=1)
 
+        body.grid_rowconfigure(1, weight=1)
+        body.grid_columnconfigure(0, weight=1)
+
         head = tk.Frame(body, bg=CARD_BG)
-        head.pack(fill="x", padx=14, pady=(12, 4))
         # language only, e.g. (английский) — not the word «перевод»
         lang_lbl = tk.Label(
-            head, text="", font=("Segoe UI", 9), fg=CARD_MUTED, bg=CARD_BG, anchor="w"
+            head,
+            text="",
+            font=(T.FONT_UI, 9),
+            fg=CARD_MUTED,
+            bg=CARD_BG,
+            anchor="w",
         )
-        lang_lbl.pack(side="left")
+        lang_lbl.pack(side="left", fill="x", expand=True)
         close = tk.Label(
-            head, text="✕", font=("Segoe UI", 10), fg=CARD_MUTED, bg=CARD_BG, cursor="hand2"
+            head,
+            text="✕",
+            font=(T.FONT_UI, 10),
+            fg=CARD_MUTED,
+            bg=CARD_BG,
+            cursor="hand2",
         )
         close.pack(side="right")
         close.bind("<ButtonRelease-1>", lambda _e: self.hide())
+        head.grid(row=0, column=0, sticky="ew", padx=14, pady=(12, 4))
 
-        # only the translation — no source repeat; Georgia for Lebedev-readable body
-        tgt = tk.Label(
-            body,
-            text="",
-            font=("Georgia", 14),
-            fg=CARD_INK,
-            bg=CARD_BG,
-            wraplength=CARD_W - 32,
-            justify="left",
-            anchor="nw",
-        )
-        tgt.pack(fill="both", expand=True, padx=14, pady=(4, 8))
-
-        status = tk.Label(
-            body, text="", font=("Segoe UI", 8), fg=CARD_MUTED, bg=CARD_BG, anchor="w"
-        )
-        status.pack(fill="x", padx=14, pady=(0, 4))
-
-        foot = tk.Frame(body, bg=CARD_FOOT)
-        foot.pack(fill="x", side="bottom")
+        foot = tk.Frame(body, bg=CARD_FOOT, height=CARD_FOOT_H)
+        foot.grid(row=3, column=0, sticky="ew")
+        foot.grid_propagate(False)
         actions = tk.Frame(foot, bg=CARD_FOOT)
         actions.pack(padx=12, pady=10, anchor="w")
+
+        # translation body — same UI font as main window; scroll when long
+        self._tgt_font = tkfont.Font(family=T.FONT_UI, size=CARD_BODY_FONT_SIZE)
+        tgt_outer = tk.Frame(body, bg=CARD_BG)
+        tgt_scroll = tk.Scrollbar(tgt_outer, orient="vertical")
+        tgt = tk.Text(
+            tgt_outer,
+            font=self._tgt_font,
+            fg=CARD_INK,
+            bg=CARD_BG,
+            wrap="word",
+            width=CARD_WRAP_CHARS,
+            height=3,
+            relief="flat",
+            highlightthickness=0,
+            borderwidth=0,
+            padx=0,
+            pady=0,
+            cursor="arrow",
+            spacing1=2,
+            spacing3=2,
+        )
+        tgt.pack(side="left", fill="both", expand=True)
+        tgt.configure(state="disabled")
+        tgt.bind("<Key>", lambda _e: "break")
+        tgt.tag_configure("read", background=READ_BG)
+        tgt.bind("<MouseWheel>", self._on_tgt_wheel)
+        tgt.bind("<Button-4>", self._on_tgt_wheel)  # Linux scroll up
+        tgt.bind("<Button-5>", self._on_tgt_wheel)  # Linux scroll down
+        tgt_outer.grid(row=1, column=0, sticky="nsew", padx=14, pady=(4, 8))
+
+        status = tk.Label(
+            body, text="", font=(T.FONT_UI, 8), fg=CARD_MUTED, bg=CARD_BG, anchor="w"
+        )
+        status.grid(row=2, column=0, sticky="ew", padx=14, pady=(0, 4))
 
         self._make_pill(actions, "⎘  копировать", self._copy_tr).pack(side="left", padx=(0, 8))
         self._make_pill(actions, "↗  в окно", self._open_main).pack(side="left")
 
         self._win = win
+        win.after(0, lambda: apply_app_icon(win))
         self._chip_frame = chip_outer
         self._card_frame = card_outer
         self._lang_lbl = lang_lbl
         self._src_lbl = None  # source text intentionally not shown
-        self._tgt_lbl = tgt
+        self._tgt_text = tgt
+        self._tgt_scroll = tgt_scroll
         self._status_lbl = status
 
     def _rebuild_chip(self) -> None:
@@ -371,8 +417,7 @@ class ChivoblyaPopup:
         self._card_frame.pack(fill="both", expand=True)
         self._mode = "card"
         # no source echo — only loading translation
-        if self._tgt_lbl:
-            self._tgt_lbl.configure(text="…", fg=CARD_MUTED, font=("Georgia", 14))
+        self._set_tgt_content("…", muted=True)
         if getattr(self, "_lang_lbl", None):
             self._lang_lbl.configure(text="(…)")
         if self._status_lbl:
@@ -500,11 +545,11 @@ class ChivoblyaPopup:
 
             if not result.ok:
                 self._translation = ""
-                if self._tgt_lbl:
-                    self._tgt_lbl.configure(text="не удалось перевести", fg=ERR)
+                self._set_tgt_content("не удалось перевести", error=True)
                 if self._status_lbl:
                     self._status_lbl.configure(text=(result.error or "ошибка")[:70])
                 log.warning("mini tr fail: %s", result.error)
+                self._resize_card_for_tgt()
                 self._arm_hide(15000)
                 return
 
@@ -513,18 +558,11 @@ class ChivoblyaPopup:
             src_code = result.detected_source or cfg.get().source_lang or "auto"
             if getattr(self, "_lang_lbl", None):
                 self._lang_lbl.configure(text=f"({short_ru(src_code)})")
-            if self._tgt_lbl:
-                # only translation, Georgia — no source repeat
-                self._tgt_lbl.configure(
-                    text=self._translation, fg=CARD_INK, font=("Georgia", 15)
-                )
+            self._set_tgt_content(self._translation)
             if self._status_lbl:
                 self._status_lbl.configure(text="")
 
-            # grow card for text
-            lines = max(2, min(14, 1 + len(self._translation) // 32))
-            h = 120 + lines * 18
-            self._cur_h = max(CARD_MIN_H, min(h, CARD_MAX_H))
+            self._resize_card_for_tgt()
             self._place(self._cur_w, self._cur_h, *self._anchor)
             self._map_window()
             # refresh lifetime after success
@@ -532,6 +570,98 @@ class ChivoblyaPopup:
             log.info("mini tr ok len=%s head=%r", len(self._translation), self._translation[:60])
         except Exception:  # noqa: BLE001
             logutil.exc("apply_tr UI")
+
+    def _set_tgt_content(
+        self,
+        text: str,
+        *,
+        muted: bool = False,
+        error: bool = False,
+    ) -> int:
+        w = self._tgt_text
+        if w is None:
+            return 2
+        color = ERR if error else (CARD_MUTED if muted else CARD_INK)
+        w.configure(state="normal", fg=color)
+        w.delete("1.0", "end")
+        w.tag_remove("read", "1.0", "end")
+        if text:
+            w.insert("1.0", text)
+        w.configure(state="disabled")
+        try:
+            w.update_idletasks()
+            lines = int(w.count("1.0", "end-1c", "displaylines")[0])
+        except Exception:  # noqa: BLE001
+            lines = max(2, 1 + len(text) // CARD_WRAP_CHARS)
+        return max(2, lines)
+
+    def _resize_card_for_tgt(self) -> None:
+        if self._tgt_text is None:
+            return
+        try:
+            self._tgt_text.update_idletasks()
+            display_lines = int(
+                self._tgt_text.count("1.0", "end-1c", "displaylines")[0]
+            )
+        except Exception:  # noqa: BLE001
+            display_lines = max(2, 1 + len(self._translation) // CARD_WRAP_CHARS)
+
+        max_lines = max(2, CARD_BODY_MAX_H // CARD_LINE_H)
+        visible_lines = min(max(2, display_lines), max_lines)
+        needs_scroll = display_lines > max_lines
+        self._scroll_mode = needs_scroll
+
+        self._tgt_text.configure(height=visible_lines)
+        scroll = self._tgt_scroll
+        if scroll is not None:
+            if needs_scroll:
+                scroll.pack(side="right", fill="y")
+                self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
+                scroll.configure(command=self._tgt_text.yview)
+            else:
+                self._tgt_text.configure(yscrollcommand=None)
+                scroll.pack_forget()
+
+        body_h = visible_lines * CARD_LINE_H + 12
+        self._cur_h = max(CARD_MIN_H, min(CARD_CHROME_H + body_h, CARD_MAX_H))
+        self._update_read_highlight()
+
+    def _on_tgt_yscroll(self, first: str, last: str) -> None:
+        scroll = self._tgt_scroll
+        if scroll is not None:
+            scroll.set(first, last)
+        self._update_read_highlight()
+
+    def _on_tgt_wheel(self, event) -> str | None:
+        w = self._tgt_text
+        if w is None or not self._scroll_mode:
+            return None
+        try:
+            delta = int(-1 * (event.delta / 120)) if getattr(event, "delta", 0) else 0
+            if delta == 0:
+                delta = -1 if event.num == 5 else 1
+            w.yview_scroll(delta, "units")
+            self._update_read_highlight()
+        except Exception:  # noqa: BLE001
+            pass
+        return "break"
+
+    def _update_read_highlight(self) -> None:
+        """Experimental: tint text above the viewport while scrolling."""
+        w = self._tgt_text
+        if w is None or not self._scroll_mode or not self._translation:
+            return
+        try:
+            top = w.index("@0,0")
+            if not top or top == "1.0":
+                w.tag_remove("read", "1.0", "end")
+                return
+            w.configure(state="normal")
+            w.tag_remove("read", "1.0", "end")
+            w.tag_add("read", "1.0", top)
+            w.configure(state="disabled")
+        except Exception:  # noqa: BLE001
+            pass
 
     def _copy_tr(self) -> None:
         t = self._translation or self._text

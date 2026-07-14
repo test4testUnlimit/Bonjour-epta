@@ -44,6 +44,9 @@ class HotkeySpec:
         parts.append(key)
         return "+".join(parts)
 
+    def mode_ru(self) -> str:
+        return "двойное" if self.mode == "double" else "комбинация"
+
     def to_dict(self) -> dict:
         return {
             "scan_code": self.scan_code,

@@ -16,6 +16,7 @@ def main() -> int:
     from app import dpi
     from app import logutil
     from app import settings as cfg
+    from app.autostart import sync as sync_autostart
     from app.hotkey import TranslateHotkey
     from app.popup import ChivoblyaPopup
     from app.selection import get_selected_text
@@ -38,7 +39,13 @@ def main() -> int:
         log.warning("hotkey sanitized → %s", safe.label())
         cfg.update(hotkey=safe.to_dict())
 
+    ok, err = sync_autostart(s0.autostart)
+    if not ok:
+        log.warning("autostart sync failed: %s", err)
+
     app = run_app()
+    if "--startup" in sys.argv:
+        app.after(250, app._minimize)
     hotkey_holder: list[TranslateHotkey] = []
     watcher_holder: list[SelectionWatcher] = []
     last_selection: list[str] = [""]
@@ -193,9 +200,7 @@ def main() -> int:
         from pathlib import Path
 
         log_path = Path.home() / ".bonjur-epta" / "bonjur.log"
-        msg = "готов · " + " · ".join(status_bits)
-        app.after(0, lambda: app._status.set(msg))
-        log.info("hooks ready %s log=%s", msg, log_path)
+        log.info("hooks ready %s log=%s", " · ".join(status_bits), log_path)
         log.info(
             "Crow usage: select text → press hotkey (now %s) → window fills. "
             "Chip click uses cache only.",
