@@ -4,3 +4,4 @@ keyboard>=0.13.5
 mouse>=0.7.1
 pyperclip>=1.9.0
 Pillow>=10.0.0
+pystray>=0.19.5

@@ -1,4 +1,4 @@
-"""Main dual-pane — custom chrome (no Windows title bar), Segoe UI / UTF-8."""
+"""Main dual-pane — native Windows caption, Segoe UI / UTF-8."""
 
 from __future__ import annotations
 
@@ -14,7 +14,6 @@ from . import logutil
 from . import settings as cfg
 from . import theme as T
 from . import translators as tr
-from . import winframe
 from .settings_ui import SettingsWindow
 from .theme import apply_appearance, ui_font
 from .app_icon import apply as apply_app_icon
@@ -30,17 +29,17 @@ class TranslatorApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         s = cfg.load()
-        # short taskbar name only — no version, no second "epta" block in OS chrome
-        self.title(T.APP_NAME)
+        # native Windows caption, empty title text
+        self.title("")
         self.geometry("1000x560")
         self.minsize(760, 440)
         self.configure(fg_color=T.BG)
 
-        # remove Windows caption/min/max/close — we draw our own
-        self.overrideredirect(True)
         self._maximized = False
         self._restore_geom = "1000x580+120+80"
         self._drag = {"x": 0, "y": 0}
+        self._tray = None
+        self._hiding_to_tray = False
 
         self._source_lang = ctk.StringVar(value=s.source_lang or "auto")
         self._target_lang = ctk.StringVar(value=s.target_lang or "ru")
@@ -53,20 +52,17 @@ class TranslatorApp(ctk.CTk):
         self._progress_tick = 0
         self._tgt_progress = False
 
-        # thin outer border (frameless needs an edge)
         self._shell = ctk.CTkFrame(
-            self, fg_color=T.BG, border_width=1, border_color=T.LINE, corner_radius=0
+            self, fg_color=T.BG, border_width=0, corner_radius=0
         )
         self._shell.pack(fill="both", expand=True)
 
-        self._build_titlebar(self._shell)
         self._build(self._shell)
         cfg.on_change(self._on_settings_changed)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.bind("<Unmap>", self._on_unmap)
 
-        # taskbar + window icon after make_appwindow (hide/show resets icon)
-        self.after(80, lambda: winframe.make_appwindow(self))
-        self.after(120, lambda: apply_app_icon(self))
+        self.after(80, lambda: apply_app_icon(self))
 
         label = next(
             (lb for pid, lb, _ in tr.list_providers() if pid == self._provider.get()),
@@ -75,95 +71,44 @@ class TranslatorApp(ctk.CTk):
         if label:
             self._provider_combo.set(label)
 
-    # ── custom title bar: only drag + window buttons (no brand text) ──
-    def _build_titlebar(self, parent: ctk.CTkFrame) -> None:
-        bar = ctk.CTkFrame(parent, fg_color=T.TITLE_BG, height=T.TITLE_H, corner_radius=0)
-        bar.pack(fill="x", side="top")
-        bar.pack_propagate(False)
-
-        # empty drag zone (brand lives in content, large, as before)
-        drag = ctk.CTkFrame(bar, fg_color="transparent")
-        drag.pack(side="left", fill="both", expand=True)
-
-        controls = ctk.CTkFrame(bar, fg_color="transparent")
-        controls.pack(side="right", padx=(0, 4))
-
-        def win_btn(text: str, cmd, *, font=None) -> ctk.CTkButton:
-            return ctk.CTkButton(
-                controls,
-                text=text,
-                width=46,
-                height=T.TITLE_H - 2,
-                corner_radius=0,
-                fg_color="transparent",
-                hover_color=T.TITLE_BTN_HOVER,
-                text_color=T.INK,
-                font=font or ui_font(12),
-                command=cmd,
-            )
-
-        win_btn("—", self._minimize).pack(side="left")
-        self._btn_max = win_btn("□", self._toggle_max, font=ui_font(15))
-        self._btn_max.pack(side="left")
-        ctk.CTkButton(
-            controls,
-            text="✕",
-            width=46,
-            height=T.TITLE_H - 2,
-            corner_radius=0,
-            fg_color="transparent",
-            hover_color=T.TITLE_CLOSE_HOVER,
-            text_color=T.INK,
-            font=ui_font(12),
-            command=self._on_close,
-        ).pack(side="left")
-
-        for w in (bar, drag):
-            w.bind("<ButtonPress-1>", self._drag_start)
-            w.bind("<B1-Motion>", self._drag_move)
-            w.bind("<Double-Button-1>", lambda _e: self._toggle_max())
-
-    def _drag_start(self, event) -> None:
-        if self._maximized:
+    def _on_unmap(self, event) -> None:
+        if event.widget is not self:
             return
-        self._drag["x"] = event.x_root - self.winfo_x()
-        self._drag["y"] = event.y_root - self.winfo_y()
-
-    def _drag_move(self, event) -> None:
-        if self._maximized:
+        if self._hiding_to_tray:
             return
-        x = event.x_root - self._drag["x"]
-        y = event.y_root - self._drag["y"]
-        self.geometry(f"+{x}+{y}")
-
-    def _minimize(self) -> None:
-        # overrideredirect: iconify is flaky — use Win32 show minimized
         try:
-            import ctypes
-
-            hwnd = winframe.hwnd_of(self)
-            # SW_MINIMIZE = 6
-            if hwnd:
-                ctypes.windll.user32.ShowWindow(hwnd, 6)
-                return
+            if str(self.state()) == "iconic":
+                self.after(0, self._minimize_to_tray)
         except Exception:  # noqa: BLE001
             pass
+
+    def _minimize_to_tray(self) -> None:
+        self._hiding_to_tray = True
         try:
-            self.iconify()
+            self.withdraw()
+        finally:
+            self._hiding_to_tray = False
+
+    def _minimize(self) -> None:
+        """Public minimize = hide to tray (also used by --startup)."""
+        self._minimize_to_tray()
+
+    def show_from_tray(self) -> None:
+        try:
+            self.deiconify()
+            self.lift()
+            self.focus_force()
         except Exception:  # noqa: BLE001
             pass
 
     def _toggle_max(self) -> None:
-        if self._maximized:
-            self.geometry(self._restore_geom)
-            self._maximized = False
-            self._btn_max.configure(text="□")
-        else:
-            self._restore_geom = self.geometry()
-            x, y, w, h = winframe.work_area()
-            self.geometry(f"{w}x{h}+{x}+{y}")
-            self._maximized = True
-            self._btn_max.configure(text="❐")
+        try:
+            if self.state() == "zoomed":
+                self.state("normal")
+            else:
+                self.state("zoomed")
+        except Exception:  # noqa: BLE001
+            pass
 
     def _build(self, parent: ctk.CTkFrame) -> None:
         """
@@ -182,26 +127,27 @@ class TranslatorApp(ctk.CTk):
 
         vpad = (T.HEAD_H - T.ROW_H) // 2
 
-        mark = ctk.CTkFrame(toolbar, fg_color="transparent", height=T.ROW_H)
-        mark.pack(side="left", pady=vpad)
+        mark = ctk.CTkFrame(toolbar, fg_color="transparent", height=T.HEAD_H)
+        mark.pack(side="left", fill="y")
+        mark.grid_rowconfigure(0, weight=1)
         ctk.CTkLabel(
             mark,
             text="bonjour",
             font=ui_font(T.FONT_BRAND_SIZE),
             text_color=T.INK,
-        ).pack(side="left")
+        ).grid(row=0, column=0, sticky="s")
         ctk.CTkLabel(
             mark,
             text=f" {T.BRAND_CYR}",
             font=ui_font(T.FONT_BRAND_CYR_SIZE, "bold"),
             text_color=T.INK,
-        ).pack(side="left")
+        ).grid(row=0, column=1, sticky="s")
         ctk.CTkLabel(
             mark,
             text=f" v{APP_VERSION}",
             font=ui_font(12),
             text_color=T.INK_SOFT,
-        ).pack(side="left")
+        ).grid(row=0, column=2, sticky="s")
 
         self._btn_swap = ctk.CTkButton(
             toolbar,
@@ -895,6 +841,12 @@ class TranslatorApp(ctk.CTk):
             ui()
 
     def _on_close(self) -> None:
+        tray = getattr(self, "_tray", None)
+        if tray is not None:
+            try:
+                tray.stop()
+            except Exception:  # noqa: BLE001
+                pass
         self.destroy()
 
 

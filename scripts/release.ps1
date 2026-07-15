@@ -10,6 +10,13 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
+# ── 0. VERSION is source of truth — sync into theme.py ────────────
+$vf = Join-Path $root "VERSION"
+if (-not (Test-Path $vf)) { throw "Missing VERSION file at repo root" }
+$ver = (Get-Content $vf -First 1).Trim()
+if (-not $ver) { throw "VERSION file is empty" }
+Write-Host "VERSION = $ver"
+
 # ── 1. ensure app.ico exists (from app.png) ───────────────────────
 $png = Join-Path $root "app.png"
 $ico = Join-Path $root "app.ico"
@@ -35,7 +42,7 @@ $staging = Join-Path $root "build\payload"
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 New-Item -ItemType Directory -Path $staging -Force | Out-Null
 
-$includeTop = @("main.py", "requirements.txt", "app.ico")
+$includeTop = @("main.py", "requirements.txt", "app.ico", "VERSION")
 foreach ($f in $includeTop) {
     $src = Join-Path $root $f
     if (Test-Path $src) { Copy-Item $src (Join-Path $staging $f) }
@@ -81,16 +88,14 @@ if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseD
 $builtExe = Join-Path $publishDir "BonjurLauncher.exe"
 if (-not (Test-Path $builtExe)) { throw "Build failed: $builtExe not found" }
 
-$ver = ""
-$vf = Join-Path $root "VERSION"
-if (Test-Path $vf) { $ver = (Get-Content $vf -First 1).Trim() }
-if (-not $ver) {
-    # read from theme.py
-    $theme = Get-Content (Join-Path $root "app\theme.py") -Raw
-    if ($theme -match 'APP_VERSION\s*=\s*"([^"]+)"') { $ver = $matches[1] }
-}
-$outName = if ($ver) { "BonjurLauncher_$ver.exe" } else { "BonjurLauncher.exe" }
+$ver = (Get-Content (Join-Path $root "VERSION") -First 1).Trim()
+$outName = "BonjurLauncher_$ver.exe"
 $outPath = Join-Path $releaseDir $outName
 Copy-Item $builtExe $outPath -Force
+# single email-friendly name
+$setupPath = Join-Path $releaseDir "bonjour-epta-setup.exe"
+Copy-Item $builtExe $setupPath -Force
 Write-Host ""
-Write-Host "Done: $outPath ($((Get-Item $outPath).Length) bytes)"
+Write-Host "Email this file (~$((Get-Item $setupPath).Length) bytes):"
+Write-Host "  $setupPath"
+Write-Host "Also: $outPath"

@@ -9,6 +9,8 @@ Layout rhythm (Lebedev: proximity + common air):
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import customtkinter as ctk
 
 # paper studio
@@ -74,7 +76,16 @@ FONT_BODY_SIZE = 13
 FONT_BRAND_SIZE = 21
 FONT_BRAND_CYR_SIZE = 16
 
-APP_VERSION = "1.5.0-beta.1"
+def _read_version() -> str:
+    path = Path(__file__).resolve().parent.parent / "VERSION"
+    try:
+        line = path.read_text(encoding="utf-8").strip().splitlines()[0].strip()
+        return line or "0.0.0"
+    except OSError:
+        return "0.0.0"
+
+
+APP_VERSION = _read_version()
 # short OS/taskbar name — no version (version lives in custom chrome only)
 APP_NAME = "bonjour epta"
 BRAND_LATIN = "epta"  # latin spelling

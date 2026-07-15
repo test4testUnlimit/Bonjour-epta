@@ -44,6 +44,11 @@ def main() -> int:
         log.warning("autostart sync failed: %s", err)
 
     app = run_app()
+    from app.tray import TrayIcon
+
+    tray = TrayIcon(app)
+    app._tray = tray
+    tray.start()
     if "--startup" in sys.argv:
         app.after(250, app._minimize)
     hotkey_holder: list[TranslateHotkey] = []

@@ -13,7 +13,6 @@ namespace BonjurLauncher
     internal sealed class LauncherForm : Form
     {
         private static readonly string AppVersion = ReadAssemblyVersion();
-        private const string ConfigFileName = "bonjur_install_path.txt";
         private const string ResourceName   = "BonjurLauncher.app.zip";
         private const string AppEntry       = "main.py";
         private const string AppName        = "bonjour epta";
@@ -159,58 +158,47 @@ namespace BonjurLauncher
         {
             try
             {
-                string launcherDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                string configPath  = Path.Combine(launcherDir, ConfigFileName);
+                // Always install/run next to this exe (Total Commander workflow).
+                string installDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (string.IsNullOrEmpty(installDir))
+                {
+                    ShowError("Не удалось определить папку установщика.");
+                    return;
+                }
 
-                string installDir = ReadSavedPath(configPath);
-                bool needInstall = installDir == null
-                    || !File.Exists(Path.Combine(installDir, AppEntry))
+                bool needInstall = !File.Exists(Path.Combine(installDir, AppEntry))
                     || !IsInstalledVersion(installDir, AppVersion);
 
                 if (!needInstall)
                 {
-                    SetStatus("Проверяю окружение...", 100);
+                    SetStatus("Запускаю...", 100);
                     string python = await EnsurePython();
                     if (python == null) { ShowError("Python не найден. Установите Python 3.12 вручную."); return; }
-                    SetStatus("Запускаю...", 100);
-                    await Task.Delay(300);
+                    await Task.Delay(200);
                     LaunchApp(python, Path.Combine(installDir, AppEntry));
                     return;
                 }
 
-                if (installDir == null)
-                {
-                    installDir = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                        "bonjur-epta");
-                }
-                Directory.CreateDirectory(installDir);
-
-                // Step 1: Python 3.12 via winget
+                // First run / upgrade in this folder
                 SetStatus("Проверяю Python 3.12...", 5);
                 string py = await EnsurePython(progress: p => SetStatus(
-                    "Устанавливаю Python 3.12 через winget, от вас ничего не требуется... " + p + "%",
+                    "Устанавливаю Python 3.12 через winget... " + p + "%",
                     5 + p * 25 / 100));
                 if (py == null) { ShowError("Не удалось установить Python. Установите вручную: winget install Python.Python.3.12"); return; }
                 SetStatus("Python — готов.", 32);
 
-                // Step 2: extract embedded app
                 SetStatus("Устанавливаю bonjour epta v" + AppVersion + "...", 36);
                 await Task.Run(() => ExtractEmbeddedWithRetry(ResourceName, installDir,
                     pct => SetStatus("Распаковка... " + pct + "%", 36 + pct * 30 / 100)));
                 File.WriteAllText(Path.Combine(installDir, "VERSION"), AppVersion);
                 SetStatus("Приложение распаковано.", 66);
 
-                // Step 3: pip install deps
                 SetStatus("Устанавливаю зависимости (pip)...", 68);
                 bool depsOk = await PipInstall(py, Path.Combine(installDir, "requirements.txt"),
                     p => SetStatus("Зависимости... " + p + "%", 68 + p * 28 / 100));
                 if (!depsOk) { ShowError("Не удалось установить зависимости. Проверьте интернет."); return; }
-                SetStatus("Зависимости — готовы.", 96);
-
-                File.WriteAllText(configPath, installDir);
                 SetStatus("Готово. Запускаю...", 100);
-                await Task.Delay(400);
+                await Task.Delay(300);
                 LaunchApp(py, Path.Combine(installDir, AppEntry));
             }
             catch (Exception ex)
@@ -220,13 +208,6 @@ namespace BonjurLauncher
         }
 
         // ── helpers ───────────────────────────────────────────────
-
-        private static string ReadSavedPath(string configPath)
-        {
-            if (!File.Exists(configPath)) return null;
-            string saved = File.ReadAllText(configPath).Trim();
-            return Directory.Exists(saved) ? saved : null;
-        }
 
         private static bool IsInstalledVersion(string installDir, string expected)
         {
