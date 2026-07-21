@@ -17,10 +17,12 @@ def main() -> int:
     from app import logutil
     from app import settings as cfg
     from app.autostart import sync as sync_autostart
+    from app.chip_offer import should_offer_chip
     from app.hotkey import TranslateHotkey
     from app.popup import ChivoblyaPopup
     from app.selection import get_selected_text
     from app.selection_watch import SelectionWatcher
+    from app.tray import TrayIcon
     from app.ui import run_app
     from app.win_hotkeys import HotkeySpec
 
@@ -104,6 +106,18 @@ def main() -> int:
         # do not flash a new chip over an open translation card
         if popup.visible and popup.mode == "card":
             log.debug("skip chip — card already open")
+            return
+
+        s = cfg.get()
+        # use UI target if app has it, else settings
+        target = getattr(app, "_target_lang", None)
+        target_code = target.get() if target is not None else (s.target_lang or "ru")
+        if not should_offer_chip(text, target_lang=target_code):
+            log.debug(
+                "skip chip — not useful for target=%s head=%r",
+                target_code,
+                (text or "")[:40],
+            )
             return
 
         def show() -> None:
