@@ -14,19 +14,11 @@ from . import theme as T
 
 
 def _load_image():
-    """Return a PIL.Image for the tray icon, or None to use pystray fallback."""
-    try:
-        from PIL import Image
-
-        path = app_icon.find_icon()
-        if path is None:
-            return None
-        img = Image.open(path).convert("RGBA")
-        # tray icons render best at 32x32 (or 64 for HiDPI)
-        size = 64
-        return img.resize((size, size), Image.Resampling.LANCZOS)
-    except Exception:  # noqa: BLE001
-        return None
+    """Return a PIL.Image for the tray icon — same artwork as window/taskbar."""
+    img = app_icon.load_tray_image()
+    if img is not None:
+        return img
+    return None
 
 
 class TrayIcon:

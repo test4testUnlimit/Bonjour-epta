@@ -17,20 +17,19 @@ $ver = (Get-Content $vf -First 1).Trim()
 if (-not $ver) { throw "VERSION file is empty" }
 Write-Host "VERSION = $ver"
 
-# ── 1. ensure app.ico exists (from app.png) ───────────────────────
+# ── 1. always rebuild app.ico from app.png (multi-size) ───────────
 $png = Join-Path $root "app.png"
 $ico = Join-Path $root "app.ico"
-if ((Test-Path $png) -and -not (Test-Path $ico)) {
-    Write-Host "Generating app.ico from app.png..."
+if (Test-Path $png) {
+    Write-Host "Generating multi-size app.ico from app.png..."
     python -c @"
 from pathlib import Path
 from PIL import Image
 img = Image.open(r'$png').convert('RGBA')
-sizes = (16, 24, 32, 48, 64, 128, 256)
-icons = [img.resize((s, s), Image.Resampling.LANCZOS) for s in sizes]
+sizes = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
 out = Path(r'$ico')
-icons[0].save(out, format='ICO', sizes=[(i.width, i.height) for i in icons], append_images=icons[1:])
-print('wrote', out)
+img.save(out, format='ICO', sizes=sizes)
+print('wrote', out, out.stat().st_size, 'bytes')
 "@
 }
 # copy icon into launcher dir (csproj references it there)

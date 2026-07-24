@@ -51,6 +51,9 @@ def main() -> int:
         return 0
 
     dpi_mode = dpi.enable()
+    from app.app_icon import set_app_user_model_id
+
+    set_app_user_model_id()  # before any HWND — taskbar uses our icon, not pythonw
     log = logutil.setup()
     log.info("main() start dpi=%s startup=%s", dpi_mode, startup)
 

@@ -98,6 +98,7 @@ class TranslatorApp(ctk.CTk):
             self.deiconify()
             self.lift()
             self.focus_force()
+            apply_app_icon(self)
         except Exception:  # noqa: BLE001
             pass
 
