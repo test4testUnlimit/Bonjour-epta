@@ -11,6 +11,24 @@ import sys
 import threading
 import traceback
 
+# Kept alive for process lifetime (Win32 single-instance mutex handle).
+_INSTANCE_MUTEX = None
+
+
+def _try_single_instance(startup: bool) -> bool:
+    """True = we own the instance. False = another copy already running."""
+    global _INSTANCE_MUTEX
+    if sys.platform != "win32":
+        return True
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    # ERROR_ALREADY_EXISTS = 183
+    _INSTANCE_MUTEX = kernel32.CreateMutexW(None, False, "Local\\BonjurEpta_SingleInstance_v1")
+    if kernel32.GetLastError() == 183:
+        return False
+    return True
+
 
 def main() -> int:
     from app import dpi
@@ -26,9 +44,15 @@ def main() -> int:
     from app.ui import run_app
     from app.win_hotkeys import HotkeySpec
 
+    startup = "--startup" in sys.argv
+    if not _try_single_instance(startup):
+        # Second copy at login → quiet exit. Manual second launch → also exit
+        # (tray already owns the session).
+        return 0
+
     dpi_mode = dpi.enable()
     log = logutil.setup()
-    log.info("main() start dpi=%s", dpi_mode)
+    log.info("main() start dpi=%s startup=%s", dpi_mode, startup)
 
     # Prefer Crow default hotkey if still on bare double-OEM3 and user never customized
     # (sanitize already fixed Ctrl+Z). Offer Ctrl+Alt+E as product default for new installs.
@@ -44,15 +68,25 @@ def main() -> int:
     ok, err = sync_autostart(s0.autostart)
     if not ok:
         log.warning("autostart sync failed: %s", err)
+    elif s0.autostart:
+        from app.autostart import registered_command
+
+        log.info("autostart refreshed: %s", registered_command())
 
     app = run_app()
-    from app.tray import TrayIcon
+    if startup:
+        # Hide before paint / tray race — after(250) was flaky on slow login.
+        try:
+            app.withdraw()
+        except Exception:  # noqa: BLE001
+            pass
 
     tray = TrayIcon(app)
     app._tray = tray
     tray.start()
-    if "--startup" in sys.argv:
-        app.after(250, app._minimize)
+    if startup:
+        app.after(0, app._minimize)
+        app.after(400, app._minimize)
     hotkey_holder: list[TranslateHotkey] = []
     watcher_holder: list[SelectionWatcher] = []
     last_selection: list[str] = [""]

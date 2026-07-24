@@ -23,6 +23,7 @@ class AppSettings:
     show_examples: bool = False  # off by default; setting removed from UI
     chivoblya_enabled: bool = True
     autostart: bool = False
+    close_to_tray: bool = True  # X / Alt+F4 → tray; tray «выход» always quits
     hotkey: dict = field(default_factory=lambda: HotkeySpec().to_dict())
     chip_style_id: int = 1  # see app/chip_styles.py — user picks in style window
 

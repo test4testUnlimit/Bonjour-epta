@@ -840,7 +840,11 @@ class TranslatorApp(ctk.CTk):
             logutil.exc("after(0) failed, run ui direct")
             ui()
 
-    def _on_close(self) -> None:
+    def _on_close(self, force: bool = False) -> None:
+        """Window X / Alt+F4: hide to tray when enabled. force=True = real quit."""
+        if not force and cfg.get().close_to_tray:
+            self._minimize_to_tray()
+            return
         tray = getattr(self, "_tray", None)
         if tray is not None:
             try:
