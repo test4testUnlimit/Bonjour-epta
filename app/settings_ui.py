@@ -28,8 +28,8 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, master: ctk.CTk) -> None:
         super().__init__(master)
         self.title(T.APP_NAME)
-        self.geometry("440x560")
-        self.minsize(420, 520)
+        self.geometry("440x1")
+        self.minsize(420, 360)
         self.configure(fg_color=T.SETTINGS_BG)
         self.resizable(False, False)
         self.transient(master)
@@ -40,6 +40,8 @@ class SettingsWindow(ctk.CTkToplevel):
         s = cfg.get()
         self._hk = s.hotkey_spec()
         self._mode_btns: dict[str, ctk.CTkButton] = {}
+        self._theme_btns: dict[str, ctk.CTkButton] = {}
+        self._ui_theme = s.ui_theme if s.ui_theme in T.THEME_CHOICES else T.THEME_LIGHT
 
         pad = T.PAD + 4
         ctk.CTkLabel(
@@ -56,17 +58,16 @@ class SettingsWindow(ctk.CTkToplevel):
             border_width=1,
             border_color=T.LINE,
         )
-        # fill=x only — card height follows content; expand would fight fixed geometry
         card.pack(fill="x", padx=pad, pady=(0, 8))
         inner_pad = T.INSET + 2
 
         switch_kw = dict(
             text_color=T.INK,
             font=ui_font(12),
-            progress_color=T.OK,
-            button_color=T.SURFACE,
-            button_hover_color=T.CHIP_HOVER,
-            fg_color=T.LINE_STRONG,
+            progress_color=T.SWITCH_ON,
+            button_color=T.SWITCH_KNOB,
+            button_hover_color=T.SWITCH_KNOB_HOVER,
+            fg_color=T.SWITCH_OFF,
             command=self._apply_switches,
         )
 
@@ -99,6 +100,23 @@ class SettingsWindow(ctk.CTkToplevel):
         self._close_tray.pack(anchor="w", padx=inner_pad, pady=(0, 6))
         if s.close_to_tray:
             self._close_tray.select()
+
+        trow = ctk.CTkFrame(card, fg_color="transparent")
+        trow.pack(fill="x", padx=inner_pad, pady=(10, 4))
+        ctk.CTkLabel(
+            trow, text="тема", text_color=T.INK_FAINT, font=ui_font(11)
+        ).pack(anchor="w")
+        theme_row = ctk.CTkFrame(trow, fg_color="transparent")
+        theme_row.pack(anchor="w", pady=(6, 0))
+        for i, key in enumerate(T.THEME_CHOICES):
+            self._theme_btns[key] = self._theme_btn(
+                theme_row,
+                key,
+                T.THEME_LABELS[key],
+                side="left",
+                padx=(0, 8) if i < len(T.THEME_CHOICES) - 1 else (0, 0),
+            )
+        self._sync_theme_buttons()
 
         prow = ctk.CTkFrame(card, fg_color="transparent")
         prow.pack(fill="x", padx=inner_pad, pady=(8, 4))
@@ -163,7 +181,7 @@ class SettingsWindow(ctk.CTkToplevel):
             wraplength=360,
             justify="left",
         )
-        self._hk_hint.pack(anchor="w", padx=inner_pad, pady=(0, 6))
+        self._hk_hint.pack(anchor="w", padx=inner_pad, pady=(0, 2))
 
         brow = ctk.CTkFrame(card, fg_color="transparent")
         brow.pack(fill="x", padx=inner_pad, pady=(0, inner_pad))
@@ -196,7 +214,7 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(side="left", padx=(8, 0))
 
         foot = ctk.CTkFrame(self, fg_color="transparent")
-        foot.pack(fill="x", padx=pad, pady=(0, 12))
+        foot.pack(fill="x", padx=pad, pady=(0, 8))
         self._status = ctk.CTkLabel(
             foot, text="", text_color=T.INK_FAINT, font=ui_font(10)
         )
@@ -218,11 +236,64 @@ class SettingsWindow(ctk.CTkToplevel):
         self.after_idle(self._fit_to_content)
 
     def _fit_to_content(self) -> None:
-        """Client height = content (+ room for 1–2 hint lines while capturing)."""
+        """Clip client height to packed content — no empty air under «закрыть»."""
         self.update_idletasks()
-        need = int(self.winfo_reqheight()) + 40
+        need = int(self.winfo_reqheight())
+        # tiny pad so DPI rounding never clips the footer
+        need = max(need + 4, 360)
         self.geometry(f"440x{need}")
-        self.minsize(420, need - 40)
+        self.minsize(420, need)
+
+    def _theme_btn(
+        self,
+        parent,
+        key: str,
+        label: str,
+        *,
+        side: str,
+        padx: tuple[int, int] = (0, 0),
+    ) -> ctk.CTkButton:
+        btn = ctk.CTkButton(
+            parent,
+            text=label,
+            width=88,
+            height=T.ROW_H,
+            corner_radius=T.ROW_H // 2,
+            fg_color=T.SURFACE,
+            border_width=1,
+            border_color=T.LINE,
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK,
+            font=ui_font(11),
+            command=lambda k=key: self._on_theme(k),
+        )
+        btn.pack(side=side, padx=padx)
+        return btn
+
+    def _sync_theme_buttons(self) -> None:
+        for key, btn in self._theme_btns.items():
+            on = key == self._ui_theme
+            btn.configure(
+                fg_color=T.ACCENT if on else T.SURFACE,
+                hover_color=T.ACCENT_HOVER if on else T.CHIP_HOVER,
+                text_color=T.ON_ACCENT if on else T.INK,
+                border_color=T.ACCENT if on else T.LINE,
+            )
+
+    def _on_theme(self, key: str) -> None:
+        if key not in T.THEME_CHOICES:
+            return
+        self._ui_theme = key
+        self._sync_theme_buttons()
+        cfg.update(ui_theme=key)
+        self._status.configure(text="тема · применено")
+        master = self.master
+        self._close()
+        if master is not None:
+            try:
+                master.after(30, master.open_settings)
+            except Exception:  # noqa: BLE001
+                pass
 
     def _mode_btn(
         self, parent, label: str, *, side: str, padx: tuple[int, int] = (0, 0)
@@ -403,6 +474,7 @@ class SettingsWindow(ctk.CTkToplevel):
             close_to_tray=bool(self._close_tray.get()),
             show_examples=False,
             provider_id=pid,
+            ui_theme=self._ui_theme,
         )
         ok, err = sync_autostart(want_autostart)
         if not ok:

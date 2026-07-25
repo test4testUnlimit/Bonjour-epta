@@ -40,13 +40,7 @@ CARD_LINE_H = 18
 CARD_FOOT_H = 44
 CARD_CHROME_H = 132  # header + footer + paddings
 CARD_BODY_MAX_H = CARD_MAX_H - CARD_CHROME_H
-READ_BG = "#ebeae4"  # experimental: already-scrolled text
-CARD_BG = T.SURFACE
-CARD_BORDER = T.LINE
-CARD_INK = T.INK
-CARD_MUTED = T.INK_SOFT
-CARD_FOOT = T.CHIP_BG
-ERR = T.ERR
+# colors live in theme tokens — read T.* at paint time (theme can switch)
 
 
 class ChivoblyaPopup:
@@ -177,31 +171,31 @@ class ChivoblyaPopup:
         win = tk.Toplevel(self._master)
         win.overrideredirect(True)
         win.attributes("-topmost", True)
-        win.configure(bg="#dadce0")
+        win.configure(bg=T.BG)
         win.withdraw()
         # don't destroy app if this window errors
         win.protocol("WM_DELETE_WINDOW", self.hide)
 
-        chip_outer = tk.Frame(win, bg="#dadce0")
+        chip_outer = tk.Frame(win, bg=T.BG)
         self._chip_host = chip_outer  # rebuilt per style on show
         self._rebuild_chip()
 
         # CARD
-        card_outer = tk.Frame(win, bg=CARD_BORDER)
-        body = tk.Frame(card_outer, bg=CARD_BG)
+        card_outer = tk.Frame(win, bg=T.LINE)
+        body = tk.Frame(card_outer, bg=T.SURFACE)
         body.pack(fill="both", expand=True, padx=1, pady=1)
 
         body.grid_rowconfigure(1, weight=1)
         body.grid_columnconfigure(0, weight=1)
 
-        head = tk.Frame(body, bg=CARD_BG)
+        head = tk.Frame(body, bg=T.SURFACE)
         # language only, e.g. (английский) — not the word «перевод»
         lang_lbl = tk.Label(
             head,
             text="",
             font=(T.FONT_UI, 9),
-            fg=CARD_MUTED,
-            bg=CARD_BG,
+            fg=T.INK_SOFT,
+            bg=T.SURFACE,
             anchor="w",
         )
         lang_lbl.pack(side="left", fill="x", expand=True)
@@ -209,29 +203,29 @@ class ChivoblyaPopup:
             head,
             text="✕",
             font=(T.FONT_UI, 10),
-            fg=CARD_MUTED,
-            bg=CARD_BG,
+            fg=T.INK_SOFT,
+            bg=T.SURFACE,
             cursor="hand2",
         )
         close.pack(side="right")
         close.bind("<ButtonRelease-1>", lambda _e: self.hide())
         head.grid(row=0, column=0, sticky="ew", padx=14, pady=(12, 4))
 
-        foot = tk.Frame(body, bg=CARD_FOOT, height=CARD_FOOT_H)
+        foot = tk.Frame(body, bg=T.CHIP_BG, height=CARD_FOOT_H)
         foot.grid(row=3, column=0, sticky="ew")
         foot.grid_propagate(False)
-        actions = tk.Frame(foot, bg=CARD_FOOT)
+        actions = tk.Frame(foot, bg=T.CHIP_BG)
         actions.pack(padx=12, pady=10, anchor="w")
 
         # translation body — same UI font as main window; scroll when long
         self._tgt_font = tkfont.Font(family=T.FONT_UI, size=CARD_BODY_FONT_SIZE)
-        tgt_outer = tk.Frame(body, bg=CARD_BG)
+        tgt_outer = tk.Frame(body, bg=T.SURFACE)
         tgt_scroll = tk.Scrollbar(tgt_outer, orient="vertical")
         tgt = tk.Text(
             tgt_outer,
             font=self._tgt_font,
-            fg=CARD_INK,
-            bg=CARD_BG,
+            fg=T.INK,
+            bg=T.SURFACE,
             wrap="word",
             width=CARD_WRAP_CHARS,
             height=3,
@@ -247,14 +241,14 @@ class ChivoblyaPopup:
         tgt.pack(side="left", fill="both", expand=True)
         tgt.configure(state="disabled")
         tgt.bind("<Key>", lambda _e: "break")
-        tgt.tag_configure("read", background=READ_BG)
+        tgt.tag_configure("read", background=T.READ_BG)
         tgt.bind("<MouseWheel>", self._on_tgt_wheel)
         tgt.bind("<Button-4>", self._on_tgt_wheel)  # Linux scroll up
         tgt.bind("<Button-5>", self._on_tgt_wheel)  # Linux scroll down
         tgt_outer.grid(row=1, column=0, sticky="nsew", padx=14, pady=(4, 8))
 
         status = tk.Label(
-            body, text="", font=(T.FONT_UI, 8), fg=CARD_MUTED, bg=CARD_BG, anchor="w"
+            body, text="", font=(T.FONT_UI, 8), fg=T.INK_SOFT, bg=T.SURFACE, anchor="w"
         )
         status.grid(row=2, column=0, sticky="ew", padx=14, pady=(0, 4))
 
@@ -654,7 +648,7 @@ class ChivoblyaPopup:
         w = self._tgt_text
         if w is None:
             return 2
-        color = ERR if error else (CARD_MUTED if muted else CARD_INK)
+        color = T.ERR if error else (T.INK_SOFT if muted else T.INK)
         w.configure(state="normal", fg=color)
         w.delete("1.0", "end")
         w.tag_remove("read", "1.0", "end")

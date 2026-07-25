@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Callable
-from pathlib import Path
 
 import customtkinter as ctk
 import pyperclip
@@ -15,7 +14,7 @@ from . import settings as cfg
 from . import theme as T
 from . import translators as tr
 from .settings_ui import SettingsWindow
-from .theme import apply_appearance, ui_font
+from .theme import apply_appearance, apply_theme, mdl2_font, ui_font
 from .app_icon import apply as apply_app_icon
 from .ui_widgets import tune_combobox
 from .translators.base import TranslateResult
@@ -29,11 +28,13 @@ class TranslatorApp(ctk.CTk):
     def __init__(self) -> None:
         super().__init__()
         s = cfg.load()
+        apply_theme(s.ui_theme)
         # native Windows caption, empty title text
         self.title("")
         self.geometry("1000x560")
         self.minsize(760, 440)
         self.configure(fg_color=T.BG)
+        self._theme_pref = s.ui_theme
 
         self._maximized = False
         self._restore_geom = "1000x580+120+80"
@@ -401,36 +402,21 @@ class TranslatorApp(ctk.CTk):
         )
 
     def _settings_btn(self, parent) -> ctk.CTkButton:
-        icon_path = Path(__file__).resolve().parent / "assets" / "settings.png"
-        image = None
-        if icon_path.is_file():
-            try:
-                from PIL import Image
-
-                pil = Image.open(icon_path)
-                image = ctk.CTkImage(
-                    light_image=pil,
-                    dark_image=pil,
-                    size=(16, 16),
-                )
-            except Exception:  # noqa: BLE001
-                image = None
-        if image is not None:
-            self._settings_icon = image
-            return ctk.CTkButton(
-                parent,
-                text="",
-                image=image,
-                width=40,
-                height=T.ROW_H,
-                corner_radius=T.ROW_H // 2,
-                fg_color=T.SURFACE,
-                border_width=1,
-                border_color=T.LINE,
-                hover_color=T.CHIP_HOVER,
-                command=self.open_settings,
-            )
-        return self._ghost(parent, "настр.", self.open_settings, w=64)
+        # Segoe MDL2 gear — readable; old png looked like a snowflake
+        return ctk.CTkButton(
+            parent,
+            text=T.GLYPH_SETTINGS,
+            font=mdl2_font(15),
+            width=40,
+            height=T.ROW_H,
+            corner_radius=T.ROW_H // 2,
+            fg_color=T.SURFACE,
+            border_width=1,
+            border_color=T.LINE,
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK,
+            command=self.open_settings,
+        )
 
     def _ghost(self, parent, text: str, cmd: Callable, w: int = 88) -> ctk.CTkButton:
         return ctk.CTkButton(
@@ -509,6 +495,10 @@ class TranslatorApp(ctk.CTk):
 
     def _on_settings_changed(self, s: cfg.AppSettings) -> None:
         def apply() -> None:
+            theme = s.ui_theme if s.ui_theme in T.THEME_CHOICES else T.THEME_LIGHT
+            if theme != getattr(self, "_theme_pref", None):
+                self._theme_pref = theme
+                self._restyle_theme(theme)
             self._provider.set(s.provider_id)
             label = next(
                 (lb for pid, lb, _ in tr.list_providers() if pid == s.provider_id), None
@@ -524,6 +514,53 @@ class TranslatorApp(ctk.CTk):
             self.after(0, apply)
         except Exception:  # noqa: BLE001
             apply()
+
+    def _restyle_theme(self, preference: str) -> None:
+        """Rebuild chrome so palette tokens stick after light/dark/auto switch."""
+        apply_theme(preference)
+        src = ""
+        tgt = ""
+        try:
+            src = self._src_box.get("1.0", "end-1c")
+            tgt = self._tgt_box.get("1.0", "end-1c")
+        except Exception:  # noqa: BLE001
+            pass
+        src_lang = self._source_lang.get()
+        tgt_lang = self._target_lang.get()
+        provider = self._provider.get()
+        status = self._status.get()
+        for child in list(self._shell.winfo_children()):
+            try:
+                child.destroy()
+            except Exception:  # noqa: BLE001
+                pass
+        self.configure(fg_color=T.BG)
+        self._shell.configure(fg_color=T.BG)
+        self._build(self._shell)
+        self._source_lang.set(src_lang)
+        self._target_lang.set(tgt_lang)
+        self._provider.set(provider)
+        self._status.set(status)
+        try:
+            if src:
+                self._src_box.insert("1.0", src)
+            if tgt:
+                self._tgt_box.insert("1.0", tgt)
+        except Exception:  # noqa: BLE001
+            pass
+        label = next(
+            (lb for pid, lb, _ in tr.list_providers() if pid == provider), None
+        )
+        if label:
+            try:
+                self._provider_combo.set(label)
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            self._src_combo.set(langs.label_of(src_lang))
+            self._tgt_combo.set(langs.label_of(tgt_lang))
+        except Exception:  # noqa: BLE001
+            pass
 
     def _on_provider_ui(self, label: str) -> None:
         pid = self._provider_map.get(label, tr.DEFAULT_PROVIDER_ID)

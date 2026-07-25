@@ -24,6 +24,7 @@ class AppSettings:
     chivoblya_enabled: bool = True
     autostart: bool = False
     close_to_tray: bool = True  # X / Alt+F4 → tray; tray «выход» always quits
+    ui_theme: str = "light"  # light | dark | auto
     hotkey: dict = field(default_factory=lambda: HotkeySpec().to_dict())
     chip_style_id: int = 1  # see app/chip_styles.py — user picks in style window
 
@@ -46,6 +47,10 @@ class AppSettings:
             base.provider_id = tr.DEFAULT_PROVIDER_ID
         if not isinstance(base.hotkey, dict):
             base.hotkey = HotkeySpec().to_dict()
+        theme = str(base.ui_theme or "light").strip().lower()
+        if theme not in ("light", "dark", "auto"):
+            theme = "light"
+        base.ui_theme = theme
         # drop illegal combos (e.g. Ctrl+Z×2 saved by mistake)
         safe = sanitize_hotkey(HotkeySpec.from_dict(base.hotkey))
         base.hotkey = safe.to_dict()

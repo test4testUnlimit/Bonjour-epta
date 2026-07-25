@@ -5,40 +5,16 @@ Brand: latin «epta» = russian «ёпта» (meme safety for mixed keyboards).
 
 Layout rhythm (Lebedev: proximity + common air):
   one scale → equal gaps between equals, same inset in both panes.
+
+Themes: light | dark | auto (follow Windows AppsUseLightTheme).
 """
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import customtkinter as ctk
-
-# paper studio
-BG = "#f2f2ef"
-SURFACE = "#ffffff"
-FIELD = "#fafaf8"
-LINE = "#e2e2dc"
-LINE_STRONG = "#cecec6"
-INK = "#141414"
-INK_SOFT = "#5a5a54"
-INK_FAINT = "#8e8e86"
-ACCENT = "#111111"
-ACCENT_HOVER = "#2c2c2c"
-CHIP_BG = "#f7f7f4"
-CHIP_BORDER = "#d8d8d0"
-CHIP_HOVER = "#ecece6"
-CHIP_INK = "#1a1a1a"
-OK = "#1a7f4b"
-ERR = "#b42318"
-TITLE_BG = "#ecece8"
-TITLE_BTN_HOVER = "#e0e0da"
-TITLE_CLOSE_HOVER = "#e81123"
-TITLE_CLOSE_HOVER_FG = "#ffffff"
-CLEAR_TINT = "#faf3f2"
-CLEAR_BORDER = "#e8c4c0"
-CLEAR_HOVER = "#f3e8e6"
-SETTINGS_BG = "#eceae4"
-SETTINGS_CARD = SURFACE
 
 # ── layout rhythm (px) — one air unit everywhere ─────────────
 AIR = 10
@@ -62,18 +38,133 @@ TITLE_H = 32
 FOOT_H = 26
 TEXT_BORDER_SPACING = 6
 HEAD_H = 36
-ON_ACCENT = "#ffffff"
 PROVIDER_COMBO_W = 142
 TOOL_GAP = 8
 
-# UTF-8 / Cyrillic-safe UI font (Segoe UI ships with full Cyrillic on Win)
 FONT_UI = "Segoe UI"
 FONT_MDL2 = "Segoe MDL2 Assets"
-GLYPH_SETTINGS = "\uE713"
+GLYPH_SETTINGS = "\uE713"  # gear — not the old blurry «snowflake» png
 FONT_UI_SIZE = 13
 FONT_BODY_SIZE = 13
 FONT_BRAND_SIZE = 21
 FONT_BRAND_CYR_SIZE = 16
+
+THEME_LIGHT = "light"
+THEME_DARK = "dark"
+THEME_AUTO = "auto"
+THEME_CHOICES = (THEME_LIGHT, THEME_DARK, THEME_AUTO)
+THEME_LABELS = {
+    THEME_LIGHT: "светлая",
+    THEME_DARK: "тёмная",
+    THEME_AUTO: "авто",
+}
+
+_LIGHT = {
+    "BG": "#f2f2ef",
+    "SURFACE": "#ffffff",
+    "FIELD": "#fafaf8",
+    "LINE": "#e2e2dc",
+    "LINE_STRONG": "#b8b8b0",
+    "INK": "#141414",
+    "INK_SOFT": "#5a5a54",
+    "INK_FAINT": "#8e8e86",
+    "ACCENT": "#111111",
+    "ACCENT_HOVER": "#2c2c2c",
+    "ON_ACCENT": "#ffffff",
+    "CHIP_BG": "#f7f7f4",
+    "CHIP_BORDER": "#d8d8d0",
+    "CHIP_HOVER": "#ecece6",
+    "CHIP_INK": "#1a1a1a",
+    "OK": "#1a7f4b",
+    "ERR": "#b42318",
+    "TITLE_BG": "#ecece8",
+    "TITLE_BTN_HOVER": "#e0e0da",
+    "TITLE_CLOSE_HOVER": "#e81123",
+    "TITLE_CLOSE_HOVER_FG": "#ffffff",
+    "CLEAR_TINT": "#faf3f2",
+    "CLEAR_BORDER": "#e8c4c0",
+    "CLEAR_HOVER": "#f3e8e6",
+    "SETTINGS_BG": "#eceae4",
+    "SETTINGS_CARD": "#ffffff",
+    # switches: track must read on white card (§76 unity with black accent)
+    "SWITCH_ON": "#111111",
+    "SWITCH_OFF": "#8a8a82",
+    # mid gray knob — читается и на чёрном треке, и на белой карточке
+    "SWITCH_KNOB": "#d4d4cc",
+    "SWITCH_KNOB_HOVER": "#c4c4bc",
+    "READ_BG": "#ebeae4",
+}
+
+_DARK = {
+    "BG": "#1a1a18",
+    "SURFACE": "#242422",
+    "FIELD": "#2c2c28",
+    "LINE": "#3a3a36",
+    "LINE_STRONG": "#52524c",
+    "INK": "#f2f2ef",
+    "INK_SOFT": "#b0b0a8",
+    "INK_FAINT": "#8a8a82",
+    "ACCENT": "#e8e8e2",
+    "ACCENT_HOVER": "#ffffff",
+    "ON_ACCENT": "#141414",
+    "CHIP_BG": "#2c2c28",
+    "CHIP_BORDER": "#4a4a44",
+    "CHIP_HOVER": "#363632",
+    "CHIP_INK": "#f2f2ef",
+    "OK": "#3dba6e",
+    "ERR": "#e85a50",
+    "TITLE_BG": "#222220",
+    "TITLE_BTN_HOVER": "#32322e",
+    "TITLE_CLOSE_HOVER": "#e81123",
+    "TITLE_CLOSE_HOVER_FG": "#ffffff",
+    "CLEAR_TINT": "#3a2826",
+    "CLEAR_BORDER": "#6a403c",
+    "CLEAR_HOVER": "#4a3230",
+    "SETTINGS_BG": "#1a1a18",
+    "SETTINGS_CARD": "#242422",
+    "SWITCH_ON": "#e8e8e2",
+    "SWITCH_OFF": "#5a5a54",
+    "SWITCH_KNOB": "#3a3a36",
+    "SWITCH_KNOB_HOVER": "#4a4a46",
+    "READ_BG": "#2a2a26",
+}
+
+# active tokens (mutated by apply_theme)
+BG = _LIGHT["BG"]
+SURFACE = _LIGHT["SURFACE"]
+FIELD = _LIGHT["FIELD"]
+LINE = _LIGHT["LINE"]
+LINE_STRONG = _LIGHT["LINE_STRONG"]
+INK = _LIGHT["INK"]
+INK_SOFT = _LIGHT["INK_SOFT"]
+INK_FAINT = _LIGHT["INK_FAINT"]
+ACCENT = _LIGHT["ACCENT"]
+ACCENT_HOVER = _LIGHT["ACCENT_HOVER"]
+ON_ACCENT = _LIGHT["ON_ACCENT"]
+CHIP_BG = _LIGHT["CHIP_BG"]
+CHIP_BORDER = _LIGHT["CHIP_BORDER"]
+CHIP_HOVER = _LIGHT["CHIP_HOVER"]
+CHIP_INK = _LIGHT["CHIP_INK"]
+OK = _LIGHT["OK"]
+ERR = _LIGHT["ERR"]
+TITLE_BG = _LIGHT["TITLE_BG"]
+TITLE_BTN_HOVER = _LIGHT["TITLE_BTN_HOVER"]
+TITLE_CLOSE_HOVER = _LIGHT["TITLE_CLOSE_HOVER"]
+TITLE_CLOSE_HOVER_FG = _LIGHT["TITLE_CLOSE_HOVER_FG"]
+CLEAR_TINT = _LIGHT["CLEAR_TINT"]
+CLEAR_BORDER = _LIGHT["CLEAR_BORDER"]
+CLEAR_HOVER = _LIGHT["CLEAR_HOVER"]
+SETTINGS_BG = _LIGHT["SETTINGS_BG"]
+SETTINGS_CARD = _LIGHT["SETTINGS_CARD"]
+SWITCH_ON = _LIGHT["SWITCH_ON"]
+SWITCH_OFF = _LIGHT["SWITCH_OFF"]
+SWITCH_KNOB = _LIGHT["SWITCH_KNOB"]
+SWITCH_KNOB_HOVER = _LIGHT["SWITCH_KNOB_HOVER"]
+READ_BG = _LIGHT["READ_BG"]
+
+_resolved: str = THEME_LIGHT
+_preference: str = THEME_LIGHT
+
 
 def _read_version() -> str:
     path = Path(__file__).resolve().parent.parent / "VERSION"
@@ -85,16 +176,71 @@ def _read_version() -> str:
 
 
 APP_VERSION = _read_version()
-# short OS/taskbar name — no version (version lives in custom chrome only)
 APP_NAME = "bonjour epta"
-BRAND_LATIN = "epta"  # latin spelling
-BRAND_CYR = "ёпта"  # same word for RU keyboards / reading aloud
+BRAND_LATIN = "epta"
+BRAND_CYR = "ёпта"
 TAGLINE = "Хочешь в Париж — учи язык"
 
 
-def apply_appearance() -> None:
-    ctk.set_appearance_mode("light")
+def system_is_dark() -> bool:
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+        )
+        val, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        return int(val) == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def resolve_theme(preference: str | None) -> str:
+    pref = (preference or THEME_LIGHT).strip().lower()
+    if pref not in THEME_CHOICES:
+        pref = THEME_LIGHT
+    if pref == THEME_AUTO:
+        return THEME_DARK if system_is_dark() else THEME_LIGHT
+    return pref
+
+
+def apply_theme(preference: str | None = None) -> str:
+    """Push palette into module tokens + CTk appearance. Returns resolved light|dark."""
+    global _resolved, _preference
+    global BG, SURFACE, FIELD, LINE, LINE_STRONG, INK, INK_SOFT, INK_FAINT
+    global ACCENT, ACCENT_HOVER, ON_ACCENT, CHIP_BG, CHIP_BORDER, CHIP_HOVER, CHIP_INK
+    global OK, ERR, TITLE_BG, TITLE_BTN_HOVER, TITLE_CLOSE_HOVER, TITLE_CLOSE_HOVER_FG
+    global CLEAR_TINT, CLEAR_BORDER, CLEAR_HOVER, SETTINGS_BG, SETTINGS_CARD
+    global SWITCH_ON, SWITCH_OFF, SWITCH_KNOB, SWITCH_KNOB_HOVER, READ_BG
+
+    pref = (preference or THEME_LIGHT).strip().lower()
+    if pref not in THEME_CHOICES:
+        pref = THEME_LIGHT
+    _preference = pref
+    resolved = resolve_theme(pref)
+    _resolved = resolved
+    pal = _DARK if resolved == THEME_DARK else _LIGHT
+    for key, val in pal.items():
+        globals()[key] = val
+    ctk.set_appearance_mode("Dark" if resolved == THEME_DARK else "Light")
     ctk.set_default_color_theme("green")
+    return resolved
+
+
+def apply_appearance() -> None:
+    """Back-compat boot: light until settings load calls apply_theme."""
+    apply_theme(THEME_LIGHT)
+
+
+def current_preference() -> str:
+    return _preference
+
+
+def current_resolved() -> str:
+    return _resolved
 
 
 def ui_font(size: int = FONT_UI_SIZE, weight: str = "normal") -> ctk.CTkFont:
