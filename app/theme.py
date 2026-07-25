@@ -65,7 +65,6 @@ HEAD_H = 36
 ON_ACCENT = "#ffffff"
 PROVIDER_COMBO_W = 142
 TOOL_GAP = 8
-SETTINGS_RESERVE = 20
 
 # UTF-8 / Cyrillic-safe UI font (Segoe UI ships with full Cyrillic on Win)
 FONT_UI = "Segoe UI"

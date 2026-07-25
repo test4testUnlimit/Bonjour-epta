@@ -28,8 +28,8 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, master: ctk.CTk) -> None:
         super().__init__(master)
         self.title(T.APP_NAME)
-        self.geometry("440x500")
-        self.minsize(420, 460)
+        self.geometry("440x560")
+        self.minsize(420, 520)
         self.configure(fg_color=T.SETTINGS_BG)
         self.resizable(False, False)
         self.transient(master)
@@ -56,7 +56,8 @@ class SettingsWindow(ctk.CTkToplevel):
             border_width=1,
             border_color=T.LINE,
         )
-        card.pack(fill="both", expand=True, padx=pad, pady=(0, 8))
+        # fill=x only — card height follows content; expand would fight fixed geometry
+        card.pack(fill="x", padx=pad, pady=(0, 8))
         inner_pad = T.INSET + 2
 
         switch_kw = dict(
@@ -194,10 +195,6 @@ class SettingsWindow(ctk.CTkToplevel):
             command=self._reset_hotkey,
         ).pack(side="left", padx=(8, 0))
 
-        ctk.CTkFrame(card, fg_color="transparent", height=T.SETTINGS_RESERVE).pack(
-            fill="x"
-        )
-
         foot = ctk.CTkFrame(self, fg_color="transparent")
         foot.pack(fill="x", padx=pad, pady=(0, 12))
         self._status = ctk.CTkLabel(
@@ -218,6 +215,14 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(side="right")
 
         self.protocol("WM_DELETE_WINDOW", self._close)
+        self.after_idle(self._fit_to_content)
+
+    def _fit_to_content(self) -> None:
+        """Client height = content (+ room for 1–2 hint lines while capturing)."""
+        self.update_idletasks()
+        need = int(self.winfo_reqheight()) + 40
+        self.geometry(f"440x{need}")
+        self.minsize(420, need - 40)
 
     def _mode_btn(
         self, parent, label: str, *, side: str, padx: tuple[int, int] = (0, 0)
