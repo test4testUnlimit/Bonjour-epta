@@ -1,6 +1,6 @@
 """Google-style «чивобля?» pill + mini translation card near selection.
 
-Stable: long lifetime on card, no accidental hide, safe UI updates from threads.
+Card dismisses on outside click (ready for next translate). Safe UI updates from threads.
 """
 
 from __future__ import annotations
@@ -21,6 +21,11 @@ from .app_icon import apply as apply_app_icon
 from . import translators as tr
 from .chip_styles import get_style
 from .screen import clamp_popup
+
+try:
+    import mouse
+except ImportError:  # pragma: no cover
+    mouse = None  # type: ignore
 
 # default sizes; split chips a bit wider
 CHIP_W, CHIP_H = 120, 36
@@ -80,6 +85,9 @@ class ChivoblyaPopup:
         # thread-safe UI: worker never calls Tk directly
         self._ui_q: queue.SimpleQueue = queue.SimpleQueue()
         self._pump_on = False
+        # global LMB → hide card when click is outside the popup
+        self._outside_handlers: list = []
+        self._outside_arm_id: str | None = None
 
     @property
     def visible(self) -> bool:
@@ -96,10 +104,11 @@ class ChivoblyaPopup:
         text = (text or "").strip()
         if not text:
             return
-        # don't reset an open card with a new chip flash
+        # new selection replaces open card/chip
         if self._visible and self._mode == "card":
-            log.debug("ignore new chip while card open")
-            return
+            log.info("replace open card with new chip")
+            self._disarm_outside_dismiss()
+            self._cancel_hide()
 
         self._text = text
         self._translation = ""
@@ -114,6 +123,7 @@ class ChivoblyaPopup:
             self._map_window()
             self._set_visible(True)
             self._arm_hide(auto_hide_ms)
+            self._arm_outside_dismiss()
             log.info(
                 "chip show len=%s at=(%s,%s) head=%r",
                 len(text),
@@ -127,6 +137,7 @@ class ChivoblyaPopup:
     def hide(self) -> None:
         logutil.get().debug("popup.hide mode=%s", self._mode)
         self._cancel_hide()
+        self._disarm_outside_dismiss()
         self._set_visible(False)
         self._mode = "chip"
         if self._win is not None:
@@ -426,6 +437,68 @@ class ChivoblyaPopup:
         self._cur_h = CARD_MIN_H + 20
         self._place(self._cur_w, self._cur_h, *self._anchor)
         self._map_window()
+        self._arm_outside_dismiss()
+
+    # ── outside click → dismiss chip/card ───────────────────
+    def _arm_outside_dismiss(self) -> None:
+        """LMB outside popup hides chip or card. Short delay so open-click doesn't close it."""
+        self._disarm_outside_dismiss()
+        if mouse is None or not self._alive:
+            return
+
+        def arm() -> None:
+            self._outside_arm_id = None
+            if not self._alive or not self._visible:
+                return
+            if self._outside_handlers:
+                return
+
+            def on_down() -> None:
+                if not self._alive or not self._visible:
+                    return
+                try:
+                    x, y = mouse.get_position()
+                except Exception:  # noqa: BLE001
+                    return
+                if self.contains_screen_point(x, y):
+                    return
+                logutil.get().info(
+                    "outside click → hide mode=%s at=(%s,%s)", self._mode, x, y
+                )
+                try:
+                    self._master.after(0, self.hide)
+                except Exception:  # noqa: BLE001
+                    pass
+
+            try:
+                self._outside_handlers.append(
+                    mouse.on_button(on_down, buttons=("left",), types=("down",))
+                )
+            except Exception:  # noqa: BLE001
+                logutil.exc("arm outside dismiss")
+
+        try:
+            # delay past the mouse-up that created the selection / opened the card
+            self._outside_arm_id = self._master.after(220, arm)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _disarm_outside_dismiss(self) -> None:
+        if self._outside_arm_id is not None:
+            try:
+                self._master.after_cancel(self._outside_arm_id)
+            except Exception:  # noqa: BLE001
+                pass
+            self._outside_arm_id = None
+        if mouse is None:
+            self._outside_handlers.clear()
+            return
+        for h in self._outside_handlers:
+            try:
+                mouse.unhook(h)
+            except Exception:  # noqa: BLE001
+                pass
+        self._outside_handlers.clear()
 
     # ── click / translate ───────────────────────────────────
     def _on_eye_click(self) -> None:

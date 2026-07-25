@@ -103,19 +103,12 @@ def main() -> int:
         else:
             app._status.set("нет текста")
 
-    # while chip/card open — pause watcher (prevents re-fire & "app feels broken")
+    # track popup visibility; do NOT pause watcher — outside-click dismiss +
+    # should_ignore(over chip) keep UX clean, and new selection can replace chip/card
     popup_open = {"on": False}
 
     def on_popup_vis(on: bool) -> None:
         popup_open["on"] = on
-        for sw in watcher_holder:
-            try:
-                if on:
-                    sw.pause()
-                else:
-                    sw.resume()
-            except Exception:  # noqa: BLE001
-                pass
 
     # Google-style pill; style chosen in «стиль чипа» window (numbered gallery)
     popup = ChivoblyaPopup(
@@ -140,11 +133,6 @@ def main() -> int:
         last_selection[0] = text or ""
         if not cfg.get().chivoblya_enabled:
             return
-        # do not flash a new chip over an open translation card
-        if popup.visible and popup.mode == "card":
-            log.debug("skip chip — card already open")
-            return
-
         s = cfg.get()
         # use UI target if app has it, else settings
         target = getattr(app, "_target_lang", None)

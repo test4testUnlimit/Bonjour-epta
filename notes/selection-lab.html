@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bonjur — lab выделения</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1a1a18;
+      --muted: #6b675e;
+      --line: #d4cfc2;
+      --hi: #fff8e8;
+      --bad: #8b2e2e;
+      --accent: #c45c26;
+      --mono: "IBM Plex Mono", "Cascadia Mono", "Consolas", monospace;
+      --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, #ffe8c8 0%, transparent 55%),
+        linear-gradient(180deg, #f7f3ea 0%, var(--bg) 40%, #ebe4d6 100%);
+      color: var(--ink);
+      font: 16px/1.55 var(--sans);
+      min-height: 100vh;
+    }
+    header {
+      padding: 1.6rem 1.4rem 1rem;
+      max-width: 920px;
+      margin: 0 auto;
+    }
+    h1 {
+      font: 700 1.55rem/1.2 var(--sans);
+      margin: 0 0 0.45rem;
+      letter-spacing: -0.02em;
+    }
+    .hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 44rem;
+    }
+    .hint strong { color: var(--accent); font-weight: 600; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 1rem;
+      align-items: center;
+    }
+    button {
+      font: 600 0.85rem var(--sans);
+      border: 1px solid var(--line);
+      background: #fffdf8;
+      color: var(--ink);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover { border-color: #b8b09c; background: #fff; }
+    button.ghost { background: transparent; }
+    #live {
+      font: 0.82rem/1.35 var(--mono);
+      color: var(--muted);
+      padding: 0.35rem 0.55rem;
+      background: rgba(255,255,255,0.55);
+      border-radius: 6px;
+      border: 1px dashed var(--line);
+      min-height: 1.6rem;
+      flex: 1 1 220px;
+      word-break: break-word;
+    }
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 1rem 3rem;
+    }
+    section { margin-top: 1.6rem; }
+    section h2 {
+      font: 650 0.78rem/1 var(--sans);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin: 0 0 0.55rem;
+      padding-left: 0.15rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.6rem 3rem 1fr;
+      gap: 0.45rem;
+      align-items: start;
+      padding: 0.55rem 0.65rem;
+      border-top: 1px solid var(--line);
+      background: rgba(255,253,248,0.72);
+    }
+    .row:last-child { border-bottom: 1px solid var(--line); }
+    .row:hover { background: var(--hi); }
+    .row.marked-bad {
+      outline: 2px solid color-mix(in srgb, var(--bad) 55%, transparent);
+      background: #fff0ee;
+    }
+    .row.marked-bad .num { color: var(--bad); }
+    .fail {
+      appearance: none;
+      width: 1.15rem;
+      height: 1.15rem;
+      margin: 0.2rem 0 0;
+      border: 1.5px solid #b8b09c;
+      border-radius: 4px;
+      background: #fffdf8;
+      cursor: pointer;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .fail:checked {
+      background: var(--bad);
+      border-color: var(--bad);
+      box-shadow: inset 0 0 0 2px #fff0ee;
+    }
+    .fail:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .num {
+      font: 650 0.8rem/1.5 var(--mono);
+      color: var(--muted);
+      padding-top: 0.12rem;
+      user-select: none;
+    }
+    .sample {
+      font-size: 1.02rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 1.4em;
+    }
+    .sample.rtl { direction: rtl; text-align: right; }
+    footer {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 1.4rem 2.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    #report {
+      margin-top: 1rem;
+      padding: 0.85rem 1rem;
+      background: #1a1a18;
+      color: #f3efe6;
+      font: 0.82rem/1.45 var(--mono);
+      border-radius: 8px;
+      white-space: pre-wrap;
+      min-height: 3rem;
+      display: none;
+    }
+    #report.show { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lab выделения — Bonjur</h1>
+    <p class="hint">
+      Выделяй текст справа. Если баг — отметь <strong>чекбокс слева</strong> от номера.
+      Текст выделяется отдельно, метка ему не мешает.
+    </p>
+    <div class="toolbar">
+      <button type="button" id="btnClear">сбросить фейлы</button>
+      <button type="button" id="btnCopy" class="ghost">копировать отчёт</button>
+      <div id="live">выделение: —</div>
+    </div>
+  </header>
+
+  <main id="lab"></main>
+
+  <footer>
+    <div id="report"></div>
+    Чекбокс = FAIL. Drag / double-click по тексту = тест чипа.
+  </footer>
+
+  <script>
+    const GROUPS = [
+      {
+        title: "Короткие слова / одно слово",
+        rows: [
+          { id: 1, text: "hello" },
+          { id: 2, text: "привет" },
+          { id: 3, text: "OK" },
+          { id: 4, text: "да" },
+          { id: 5, text: "i" },
+          { id: 6, text: "я" },
+          { id: 7, text: "café" },
+          { id: 8, text: " naïve " },
+        ],
+      },
+      {
+        title: "Английский",
+        rows: [
+          { id: 10, text: "The quick brown fox jumps over the lazy dog." },
+          { id: 11, text: "Don't break what's already working — ship it." },
+          { id: 12, text: "It's a \"quoted\" phrase with 'mixed' marks." },
+          { id: 13, text: "Email: user.name+tag@example.com please translate." },
+          { id: 14, text: "Visit https://example.com/path?q=1&lang=en now." },
+          { id: 15, text: "CamelCaseIdentifier and snake_case_name together." },
+        ],
+      },
+      {
+        title: "Русский",
+        rows: [
+          { id: 20, text: "Съешь ещё этих мягких французских булок да выпей же чаю." },
+          { id: 21, text: "Не ломай то, что уже работает — лучше отгрузи." },
+          { id: 22, text: "«Ёлочки» и „лапки“, тире — и многоточие…" },
+          { id: 23, text: "Письмо: имя.фамилия@почта.рф — проверь." },
+          { id: 24, text: "Номер №12 и сумма 1 250,50 ₽ в тексте." },
+        ],
+      },
+      {
+        title: "Смешанный RU ↔ EN",
+        rows: [
+          { id: 30, text: "Open файл settings.json and restart." },
+          { id: 31, text: "Переведи hello world на русский." },
+          { id: 32, text: "bug: selection fails after Ctrl+C" },
+          { id: 33, text: "API ключ: sk-test-ABC123 (не настоящий)" },
+          { id: 34, text: "commit message: fix(popup): hide on outside click" },
+          { id: 35, text: "Windows 11 · DPI 125% · монитор 2" },
+          { id: 36, text: "слово word слово word слово" },
+          { id: 37, text: "EN→RU: Please translate this sentence." },
+        ],
+      },
+      {
+        title: "Знаки, цифры, «шум»",
+        rows: [
+          { id: 40, text: "12345" },
+          { id: 41, text: "3.14159" },
+          { id: 42, text: "$50" },
+          { id: 43, text: "50%" },
+          { id: 44, text: "2026-07-25" },
+          { id: 45, text: "№12" },
+          { id: 46, text: "!!!???" },
+          { id: 47, text: "→ ← — – … • ·" },
+          { id: 48, text: "(parentheses) [brackets] {braces}" },
+          { id: 49, text: "a1b2c3" },
+          { id: 50, text: "v1.6.3" },
+          { id: 51, text: "C:\\Projects\\Bonjur-epta\\app\\popup.py" },
+        ],
+      },
+      {
+        title: "Другие языки",
+        rows: [
+          { id: 60, text: "Guten Tag, wie geht es Ihnen?" },
+          { id: 61, text: "Bonjour, comment ça va ?" },
+          { id: 62, text: "¿Cómo estás hoy?" },
+          { id: 63, text: "こんにちは、元気ですか？" },
+          { id: 64, text: "你好，世界" },
+          { id: 65, text: "안녕하세요" },
+          { id: 66, text: "مرحبا بالعالم", rtl: true },
+          { id: 67, text: "שלום עולם", rtl: true },
+          { id: 68, text: "Γεια σου κόσμε" },
+          { id: 69, text: "Привіт, як справи?" },
+        ],
+      },
+      {
+        title: "Сложные выделения",
+        rows: [
+          { id: 70, text: "one\ntwo\nthree" },
+          { id: 71, text: "leading spaces:    four spaces before" },
+          { id: 72, text: "trailing spaces then end: word   " },
+          { id: 73, text: "emoji mix: 🔥 hot fix и срочный патч 🛠" },
+          { id: 74, text: "zero‑width? soft\u00ADhyphen and non‑breaking\u00A0space" },
+          { id: 75, text: "“smart quotes” vs \"dumb quotes\"" },
+          { id: 76, text: "select ONLY this WORD in the middle of sentence please" },
+          { id: 77, text: "AAAAAAAAAAAAA veryyyyyyyyy longgggggggg token without spaces" },
+          {
+            id: 78,
+            text: "Paragraph: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
+          },
+          {
+            id: 79,
+            text: "Абзац: В начале было слово, и слово было у Бога. Дальше длинный русский текст для проверки длинного выделения и карточки перевода.",
+          },
+        ],
+      },
+      {
+        title: "Код / JSON / разметка",
+        rows: [
+          { id: 80, text: '{\"ok\": true, \"msg\": \"hello\"}' },
+          { id: 81, text: "def translate(text: str) -> str:" },
+          { id: 82, text: "<div class=\"chip\">чивобля?</div>" },
+          { id: 83, text: "SELECT * FROM users WHERE id = 1;" },
+          { id: 84, text: "git push -u origin HEAD" },
+        ],
+      },
+    ];
+
+    const fails = new Set();
+    const lab = document.getElementById("lab");
+    const live = document.getElementById("live");
+    const reportEl = document.getElementById("report");
+
+    function render() {
+      lab.innerHTML = "";
+      for (const g of GROUPS) {
+        const sec = document.createElement("section");
+        const h = document.createElement("h2");
+        h.textContent = g.title;
+        sec.appendChild(h);
+        for (const row of g.rows) {
+          const el = document.createElement("div");
+          el.className = "row" + (fails.has(row.id) ? " marked-bad" : "");
+          el.dataset.id = String(row.id);
+
+          const box = document.createElement("input");
+          box.type = "checkbox";
+          box.className = "fail";
+          box.title = "FAIL";
+          box.checked = fails.has(row.id);
+          box.addEventListener("change", () => {
+            if (box.checked) fails.add(row.id);
+            else fails.delete(row.id);
+            el.classList.toggle("marked-bad", box.checked);
+            updateReport();
+            syncLiveFails();
+          });
+
+          const num = document.createElement("div");
+          num.className = "num";
+          num.textContent = String(row.id).padStart(2, "0");
+
+          const sample = document.createElement("div");
+          sample.className = "sample" + (row.rtl ? " rtl" : "");
+          sample.textContent = row.text;
+
+          el.append(box, num, sample);
+          sec.appendChild(el);
+        }
+        lab.appendChild(sec);
+      }
+      updateReport();
+    }
+
+    function syncLiveFails() {
+      const list = [...fails].sort((a, b) => a - b);
+      if (list.length) {
+        live.textContent = "FAIL: " + list.map((n) => String(n).padStart(2, "0")).join(", ");
+      }
+    }
+
+    function updateReport() {
+      const bad = [...fails].sort((a, b) => a - b);
+      if (!bad.length) {
+        reportEl.classList.remove("show");
+        reportEl.textContent = "";
+        return;
+      }
+      reportEl.textContent = "SELECTION LAB FAIL\nlines: " + bad.join(", ");
+      reportEl.classList.add("show");
+    }
+
+    document.getElementById("btnClear").addEventListener("click", () => {
+      fails.clear();
+      render();
+      live.textContent = "выделение: —";
+    });
+
+    document.getElementById("btnCopy").addEventListener("click", async () => {
+      updateReport();
+      const t = reportEl.textContent || "no fails yet";
+      try {
+        await navigator.clipboard.writeText(t);
+        live.textContent = "отчёт скопирован";
+      } catch {
+        live.textContent = "не скопировалось — возьми текст внизу";
+      }
+    });
+
+    document.addEventListener("selectionchange", () => {
+      if (fails.size) {
+        syncLiveFails();
+        return;
+      }
+      const sel = window.getSelection();
+      const t = (sel && sel.toString()) || "";
+      if (!t) {
+        live.textContent = "выделение: —";
+        return;
+      }
+      const one = t.replace(/\s+/g, " ").trim();
+      live.textContent =
+        "выделение [" + t.length + "]: " + (one.length > 120 ? one.slice(0, 120) + "…" : one);
+    });
+
+    render();
+  </script>
+</body>
+</html>
