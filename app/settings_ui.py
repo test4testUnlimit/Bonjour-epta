@@ -233,16 +233,30 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(side="right")
 
         self.protocol("WM_DELETE_WINDOW", self._close)
-        self.after_idle(self._fit_to_content)
+        self.after_idle(lambda: self._fit_to_content(0))
 
-    def _fit_to_content(self) -> None:
-        """Clip client height to packed content — no empty air under «закрыть»."""
+    def _fit_to_content(self, _attempt: int = 0) -> None:
+        """Size client height to laid-out bottom — winfo_reqheight is inflated (~+278)."""
         self.update_idletasks()
-        need = int(self.winfo_reqheight())
-        # tiny pad so DPI rounding never clips the footer
-        need = max(need + 4, 360)
+        bottom = 0
+        for ch in self.winfo_children():
+            try:
+                bottom = max(bottom, int(ch.winfo_y()) + int(ch.winfo_height()))
+            except Exception:  # noqa: BLE001
+                pass
+        if bottom < 80 and _attempt < 20:
+            self.after(20, lambda: self._fit_to_content(_attempt + 1))
+            return
+        need = max(bottom + 8, 200)
         self.geometry(f"440x{need}")
         self.minsize(420, need)
+        self.update_idletasks()
+        got = int(self.winfo_height())
+        # Windows DPI may scale geometry up — request smaller so result ≈ bottom.
+        if got > need + 16 and need > 0:
+            adjusted = max(int(round(need / (got / float(need)))) + 2, 200)
+            self.geometry(f"440x{adjusted}")
+            self.minsize(420, adjusted)
 
     def _theme_btn(
         self,
