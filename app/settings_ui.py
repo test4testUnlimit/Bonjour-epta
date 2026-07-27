@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 
 import customtkinter as ctk
@@ -10,6 +11,7 @@ from . import settings as cfg
 from . import theme as T
 from . import translators as tr
 from .autostart import sync as sync_autostart
+from .screen import work_area
 from .theme import ui_font
 from .ui_widgets import tune_combobox
 from .app_icon import apply as apply_app_icon
@@ -23,13 +25,18 @@ except ImportError:  # pragma: no cover
 _MODE_DOUBLE = "×2 одна клавиша"
 _MODE_COMBO = "комбинация"
 
+# Logical (pre-DPI) geometry width for settings.
+_WIN_W = 440
+
 
 class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, master: ctk.CTk) -> None:
         super().__init__(master)
         self.title(T.APP_NAME)
-        self.geometry("440x1")
-        self.minsize(420, 360)
+        # Tall seed so pack lays out unconstrained (measuring at 1px height
+        # under-reports children and clips the bottom on DPI-scaled screens).
+        self.geometry(f"{_WIN_W}x1200")
+        self.minsize(400, 280)
         self.configure(fg_color=T.SETTINGS_BG)
         self.resizable(False, False)
         self.transient(master)
@@ -43,13 +50,13 @@ class SettingsWindow(ctk.CTkToplevel):
         self._theme_btns: dict[str, ctk.CTkButton] = {}
         self._ui_theme = s.ui_theme if s.ui_theme in T.THEME_CHOICES else T.THEME_LIGHT
 
-        pad = T.PAD + 4
+        pad = T.PAD + 2
         ctk.CTkLabel(
             self,
             text="настройки",
-            font=ui_font(18, "bold"),
+            font=ui_font(17, "bold"),
             text_color=T.INK,
-        ).pack(anchor="w", padx=pad, pady=(10, 6))
+        ).pack(anchor="w", padx=pad, pady=(8, 4))
 
         card = ctk.CTkFrame(
             self,
@@ -58,8 +65,8 @@ class SettingsWindow(ctk.CTkToplevel):
             border_width=1,
             border_color=T.LINE,
         )
-        card.pack(fill="x", padx=pad, pady=(0, 8))
-        inner_pad = T.INSET + 2
+        card.pack(fill="x", padx=pad, pady=(0, 6))
+        inner_pad = T.INSET
 
         switch_kw = dict(
             text_color=T.INK,
@@ -74,21 +81,21 @@ class SettingsWindow(ctk.CTkToplevel):
         self._instant = ctk.CTkSwitch(
             card, text="мгновенный перевод при вставке", **switch_kw
         )
-        self._instant.pack(anchor="w", padx=inner_pad, pady=(inner_pad, 6))
+        self._instant.pack(anchor="w", padx=inner_pad, pady=(inner_pad, 4))
         if s.instant_translate:
             self._instant.select()
 
         self._chivo = ctk.CTkSwitch(
             card, text="чивобля? при выделении текста", **switch_kw
         )
-        self._chivo.pack(anchor="w", padx=inner_pad, pady=6)
+        self._chivo.pack(anchor="w", padx=inner_pad, pady=4)
         if s.chivoblya_enabled:
             self._chivo.select()
 
         self._autostart = ctk.CTkSwitch(
             card, text="запускать вместе с Windows", **switch_kw
         )
-        self._autostart.pack(anchor="w", padx=inner_pad, pady=(0, 6))
+        self._autostart.pack(anchor="w", padx=inner_pad, pady=(0, 4))
         if s.autostart:
             self._autostart.select()
         if sys.platform != "win32":
@@ -97,17 +104,17 @@ class SettingsWindow(ctk.CTkToplevel):
         self._close_tray = ctk.CTkSwitch(
             card, text="закрытие окна — в трей", **switch_kw
         )
-        self._close_tray.pack(anchor="w", padx=inner_pad, pady=(0, 6))
+        self._close_tray.pack(anchor="w", padx=inner_pad, pady=(0, 4))
         if s.close_to_tray:
             self._close_tray.select()
 
         trow = ctk.CTkFrame(card, fg_color="transparent")
-        trow.pack(fill="x", padx=inner_pad, pady=(10, 4))
+        trow.pack(fill="x", padx=inner_pad, pady=(6, 2))
         ctk.CTkLabel(
             trow, text="тема", text_color=T.INK_FAINT, font=ui_font(11)
         ).pack(anchor="w")
         theme_row = ctk.CTkFrame(trow, fg_color="transparent")
-        theme_row.pack(anchor="w", pady=(6, 0))
+        theme_row.pack(anchor="w", pady=(4, 0))
         for i, key in enumerate(T.THEME_CHOICES):
             self._theme_btns[key] = self._theme_btn(
                 theme_row,
@@ -119,7 +126,7 @@ class SettingsWindow(ctk.CTkToplevel):
         self._sync_theme_buttons()
 
         prow = ctk.CTkFrame(card, fg_color="transparent")
-        prow.pack(fill="x", padx=inner_pad, pady=(8, 4))
+        prow.pack(fill="x", padx=inner_pad, pady=(6, 2))
         ctk.CTkLabel(
             prow, text="провайдер", text_color=T.INK_FAINT, font=ui_font(11)
         ).pack(anchor="w")
@@ -142,11 +149,11 @@ class SettingsWindow(ctk.CTkToplevel):
             font=ui_font(12),
         )
         self._prov.set(self._pinv.get(s.provider_id, labels[0]))
-        self._prov.pack(anchor="w", pady=(4, 0))
+        self._prov.pack(anchor="w", pady=(3, 0))
         tune_combobox(self._prov)
 
         sep = ctk.CTkFrame(card, fg_color=T.LINE, height=1)
-        sep.pack(fill="x", padx=inner_pad, pady=12)
+        sep.pack(fill="x", padx=inner_pad, pady=8)
 
         ctk.CTkLabel(
             card,
@@ -156,7 +163,7 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(anchor="w", padx=inner_pad)
 
         mode_row = ctk.CTkFrame(card, fg_color="transparent")
-        mode_row.pack(anchor="w", padx=inner_pad, pady=(8, 6))
+        mode_row.pack(anchor="w", padx=inner_pad, pady=(6, 4))
         self._mode_btns[_MODE_DOUBLE] = self._mode_btn(
             mode_row, _MODE_DOUBLE, side="left", padx=(0, 8)
         )
@@ -169,17 +176,18 @@ class SettingsWindow(ctk.CTkToplevel):
             card,
             text=self._hk.label(),
             text_color=T.INK,
-            font=ui_font(15, "bold"),
+            font=ui_font(14, "bold"),
         )
-        self._hk_label.pack(anchor="w", padx=inner_pad, pady=(0, 4))
+        self._hk_label.pack(anchor="w", padx=inner_pad, pady=(0, 2))
 
         self._hk_hint = ctk.CTkLabel(
             card,
-            text="",
+            text=" ",
             text_color=T.INK_FAINT,
             font=ui_font(10),
             wraplength=360,
             justify="left",
+            height=16,
         )
         self._hk_hint.pack(anchor="w", padx=inner_pad, pady=(0, 2))
 
@@ -214,7 +222,7 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(side="left", padx=(8, 0))
 
         foot = ctk.CTkFrame(self, fg_color="transparent")
-        foot.pack(fill="x", padx=pad, pady=(0, 8))
+        foot.pack(fill="x", padx=pad, pady=(0, 6))
         self._status = ctk.CTkLabel(
             foot, text="", text_color=T.INK_FAINT, font=ui_font(10)
         )
@@ -235,28 +243,97 @@ class SettingsWindow(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self._close)
         self.after_idle(lambda: self._fit_to_content(0))
 
-    def _fit_to_content(self, _attempt: int = 0) -> None:
-        """Size client height to laid-out bottom — winfo_reqheight is inflated (~+278)."""
-        self.update_idletasks()
+    def _content_bottom(self) -> int:
+        """Lowest pixel of direct children (client coords). Not winfo_reqheight —
+        CTkFrame reqheight is inflated by ~200px."""
         bottom = 0
         for ch in self.winfo_children():
             try:
                 bottom = max(bottom, int(ch.winfo_y()) + int(ch.winfo_height()))
             except Exception:  # noqa: BLE001
                 pass
-        if bottom < 80 and _attempt < 20:
+        return bottom
+
+    def _geo_scale(self) -> tuple[float, float, int, int]:
+        """Return (sx, sy, geo_w, geo_h). Tk geometry is logical; winfo is DPI-scaled."""
+        m = re.match(r"(\d+)x(\d+)", self.geometry() or "")
+        if not m:
+            return 1.0, 1.0, _WIN_W, 600
+        gw, gh = int(m.group(1)), int(m.group(2))
+        ww, wh = max(int(self.winfo_width()), 1), max(int(self.winfo_height()), 1)
+        sx = ww / float(gw) if gw > 0 else 1.0
+        sy = wh / float(gh) if gh > 0 else 1.0
+        # Guard nonsense (minimized / not mapped)
+        if sx < 0.5 or sx > 4.0:
+            sx = 1.0
+        if sy < 0.5 or sy > 4.0:
+            sy = 1.0
+        return sx, sy, gw, gh
+
+    def _fit_to_content(self, _attempt: int = 0) -> None:
+        """Fit height to full content on any DPI / scale / work-area size.
+
+        Must measure after an unconstrained layout (seed height 1200), then convert
+        client px → geometry units via observed DPI scale. Never measure at height=1.
+        """
+        try:
+            self.update_idletasks()
+        except Exception:  # noqa: BLE001
+            return
+
+        # Ensure unconstrained layout for measurement
+        if _attempt == 0:
+            self.geometry(f"{_WIN_W}x1200")
+            self.update_idletasks()
+
+        bottom = self._content_bottom()
+        if bottom < 80 and _attempt < 25:
             self.after(20, lambda: self._fit_to_content(_attempt + 1))
             return
-        need = max(bottom + 8, 200)
-        self.geometry(f"440x{need}")
-        self.minsize(420, need)
+
+        need_client = max(bottom + 10, 200)  # client px (DPI-scaled)
+        sx, sy, _gw, _gh = self._geo_scale()
+        req_h = max(int(round(need_client / sy)) + 2, 200)
+        req_w = _WIN_W
+
+        # Cap to primary work area so window never exceeds visible desktop
+        try:
+            _wx, _wy, _ww, wh = work_area()
+            # leave room for taskbar chrome / title; convert screen px → geometry
+            max_client = max(int(wh * 0.92), 280)
+            max_req_h = max(int(round(max_client / sy)), 280)
+            if req_h > max_req_h:
+                req_h = max_req_h
+        except Exception:  # noqa: BLE001
+            pass
+
+        self.geometry(f"{req_w}x{req_h}")
+        self.minsize(min(400, req_w), min(280, req_h))
         self.update_idletasks()
-        got = int(self.winfo_height())
-        # Windows DPI may scale geometry up — request smaller so result ≈ bottom.
-        if got > need + 16 and need > 0:
-            adjusted = max(int(round(need / (got / float(need)))) + 2, 200)
-            self.geometry(f"440x{adjusted}")
-            self.minsize(420, adjusted)
+
+        # Verify: if still clipped (scale misread), grow once more from residual
+        got = max(int(self.winfo_height()), 1)
+        still = self._content_bottom()
+        if still > got - 6 and _attempt < 8:
+            deficit = still - got + 14
+            sx2, sy2, _a, _b = self._geo_scale()
+            grow = max(int(round(deficit / max(sy2, 0.01))), 8)
+            self.geometry(f"{req_w}x{req_h + grow}")
+            self.update_idletasks()
+
+        self._center_on_screen()
+
+    def _center_on_screen(self) -> None:
+        try:
+            self.update_idletasks()
+            ww = int(self.winfo_width())
+            wh = int(self.winfo_height())
+            wx, wy, aw, ah = work_area()
+            x = wx + max((aw - ww) // 2, 0)
+            y = wy + max((ah - wh) // 2, 0)
+            self.geometry(f"+{x}+{y}")
+        except Exception:  # noqa: BLE001
+            pass
 
     def _theme_btn(
         self,

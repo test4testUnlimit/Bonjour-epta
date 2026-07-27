@@ -8,7 +8,7 @@ import time
 from collections.abc import Callable
 
 from . import logutil
-from .selection import get_selected_text
+from .selection import get_selected_text, sanitize_selection
 
 try:
     import mouse
@@ -24,8 +24,8 @@ MAX_CHARS = 8000
 DEDUP_MS = 900
 # settle after mouse-up before Ctrl+C (Electron/Nova needs a bit more than browsers)
 SETTLE_S = 0.18
-# max wait for clipboard to leave marker after Ctrl+C
-CAPTURE_SETTLE_S = 0.9
+# soft wait after Ctrl+C; selection.py extends to hard cap while marker remains
+CAPTURE_SETTLE_S = 1.2
 
 
 class SelectionWatcher:
@@ -149,9 +149,9 @@ class SelectionWatcher:
             except Exception:  # noqa: BLE001 — never kill watcher thread
                 logutil.exc("watcher get_selected_text")
                 return
-            text = (text or "").strip()
+            text = sanitize_selection(text)
             if not text or len(text) < MIN_CHARS or len(text) > MAX_CHARS:
-                logutil.get().debug("watcher skip empty/short/long len=%s", len(text or ""))
+                logutil.get().debug("watcher skip empty/short/long/marker len=%s", len(text or ""))
                 return
             now = time.perf_counter()
             if text == self._last_text and (now - self._last_fire_ts) * 1000 < DEDUP_MS:

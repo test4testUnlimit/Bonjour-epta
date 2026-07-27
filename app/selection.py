@@ -12,10 +12,14 @@ the same string still registers a change. Without marker, if selection
 == previous clipboard (common in Nova / Electron fields), we got empty.
 
 Global lock: concurrent watcher threads must not interleave Ctrl+C/restore.
+
+Marker hygiene: never return/leave __bonjur_* on clipboard or as selection
+(large copies are slow; pyperclip may add \\r\\n — old endswith check missed those).
 """
 
 from __future__ import annotations
 
+import re
 import sys
 import threading
 import time
@@ -26,7 +30,14 @@ import pyperclip
 from . import logutil
 
 MARKER_PREFIX = "__bonjur_"
+# uuid hex + delimiters; also accept any leftover junk after prefix
+_MARKER_RE = re.compile(r"^\s*" + re.escape(MARKER_PREFIX) + r"[0-9a-fA-F]*__?\s*$")
 _CLIP_LOCK = threading.Lock()
+
+# Large selections: Ctrl+C can take >1s; keep polling while still on marker.
+_HARD_CAP_S = 5.0
+_STABLE_POLLS = 3
+_STABLE_GAP_S = 0.04
 
 
 def _mods_down_win() -> bool:
@@ -161,8 +172,48 @@ def _clip_set(text: str) -> bool:
     return False
 
 
-def _is_marker(text: str) -> bool:
-    return bool(text) and text.startswith(MARKER_PREFIX) and text.endswith("__")
+def _is_marker(text: str | None) -> bool:
+    """True for our clipboard probe — strip whitespace/newlines; prefix is enough."""
+    if not text:
+        return False
+    t = text.strip("\x00").strip()
+    if not t:
+        return False
+    # any clipboard value that is (only) our marker, with optional trailing junk newlines
+    if t.startswith(MARKER_PREFIX):
+        # pure marker form, or marker + only whitespace already stripped
+        if _MARKER_RE.match(t) or t.endswith("__"):
+            return True
+        # truncated / partial marker still not real user text
+        if len(t) < 80 and all(c.isalnum() or c in "_-" for c in t):
+            return True
+    return False
+
+
+def sanitize_selection(text: str | None) -> str:
+    """Strip + drop marker — call at every boundary (hotkey, watcher, paste)."""
+    if not text:
+        return ""
+    t = text.strip("\x00").strip()
+    if not t or _is_marker(t):
+        return ""
+    # marker embedded as whole first line only (paranoia)
+    first = t.splitlines()[0].strip() if t else ""
+    if _is_marker(first) and len(t) < 100:
+        return ""
+    return t
+
+
+def _ensure_not_marker_on_clipboard(previous: str) -> None:
+    """If our probe is still on the clipboard, wipe it (never leave marker for user paste)."""
+    try:
+        got = _clip_get()
+        if _is_marker(got):
+            restore = previous if previous and not _is_marker(previous) else ""
+            _clip_set(restore)
+            logutil.get().warning("cleared leftover marker from clipboard")
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def get_selected_text(
@@ -173,7 +224,8 @@ def get_selected_text(
 ) -> str:
     """
     Crow-style selection grab + marker (same-text reselect safe). Never raises.
-    settle_s: max wait for clipboard change after Ctrl+C (Crow uses 1000ms).
+    settle_s: soft wait for clipboard change after Ctrl+C; extended while still marker.
+    Never returns a marker string.
     """
     log = logutil.get()
     # serialize: dual mouse-up / hotkey+chip must not interleave Ctrl+C
@@ -219,8 +271,9 @@ def _get_selected_text_locked(
             log.warning("marker set failed")
         else:
             # wait until marker is visible (clipboard APIs are racy)
-            for _ in range(30):
-                if _clip_get() == marker:
+            for _ in range(40):
+                got_m = _clip_get()
+                if got_m == marker or _is_marker(got_m):
                     break
                 time.sleep(0.01)
             else:
@@ -232,37 +285,90 @@ def _get_selected_text_locked(
             log.warning("Ctrl+C send failed")
             if restore_clipboard:
                 _clip_set(previous)
-            if clipboard_fallback and previous:
-                return previous.strip()
+            _ensure_not_marker_on_clipboard(previous)
+            if clipboard_fallback and previous and not _is_marker(previous):
+                return sanitize_selection(previous)
             return ""
 
-        # wait until clipboard leaves the marker (real selection or app copy)
-        deadline = time.perf_counter() + max(settle_s, 0.25)
+        # Wait until clipboard leaves the marker. Soft settle_s, hard cap for big text.
+        soft = max(float(settle_s), 0.25)
+        hard = max(soft, min(_HARD_CAP_S, soft * 4.0 if soft < 2 else _HARD_CAP_S))
+        deadline_soft = time.perf_counter() + soft
+        deadline_hard = time.perf_counter() + hard
         polls = 0
         selected = ""
-        while time.perf_counter() < deadline:
+        while time.perf_counter() < deadline_hard:
             time.sleep(0.03)
             polls += 1
             try:
                 got = _clip_get()
             except Exception:  # noqa: BLE001
                 continue
-            if not got or got == marker or _is_marker(got):
+            if not got or _is_marker(got) or got == marker:
+                # still marker: keep going until hard cap (large copy slow)
                 continue
-            selected = got.strip()
-            log.debug("clip left marker after %s polls len=%s", polls, len(selected))
-            break
+
+            # Real content — for large blobs wait until length stabilizes
+            # (some apps fill clipboard in stages).
+            candidate = got
+            stable = 1
+            last_len = len(candidate)
+            for _ in range(_STABLE_POLLS - 1):
+                time.sleep(_STABLE_GAP_S)
+                try:
+                    again = _clip_get()
+                except Exception:  # noqa: BLE001
+                    break
+                if not again or _is_marker(again):
+                    candidate = ""
+                    break
+                if len(again) == last_len and again == candidate:
+                    stable += 1
+                else:
+                    candidate = again
+                    last_len = len(again)
+                    stable = 1
+            if not candidate or _is_marker(candidate):
+                continue
+            if stable < 2 and last_len > 50_000:
+                # huge text still growing — one more beat
+                time.sleep(0.08)
+                try:
+                    again = _clip_get()
+                    if again and not _is_marker(again):
+                        candidate = again
+                except Exception:  # noqa: BLE001
+                    pass
+
+            selected = sanitize_selection(candidate)
+            if selected:
+                log.debug(
+                    "clip left marker after %s polls len=%s", polls, len(selected)
+                )
+                break
+
+            # soft deadline exceeded and still nothing usable → give up soon
+            if time.perf_counter() > deadline_soft and not selected:
+                # only stop early if we've already left soft window AND
+                # clipboard is non-marker empty-ish — else keep hard wait
+                pass
 
         if restore_clipboard:
             _clip_set(previous)
 
+        # Absolute hygiene: never leave probe on clipboard
+        _ensure_not_marker_on_clipboard(previous)
+
+        selected = sanitize_selection(selected)
         if selected:
             log.info("selected ok len=%s head=%r", len(selected), selected[:100])
             return selected
 
         if clipboard_fallback and previous and not _is_marker(previous):
-            log.info("empty selection → fallback previous len=%s", len(previous))
-            return previous.strip()
+            fb = sanitize_selection(previous)
+            if fb:
+                log.info("empty selection → fallback previous len=%s", len(fb))
+                return fb
 
         log.warning("selection empty polls=%s", polls)
         return ""
@@ -273,6 +379,7 @@ def _get_selected_text_locked(
                 _clip_set(previous)
         except Exception:  # noqa: BLE001
             pass
+        _ensure_not_marker_on_clipboard(previous)
         if clipboard_fallback and previous and not _is_marker(previous):
-            return previous.strip()
+            return sanitize_selection(previous)
         return ""

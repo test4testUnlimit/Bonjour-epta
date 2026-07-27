@@ -394,13 +394,39 @@ namespace BonjurLauncher
                 }
         }
 
-        private void LaunchApp(string pythonw, string mainPy)
+        /// <summary>
+        /// Prefer pythonw.exe so the GUI app has no console window.
+        /// FindPython may return python.exe (needed for pip); convert only at launch.
+        /// </summary>
+        private static string PreferPythonw(string pythonPath)
         {
             try
             {
-                var psi = new ProcessStartInfo(pythonw, $"\"{mainPy}\"")
+                if (string.IsNullOrEmpty(pythonPath)) return pythonPath;
+                string name = Path.GetFileName(pythonPath);
+                if (name.Equals("python.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    string dir = Path.GetDirectoryName(pythonPath);
+                    if (!string.IsNullOrEmpty(dir))
+                    {
+                        string pyw = Path.Combine(dir, "pythonw.exe");
+                        if (File.Exists(pyw)) return pyw;
+                    }
+                }
+            }
+            catch { }
+            return pythonPath;
+        }
+
+        private void LaunchApp(string python, string mainPy)
+        {
+            try
+            {
+                string exe = PreferPythonw(python);
+                var psi = new ProcessStartInfo(exe, $"\"{mainPy}\"")
                 {
                     UseShellExecute = false,
+                    CreateNoWindow = true,
                     WorkingDirectory = Path.GetDirectoryName(mainPy),
                 };
                 Process.Start(psi);

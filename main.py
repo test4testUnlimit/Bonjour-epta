@@ -168,11 +168,14 @@ def main() -> int:
                 pass
 
             # Crow: grab NOW via Ctrl+C (mods must be released — handled inside)
+            from app.selection import sanitize_selection
+
             selected = get_selected_text(
                 restore_clipboard=True,
-                settle_s=1.0,  # Crow maxSelectionDelay = 1000ms
+                settle_s=1.5,  # soft; hard cap ~5s while large copy still on marker
                 clipboard_fallback=True,
             )
+            selected = sanitize_selection(selected)
             log.info(
                 "hotkey grab len=%s cache_len=%s head=%r",
                 len(selected or ""),
@@ -180,8 +183,9 @@ def main() -> int:
                 (selected or "")[:100],
             )
             if not selected and last_selection[0]:
-                selected = last_selection[0]
-                log.info("hotkey fallback cache len=%s", len(selected))
+                selected = sanitize_selection(last_selection[0])
+                if selected:
+                    log.info("hotkey fallback cache len=%s", len(selected))
 
             if not selected:
                 log.warning("hotkey: nothing to translate")

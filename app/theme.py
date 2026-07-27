@@ -44,6 +44,7 @@ TOOL_GAP = 8
 FONT_UI = "Segoe UI"
 FONT_MDL2 = "Segoe MDL2 Assets"
 GLYPH_SETTINGS = "\uE713"  # gear — not the old blurry «snowflake» png
+GLYPH_RESTART = "\uE72C"  # circular refresh arrow (Segoe MDL2)
 FONT_UI_SIZE = 13
 FONT_BODY_SIZE = 13
 FONT_BRAND_SIZE = 21

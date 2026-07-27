@@ -13,6 +13,7 @@ from . import logutil
 from . import settings as cfg
 from . import theme as T
 from . import translators as tr
+from .restart import schedule_relaunch
 from .settings_ui import SettingsWindow
 from .theme import apply_appearance, apply_theme, mdl2_font, ui_font
 from .app_icon import apply as apply_app_icon
@@ -150,6 +151,20 @@ class TranslatorApp(ctk.CTk):
             font=ui_font(12),
             text_color=T.INK_SOFT,
         ).grid(row=0, column=2, sticky="s")
+        # circular arrow — hard kill + relaunch (dev reload without TC)
+        ctk.CTkButton(
+            mark,
+            text=T.GLYPH_RESTART,
+            font=mdl2_font(13),
+            width=26,
+            height=26,
+            corner_radius=13,
+            fg_color="transparent",
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK_SOFT,
+            border_width=0,
+            command=self._restart_client,
+        ).grid(row=0, column=3, sticky="s", padx=(6, 0), pady=(0, 1))
 
         self._btn_swap = ctk.CTkButton(
             toolbar,
@@ -618,8 +633,9 @@ class TranslatorApp(ctk.CTk):
 
     def set_source_text(self, text: str) -> None:
         from . import logutil
+        from .selection import sanitize_selection
 
-        text = text or ""
+        text = sanitize_selection(text)
         log = logutil.get()
         log.debug("set_source_text len=%s head=%r", len(text), text[:100])
         inner = self._inner(self._src_box)
@@ -814,8 +830,9 @@ class TranslatorApp(ctk.CTk):
         import threading
 
         from . import logutil
+        from .selection import sanitize_selection
 
-        text = (text or "").strip()
+        text = sanitize_selection(text)
         log = logutil.get()
         log.info(
             "bring_with_selection called len=%s head=%r thread=%s",
@@ -877,6 +894,41 @@ class TranslatorApp(ctk.CTk):
         except Exception:  # noqa: BLE001
             logutil.exc("after(0) failed, run ui direct")
             ui()
+
+    def _restart_client(self) -> None:
+        """Full process kill + fresh start (after name/version ↻)."""
+        import os
+
+        log = logutil.get()
+        log.info("restart client requested")
+        try:
+            self._status.set("перезапуск…")
+        except Exception:  # noqa: BLE001
+            pass
+        ok = False
+        try:
+            ok = schedule_relaunch()
+        except Exception:  # noqa: BLE001
+            logutil.exc("schedule_relaunch")
+        if not ok:
+            try:
+                self._status.set("не удалось перезапустить")
+            except Exception:  # noqa: BLE001
+                pass
+            return
+        # Stop tray / destroy best-effort, then hard-exit so mutex drops.
+        # after() is useless here — destroy ends mainloop; os._exit is immediate.
+        tray = getattr(self, "_tray", None)
+        if tray is not None:
+            try:
+                tray.stop()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            self.destroy()
+        except Exception:  # noqa: BLE001
+            pass
+        os._exit(0)
 
     def _on_close(self, force: bool = False) -> None:
         """Window X / Alt+F4: hide to tray when enabled. force=True = real quit."""

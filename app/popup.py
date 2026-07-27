@@ -20,7 +20,7 @@ from . import theme as T
 from .app_icon import apply as apply_app_icon
 from . import translators as tr
 from .chip_styles import get_style
-from .screen import clamp_popup
+from .screen import clamp_popup, max_popup_size_at
 
 try:
     import mouse
@@ -31,15 +31,19 @@ except ImportError:  # pragma: no cover
 CHIP_W, CHIP_H = 120, 36
 CHIP_W_SPLIT = 148
 
-CARD_W = 480
-CARD_MIN_H = 140
-CARD_MAX_H = 560
-CARD_BODY_FONT_SIZE = 12
-CARD_WRAP_CHARS = 54
-CARD_LINE_H = 18
-CARD_FOOT_H = 44
-CARD_CHROME_H = 132  # header + footer + paddings
-CARD_BODY_MAX_H = CARD_MAX_H - CARD_CHROME_H
+# Card shrink-wraps to text (Lebedev: size = content, no empty air).
+# Grows for long translations; scroll only past ~85% work-area height.
+CARD_MIN_W = 220  # both foot pills must fit
+CARD_MAX_W = 420
+CARD_MIN_H = 72
+CARD_BODY_FONT_SIZE = 11
+CARD_WRAP_CHARS = 48  # max chars before wrap; short text uses fewer
+CARD_LINE_H = 17
+CARD_FOOT_H = 32
+CARD_HEAD_H = 22
+CARD_PAD_X = 10
+# head + foot + borders + body pads (status row optional, not counted)
+CARD_CHROME_H = CARD_HEAD_H + CARD_FOOT_H + 10
 # colors live in theme tokens — read T.* at paint time (theme can switch)
 
 
@@ -185,7 +189,8 @@ class ChivoblyaPopup:
         body = tk.Frame(card_outer, bg=T.SURFACE)
         body.pack(fill="both", expand=True, padx=1, pady=1)
 
-        body.grid_rowconfigure(1, weight=1)
+        # No row weight — text keeps natural height; window shrink-wraps to content
+        # (weight=1 + oversized geometry = huge empty white body — Lebedev anti-pattern)
         body.grid_columnconfigure(0, weight=1)
 
         head = tk.Frame(body, bg=T.SURFACE)
@@ -193,7 +198,7 @@ class ChivoblyaPopup:
         lang_lbl = tk.Label(
             head,
             text="",
-            font=(T.FONT_UI, 9),
+            font=(T.FONT_UI, 8),
             fg=T.INK_SOFT,
             bg=T.SURFACE,
             anchor="w",
@@ -202,22 +207,22 @@ class ChivoblyaPopup:
         close = tk.Label(
             head,
             text="✕",
-            font=(T.FONT_UI, 10),
+            font=(T.FONT_UI, 9),
             fg=T.INK_SOFT,
             bg=T.SURFACE,
             cursor="hand2",
         )
         close.pack(side="right")
         close.bind("<ButtonRelease-1>", lambda _e: self.hide())
-        head.grid(row=0, column=0, sticky="ew", padx=14, pady=(12, 4))
+        head.grid(row=0, column=0, sticky="ew", padx=10, pady=(6, 2))
 
         foot = tk.Frame(body, bg=T.CHIP_BG, height=CARD_FOOT_H)
         foot.grid(row=3, column=0, sticky="ew")
         foot.grid_propagate(False)
         actions = tk.Frame(foot, bg=T.CHIP_BG)
-        actions.pack(padx=12, pady=10, anchor="w")
+        actions.pack(padx=8, pady=5, anchor="w")
 
-        # translation body — same UI font as main window; scroll when long
+        # translation body — compact font; grow window for long text, scroll only at cap
         self._tgt_font = tkfont.Font(family=T.FONT_UI, size=CARD_BODY_FONT_SIZE)
         tgt_outer = tk.Frame(body, bg=T.SURFACE)
         tgt_scroll = tk.Scrollbar(tgt_outer, orient="vertical")
@@ -228,15 +233,15 @@ class ChivoblyaPopup:
             bg=T.SURFACE,
             wrap="word",
             width=CARD_WRAP_CHARS,
-            height=3,
+            height=2,
             relief="flat",
             highlightthickness=0,
             borderwidth=0,
             padx=0,
             pady=0,
             cursor="arrow",
-            spacing1=2,
-            spacing3=2,
+            spacing1=1,
+            spacing3=1,
         )
         tgt.pack(side="left", fill="both", expand=True)
         tgt.configure(state="disabled")
@@ -245,14 +250,14 @@ class ChivoblyaPopup:
         tgt.bind("<MouseWheel>", self._on_tgt_wheel)
         tgt.bind("<Button-4>", self._on_tgt_wheel)  # Linux scroll up
         tgt.bind("<Button-5>", self._on_tgt_wheel)  # Linux scroll down
-        tgt_outer.grid(row=1, column=0, sticky="nsew", padx=14, pady=(4, 8))
+        tgt_outer.grid(row=1, column=0, sticky="nsew", padx=10, pady=(2, 4))
 
         status = tk.Label(
-            body, text="", font=(T.FONT_UI, 8), fg=T.INK_SOFT, bg=T.SURFACE, anchor="w"
+            body, text="", font=(T.FONT_UI, 7), fg=T.INK_SOFT, bg=T.SURFACE, anchor="w"
         )
-        status.grid(row=2, column=0, sticky="ew", padx=14, pady=(0, 4))
+        status.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 2))
 
-        self._make_pill(actions, "⎘  копировать", self._copy_tr).pack(side="left", padx=(0, 8))
+        self._make_pill(actions, "⎘  копировать", self._copy_tr).pack(side="left", padx=(0, 6))
         self._make_pill(actions, "↗  в окно", self._open_main).pack(side="left")
 
         self._win = win
@@ -376,11 +381,11 @@ class ChivoblyaPopup:
         lab = tk.Label(
             outer,
             text=text,
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 8),
             fg=ink,
             bg=bg,
-            padx=12,
-            pady=5,
+            padx=8,
+            pady=2,
             cursor="hand2",
         )
         lab.pack(padx=1, pady=1)
@@ -427,8 +432,12 @@ class ChivoblyaPopup:
             self._lang_lbl.configure(text="(…)")
         if self._status_lbl:
             self._status_lbl.configure(text="")
-        self._cur_w = CARD_W
-        self._cur_h = CARD_MIN_H + 20
+            try:
+                self._status_lbl.grid_remove()
+            except Exception:  # noqa: BLE001
+                pass
+        self._cur_w = CARD_MIN_W
+        self._cur_h = CARD_MIN_H
         self._place(self._cur_w, self._cur_h, *self._anchor)
         self._map_window()
         self._arm_outside_dismiss()
@@ -617,6 +626,8 @@ class ChivoblyaPopup:
                     self._status_lbl.configure(text=(result.error or "ошибка")[:70])
                 log.warning("mini tr fail: %s", result.error)
                 self._resize_card_for_tgt()
+                self._place(self._cur_w, self._cur_h, *self._anchor)
+                self._map_window()
                 self._arm_hide(15000)
                 return
 
@@ -634,7 +645,13 @@ class ChivoblyaPopup:
             self._map_window()
             # refresh lifetime after success
             self._arm_hide(45000)
-            log.info("mini tr ok len=%s head=%r", len(self._translation), self._translation[:60])
+            log.info(
+                "mini tr ok len=%s size=%sx%s head=%r",
+                len(self._translation),
+                self._cur_w,
+                self._cur_h,
+                self._translation[:60],
+            )
         except Exception:  # noqa: BLE001
             logutil.exc("apply_tr UI")
 
@@ -659,22 +676,107 @@ class ChivoblyaPopup:
             w.update_idletasks()
             lines = int(w.count("1.0", "end-1c", "displaylines")[0])
         except Exception:  # noqa: BLE001
-            lines = max(2, 1 + len(text) // CARD_WRAP_CHARS)
-        return max(2, lines)
+            lines = max(1, 1 + len(text) // CARD_WRAP_CHARS)
+        return max(1, lines)
+
+    def _content_text_width_px(self, text: str) -> int:
+        """Pixel width of longest source line (pre-wrap)."""
+        font = self._tgt_font
+        if not text:
+            return 40
+        lines = text.splitlines() or [text]
+        if font is None:
+            return max(len(ln) for ln in lines) * 7
+        return max(int(font.measure(ln)) for ln in lines)
+
+    def _estimate_wrapped_lines(self, text: str, inner_px: int) -> int:
+        """Font-measure wrap count — reliable when Text.count(displaylines) is None/wrong."""
+        if not text:
+            return 1
+        font = self._tgt_font
+        inner_px = max(int(inner_px), 40)
+        total = 0
+        for para in text.split("\n"):
+            if not para:
+                total += 1
+                continue
+            if font is None:
+                # ~avg char width 7px
+                total += max(1, (len(para) * 7 + inner_px - 1) // inner_px)
+                continue
+            line_w = 0
+            total += 1
+            for ch in para:
+                cw = int(font.measure(ch))
+                if line_w + cw > inner_px and line_w > 0:
+                    total += 1
+                    line_w = cw
+                else:
+                    line_w += cw
+        return max(1, total)
+
+    def _count_display_lines(self, text: str, wrap_chars: int, inner_px: int) -> int:
+        """Font-measure wrap only.
+
+        Tk Text.count('displaylines') is unreliable here: unmapped / pre-geometry
+        widgets report one-char width → N chars become N lines (horse-sized card).
+        """
+        return self._estimate_wrapped_lines(text, inner_px)
 
     def _resize_card_for_tgt(self) -> None:
+        """Shrink-wrap card to translation; grow only when text needs it."""
         if self._tgt_text is None:
             return
+
+        text = self._translation or ""
+        if not text:
+            try:
+                text = self._tgt_text.get("1.0", "end-1c")
+            except Exception:  # noqa: BLE001
+                text = ""
+
+        ax, ay = self._anchor
+        mon_w, mon_h = max_popup_size_at(ax, ay, frac=0.85)
+        max_card_w = min(CARD_MAX_W, mon_w)
+        max_card_h = max(mon_h, CARD_MIN_H)
+
+        font = self._tgt_font
+        zero_w = max(int(font.measure("0")) if font else 7, 6)
+        line_h = max(int(font.metrics("linespace")) if font else CARD_LINE_H, 14)
+
+        # Width: fit text, but always wide enough for foot pills; cap at max
+        pad_x = CARD_PAD_X * 2 + 2  # side pads + 1px border each side
+        content_px = self._content_text_width_px(text)
+        want_w = content_px + pad_x + 8
+        card_w = max(CARD_MIN_W, min(want_w, max_card_w))
+        inner_px = max(card_w - pad_x, 40)
+
+        # Text wrap width in characters so layout matches card width
+        wrap_chars = max(8, min(CARD_WRAP_CHARS, inner_px // zero_w))
+        self._tgt_text.configure(width=wrap_chars)
         try:
             self._tgt_text.update_idletasks()
-            display_lines = int(
-                self._tgt_text.count("1.0", "end-1c", "displaylines")[0]
-            )
         except Exception:  # noqa: BLE001
-            display_lines = max(2, 1 + len(self._translation) // CARD_WRAP_CHARS)
+            pass
 
-        max_lines = max(2, CARD_BODY_MAX_H // CARD_LINE_H)
-        visible_lines = min(max(2, display_lines), max_lines)
+        display_lines = self._count_display_lines(text, wrap_chars, inner_px)
+
+        # Status row only when there is a message (Lebedev: no empty chrome)
+        status_h = 0
+        if self._status_lbl is not None:
+            st = (self._status_lbl.cget("text") or "").strip()
+            try:
+                if st:
+                    self._status_lbl.grid()
+                    status_h = 14
+                else:
+                    self._status_lbl.grid_remove()
+            except Exception:  # noqa: BLE001
+                pass
+
+        max_body_h = max(line_h, max_card_h - CARD_CHROME_H - status_h)
+        max_lines = max(1, max_body_h // line_h)
+        visible_lines = min(display_lines, max_lines)
         needs_scroll = display_lines > max_lines
         self._scroll_mode = needs_scroll
 
@@ -685,12 +787,28 @@ class ChivoblyaPopup:
                 scroll.pack(side="right", fill="y")
                 self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
                 scroll.configure(command=self._tgt_text.yview)
+                card_w = min(max(card_w + 14, CARD_MIN_W), max_card_w)  # scrollbar
             else:
                 self._tgt_text.configure(yscrollcommand=None)
                 scroll.pack_forget()
 
-        body_h = visible_lines * CARD_LINE_H + 12
-        self._cur_h = max(CARD_MIN_H, min(CARD_CHROME_H + body_h, CARD_MAX_H))
+        # Body height from lines × metrics — never parent winfo_reqheight
+        # (expand-packed parent reports previous oversized geometry).
+        body_h = visible_lines * line_h + 6
+        try:
+            self._tgt_text.update_idletasks()
+            req = int(self._tgt_text.winfo_reqheight())
+            # only trust req when it matches ~visible lines (guards mapped weirdness)
+            if line_h <= req <= visible_lines * line_h + line_h:
+                body_h = req + 6
+        except Exception:  # noqa: BLE001
+            pass
+
+        want_h = CARD_HEAD_H + body_h + status_h + CARD_FOOT_H + 4
+        card_h = max(CARD_MIN_H, min(want_h, max_card_h))
+
+        self._cur_w = card_w
+        self._cur_h = card_h
         self._update_read_highlight()
 
     def _on_tgt_yscroll(self, first: str, last: str) -> None:
@@ -761,6 +879,10 @@ class ChivoblyaPopup:
                 pass
 
     def _place(self, w: int, h: int, x: int, y: int) -> None:
+        # Cap to monitor work area so geometry never claims more than can fit
+        max_w, max_h = max_popup_size_at(int(x), int(y), frac=0.9)
+        w = min(int(w), max_w)
+        h = min(int(h), max_h)
         self._cur_w, self._cur_h = w, h
         px, py = clamp_popup(int(x), int(y), w, h)
         if self._win is not None:
