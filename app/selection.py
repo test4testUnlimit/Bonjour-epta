@@ -7,14 +7,21 @@ Crow (GPL-3, Hennadii Chernyshchyk):
   4) wait for clipboard change (up to ~1s)
   5) read text, restore clipboard
 
-Extra (bonjur): unique marker on clipboard before Ctrl+C so re-selecting
-the same string still registers a change. Without marker, if selection
-== previous clipboard (common in Nova / Electron fields), we got empty.
+Change detection: GetClipboardSequenceNumber() — Windows bumps it on EVERY
+clipboard write, even re-copying identical text. That is the exact case the
+old __bonjur_* marker was invented for, so the marker is gone entirely.
+
+Why no marker anymore (critical bug fix):
+  We must NEVER write to the global clipboard before Ctrl+C. The old code put
+  a probe string on the clipboard; on a large/slow copy the restore raced and
+  the probe survived — the user's next paste was `__bonjur_<uuid>__`. Using the
+  sequence number means bonjur reads/restores the clipboard but never writes a
+  probe, so a probe can never leak into the user's paste. Class of bug removed.
 
 Global lock: concurrent watcher threads must not interleave Ctrl+C/restore.
 
-Marker hygiene: never return/leave __bonjur_* on clipboard or as selection
-(large copies are slow; pyperclip may add \\r\\n — old endswith check missed those).
+sanitize_selection / _is_marker stay as defence-in-depth: strip any stray
+__bonjur_* left on the clipboard by an older build still running elsewhere.
 """
 
 from __future__ import annotations
@@ -23,7 +30,6 @@ import re
 import sys
 import threading
 import time
-import uuid
 
 import pyperclip
 
@@ -34,10 +40,22 @@ MARKER_PREFIX = "__bonjur_"
 _MARKER_RE = re.compile(r"^\s*" + re.escape(MARKER_PREFIX) + r"[0-9a-fA-F]*__?\s*$")
 _CLIP_LOCK = threading.Lock()
 
-# Large selections: Ctrl+C can take >1s; keep polling while still on marker.
+# Large selections: Ctrl+C can take >1s; keep polling for the clipboard change.
 _HARD_CAP_S = 5.0
 _STABLE_POLLS = 3
 _STABLE_GAP_S = 0.04
+
+
+def _clipboard_seq() -> int:
+    """Windows clipboard sequence number — bumps on every write. 0 if unavailable."""
+    if sys.platform != "win32":
+        return 0
+    try:
+        import ctypes
+
+        return int(ctypes.windll.user32.GetClipboardSequenceNumber())
+    except Exception:  # noqa: BLE001
+        return 0
 
 
 def _mods_down_win() -> bool:
@@ -223,9 +241,10 @@ def get_selected_text(
     clipboard_fallback: bool = False,
 ) -> str:
     """
-    Crow-style selection grab + marker (same-text reselect safe). Never raises.
-    settle_s: soft wait for clipboard change after Ctrl+C; extended while still marker.
-    Never returns a marker string.
+    Crow-style selection grab via clipboard sequence number (same-text reselect
+    safe, never writes a probe to the clipboard). Never raises.
+    settle_s: soft wait for the clipboard change after Ctrl+C; extended to a hard
+    cap for large/slow copies. Never returns a marker string.
     """
     log = logutil.get()
     # serialize: dual mouse-up / hotkey+chip must not interleave Ctrl+C
@@ -250,7 +269,7 @@ def _get_selected_text_locked(
 ) -> str:
     log = logutil.get()
     log.debug(
-        "get_selected_text CROW restore=%s settle=%.2f fallback=%s",
+        "get_selected_text SEQ restore=%s settle=%.2f fallback=%s",
         restore_clipboard,
         settle_s,
         clipboard_fallback,
@@ -265,32 +284,21 @@ def _get_selected_text_locked(
         previous = ""
     log.debug("clip previous len=%s head=%r", len(previous), previous[:80])
 
-    marker = f"{MARKER_PREFIX}{uuid.uuid4().hex}__"
-    try:
-        if not _clip_set(marker):
-            log.warning("marker set failed")
-        else:
-            # wait until marker is visible (clipboard APIs are racy)
-            for _ in range(40):
-                got_m = _clip_get()
-                if got_m == marker or _is_marker(got_m):
-                    break
-                time.sleep(0.01)
-            else:
-                log.warning("marker not confirmed on clipboard")
+    # NOTE: we do NOT write anything to the clipboard here. Change is detected
+    # via the sequence number (win32) or content diff (fallback). This is what
+    # makes a probe/marker leak into the user's paste impossible.
+    seq_before = _clipboard_seq()
 
+    try:
         _wait_mods_up(2.0)
 
         if not _send_ctrl_c():
             log.warning("Ctrl+C send failed")
-            if restore_clipboard:
-                _clip_set(previous)
-            _ensure_not_marker_on_clipboard(previous)
-            if clipboard_fallback and previous and not _is_marker(previous):
+            if clipboard_fallback and previous:
                 return sanitize_selection(previous)
             return ""
 
-        # Wait until clipboard leaves the marker. Soft settle_s, hard cap for big text.
+        # Wait for the clipboard to change. Soft settle_s, hard cap for big text.
         soft = max(float(settle_s), 0.25)
         hard = max(soft, min(_HARD_CAP_S, soft * 4.0 if soft < 2 else _HARD_CAP_S))
         deadline_soft = time.perf_counter() + soft
@@ -300,16 +308,30 @@ def _get_selected_text_locked(
         while time.perf_counter() < deadline_hard:
             time.sleep(0.03)
             polls += 1
+
+            # Has the clipboard changed since our Ctrl+C?
+            if seq_before:  # win32: authoritative, works for identical re-copy
+                if _clipboard_seq() == seq_before:
+                    if time.perf_counter() > deadline_soft:
+                        break  # nothing copyable (e.g. selection not text)
+                    continue
             try:
                 got = _clip_get()
             except Exception:  # noqa: BLE001
                 continue
-            if not got or _is_marker(got) or got == marker:
-                # still marker: keep going until hard cap (large copy slow)
+            if not got:
+                # changed but empty text (image / non-text copy) — bail after soft
+                if time.perf_counter() > deadline_soft:
+                    break
+                continue
+            if not seq_before and got == previous:
+                # no seq API: can't distinguish; wait for real diff
+                if time.perf_counter() > deadline_soft:
+                    break
                 continue
 
             # Real content — for large blobs wait until length stabilizes
-            # (some apps fill clipboard in stages).
+            # (some apps fill the clipboard in stages).
             candidate = got
             stable = 1
             last_len = len(candidate)
@@ -319,8 +341,7 @@ def _get_selected_text_locked(
                     again = _clip_get()
                 except Exception:  # noqa: BLE001
                     break
-                if not again or _is_marker(again):
-                    candidate = ""
+                if not again:
                     break
                 if len(again) == last_len and again == candidate:
                     stable += 1
@@ -328,36 +349,23 @@ def _get_selected_text_locked(
                     candidate = again
                     last_len = len(again)
                     stable = 1
-            if not candidate or _is_marker(candidate):
-                continue
             if stable < 2 and last_len > 50_000:
                 # huge text still growing — one more beat
                 time.sleep(0.08)
                 try:
                     again = _clip_get()
-                    if again and not _is_marker(again):
+                    if again:
                         candidate = again
                 except Exception:  # noqa: BLE001
                     pass
 
             selected = sanitize_selection(candidate)
             if selected:
-                log.debug(
-                    "clip left marker after %s polls len=%s", polls, len(selected)
-                )
+                log.debug("clip changed after %s polls len=%s", polls, len(selected))
                 break
-
-            # soft deadline exceeded and still nothing usable → give up soon
-            if time.perf_counter() > deadline_soft and not selected:
-                # only stop early if we've already left soft window AND
-                # clipboard is non-marker empty-ish — else keep hard wait
-                pass
 
         if restore_clipboard:
             _clip_set(previous)
-
-        # Absolute hygiene: never leave probe on clipboard
-        _ensure_not_marker_on_clipboard(previous)
 
         selected = sanitize_selection(selected)
         if selected:
@@ -379,7 +387,6 @@ def _get_selected_text_locked(
                 _clip_set(previous)
         except Exception:  # noqa: BLE001
             pass
-        _ensure_not_marker_on_clipboard(previous)
         if clipboard_fallback and previous and not _is_marker(previous):
             return sanitize_selection(previous)
         return ""
