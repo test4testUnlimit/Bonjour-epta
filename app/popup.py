@@ -39,11 +39,11 @@ CARD_MIN_H = 72
 CARD_BODY_FONT_SIZE = 11
 CARD_WRAP_CHARS = 48  # max chars before wrap; short text uses fewer
 CARD_LINE_H = 17
-CARD_FOOT_H = 32
-CARD_HEAD_H = 22
+CARD_FOOT_H = 34
+CARD_HEAD_H = 26
 CARD_PAD_X = 10
-# head + foot + borders + body pads (status row optional, not counted)
-CARD_CHROME_H = CARD_HEAD_H + CARD_FOOT_H + 10
+# head + foot + borders + body pads — foot must always fit inside geometry
+CARD_CHROME_H = CARD_HEAD_H + CARD_FOOT_H + 16
 # colors live in theme tokens — read T.* at paint time (theme can switch)
 
 
@@ -71,6 +71,8 @@ class ChivoblyaPopup:
         self._tgt_scroll: tk.Scrollbar | None = None
         self._tgt_font: tkfont.Font | None = None
         self._status_lbl: tk.Label | None = None
+        self._card_body: tk.Frame | None = None
+        self._card_foot: tk.Frame | None = None
         self._scroll_mode = False
 
         self._hide_after_id: str | None = None
@@ -189,9 +191,9 @@ class ChivoblyaPopup:
         body = tk.Frame(card_outer, bg=T.SURFACE)
         body.pack(fill="both", expand=True, padx=1, pady=1)
 
-        # No row weight — text keeps natural height; window shrink-wraps to content
-        # (weight=1 + oversized geometry = huge empty white body — Lebedev anti-pattern)
+        # row 1 (text) expands; foot stays pinned so buttons never clip
         body.grid_columnconfigure(0, weight=1)
+        body.grid_rowconfigure(1, weight=1)
 
         head = tk.Frame(body, bg=T.SURFACE)
         # language only, e.g. (английский) — not the word «перевод»
@@ -264,6 +266,8 @@ class ChivoblyaPopup:
         win.after(0, lambda: apply_app_icon(win))
         self._chip_frame = chip_outer
         self._card_frame = card_outer
+        self._card_body = body
+        self._card_foot = foot
         self._lang_lbl = lang_lbl
         self._src_lbl = None  # source text intentionally not shown
         self._tgt_text = tgt
@@ -723,9 +727,23 @@ class ChivoblyaPopup:
         """
         return self._estimate_wrapped_lines(text, inner_px)
 
+    def _measure_card_need_h(self) -> int:
+        """Natural card height after layout (not the clipped window height)."""
+        fr = self._card_frame
+        if fr is None:
+            return CARD_MIN_H
+        try:
+            fr.update_idletasks()
+            rh = int(fr.winfo_reqheight())
+            if rh >= CARD_MIN_H:
+                return rh + 2
+        except Exception:  # noqa: BLE001
+            pass
+        return CARD_MIN_H
+
     def _resize_card_for_tgt(self) -> None:
-        """Shrink-wrap card to translation; grow only when text needs it."""
-        if self._tgt_text is None:
+        """Shrink-wrap to translation; never clip foot. Scroll only at monitor cap."""
+        if self._tgt_text is None or self._win is None:
             return
 
         text = self._translation or ""
@@ -744,68 +762,62 @@ class ChivoblyaPopup:
         zero_w = max(int(font.measure("0")) if font else 7, 6)
         line_h = max(int(font.metrics("linespace")) if font else CARD_LINE_H, 14)
 
-        # Width: fit text, but always wide enough for foot pills; cap at max
-        pad_x = CARD_PAD_X * 2 + 2  # side pads + 1px border each side
+        pad_x = CARD_PAD_X * 2 + 2
         content_px = self._content_text_width_px(text)
         want_w = content_px + pad_x + 8
         card_w = max(CARD_MIN_W, min(want_w, max_card_w))
         inner_px = max(card_w - pad_x, 40)
 
-        # Text wrap width in characters so layout matches card width
         wrap_chars = max(8, min(CARD_WRAP_CHARS, inner_px // zero_w))
         self._tgt_text.configure(width=wrap_chars)
-        try:
-            self._tgt_text.update_idletasks()
-        except Exception:  # noqa: BLE001
-            pass
 
-        display_lines = self._count_display_lines(text, wrap_chars, inner_px)
-
-        # Status row only when there is a message (Lebedev: no empty chrome)
         status_h = 0
         if self._status_lbl is not None:
             st = (self._status_lbl.cget("text") or "").strip()
             try:
                 if st:
                     self._status_lbl.grid()
-                    status_h = 14
+                    status_h = 16
                 else:
                     self._status_lbl.grid_remove()
             except Exception:  # noqa: BLE001
                 pass
 
-        max_body_h = max(line_h, max_card_h - CARD_CHROME_H - status_h)
-        max_lines = max(1, max_body_h // line_h)
-        visible_lines = min(display_lines, max_lines)
-        needs_scroll = display_lines > max_lines
-        self._scroll_mode = needs_scroll
-
-        self._tgt_text.configure(height=visible_lines)
+        display_lines = max(1, self._count_display_lines(text, wrap_chars, inner_px))
+        # First pass: lay out full text on a tall seed so reqheight is unconstrained
+        self._tgt_text.configure(height=display_lines)
         scroll = self._tgt_scroll
         if scroll is not None:
-            if needs_scroll:
-                scroll.pack(side="right", fill="y")
-                self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
-                scroll.configure(command=self._tgt_text.yview)
-                card_w = min(max(card_w + 14, CARD_MIN_W), max_card_w)  # scrollbar
-            else:
-                self._tgt_text.configure(yscrollcommand=None)
-                scroll.pack_forget()
+            self._tgt_text.configure(yscrollcommand=None)
+            scroll.pack_forget()
+        self._scroll_mode = False
 
-        # Body height from lines × metrics — never parent winfo_reqheight
-        # (expand-packed parent reports previous oversized geometry).
-        body_h = visible_lines * line_h + 6
         try:
-            self._tgt_text.update_idletasks()
-            req = int(self._tgt_text.winfo_reqheight())
-            # only trust req when it matches ~visible lines (guards mapped weirdness)
-            if line_h <= req <= visible_lines * line_h + line_h:
-                body_h = req + 6
+            # Tall seed — same lesson as settings: never measure at a clipped height
+            self._win.geometry(f"{card_w}x{max(max_card_h + 240, 900)}")
+            self._win.update_idletasks()
         except Exception:  # noqa: BLE001
             pass
 
-        want_h = CARD_HEAD_H + body_h + status_h + CARD_FOOT_H + 4
-        card_h = max(CARD_MIN_H, min(want_h, max_card_h))
+        need_h = self._measure_card_need_h()
+        # Heuristic floor if measure under-reports (Cyrillic wrap / spacing)
+        floor_h = CARD_CHROME_H + status_h + display_lines * line_h + 8
+        need_h = max(need_h, floor_h, CARD_MIN_H)
+
+        if need_h <= max_card_h:
+            card_h = need_h
+            self._scroll_mode = False
+        else:
+            card_h = max_card_h
+            self._scroll_mode = True
+            max_body_h = max(line_h, card_h - CARD_CHROME_H - status_h)
+            visible_lines = max(1, max_body_h // line_h)
+            self._tgt_text.configure(height=visible_lines)
+            if scroll is not None:
+                scroll.pack(side="right", fill="y")
+                self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
+                scroll.configure(command=self._tgt_text.yview)
+                card_w = min(max(card_w + 14, CARD_MIN_W), max_card_w)
 
         self._cur_w = card_w
         self._cur_h = card_h
@@ -885,11 +897,50 @@ class ChivoblyaPopup:
         h = min(int(h), max_h)
         self._cur_w, self._cur_h = w, h
         px, py = clamp_popup(int(x), int(y), w, h)
-        if self._win is not None:
-            try:
-                self._win.geometry(f"{w}x{h}+{px}+{py}")
-            except Exception:  # noqa: BLE001
-                logutil.exc("geometry")
+        if self._win is None:
+            return
+        try:
+            self._win.geometry(f"{w}x{h}+{px}+{py}")
+            self._win.update_idletasks()
+        except Exception:  # noqa: BLE001
+            logutil.exc("geometry")
+            return
+        # If foot is still clipped (DPI / under-measure), grow and re-clamp once
+        if self._mode != "card":
+            return
+        foot = getattr(self, "_card_foot", None)
+        if foot is None:
+            return
+        try:
+            foot.update_idletasks()
+            need_bottom = int(foot.winfo_y()) + int(foot.winfo_height()) + 2
+            got = int(self._win.winfo_height())
+            if need_bottom <= got:
+                return
+            grow = need_bottom - got
+            new_h = min(h + grow, max_h)
+            if new_h <= h:
+                # Can't grow — force scroll so foot stays in budget
+                if self._tgt_text is not None and not self._scroll_mode:
+                    self._scroll_mode = True
+                    line_h = max(
+                        int(self._tgt_font.metrics("linespace")) if self._tgt_font else CARD_LINE_H,
+                        14,
+                    )
+                    body_budget = max(line_h, new_h - CARD_CHROME_H)
+                    vis = max(1, body_budget // line_h)
+                    self._tgt_text.configure(height=vis)
+                    scroll = self._tgt_scroll
+                    if scroll is not None:
+                        scroll.pack(side="right", fill="y")
+                        self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
+                        scroll.configure(command=self._tgt_text.yview)
+                return
+            self._cur_h = new_h
+            px, py = clamp_popup(int(x), int(y), w, new_h)
+            self._win.geometry(f"{w}x{new_h}+{px}+{py}")
+        except Exception:  # noqa: BLE001
+            logutil.exc("geometry verify foot")
 
     def _map_window(self) -> None:
         if self._win is None or not self._alive:
