@@ -442,6 +442,12 @@ class ChivoblyaPopup:
                 pass
         self._cur_w = CARD_MIN_W
         self._cur_h = CARD_MIN_H
+        body = getattr(self, "_card_body", None)
+        if body is not None:
+            try:
+                body.grid_rowconfigure(1, weight=0)
+            except Exception:  # noqa: BLE001
+                pass
         self._place(self._cur_w, self._cur_h, *self._anchor)
         self._map_window()
         self._arm_outside_dismiss()
@@ -727,22 +733,12 @@ class ChivoblyaPopup:
         """
         return self._estimate_wrapped_lines(text, inner_px)
 
-    def _measure_card_need_h(self) -> int:
-        """Natural card height after layout (not the clipped window height)."""
-        fr = self._card_frame
-        if fr is None:
-            return CARD_MIN_H
-        try:
-            fr.update_idletasks()
-            rh = int(fr.winfo_reqheight())
-            if rh >= CARD_MIN_H:
-                return rh + 2
-        except Exception:  # noqa: BLE001
-            pass
-        return CARD_MIN_H
-
     def _resize_card_for_tgt(self) -> None:
-        """Shrink-wrap to translation; never clip foot. Scroll only at monitor cap."""
+        """Shrink-wrap to text (Lebedev: size = content). Scroll only at monitor cap.
+
+        Never seed a tall geometry then measure — with row weight=1 the body
+        expands to the seed and the card becomes a white skyscraper.
+        """
         if self._tgt_text is None or self._win is None:
             return
 
@@ -784,40 +780,62 @@ class ChivoblyaPopup:
                 pass
 
         display_lines = max(1, self._count_display_lines(text, wrap_chars, inner_px))
-        # First pass: lay out full text on a tall seed so reqheight is unconstrained
-        self._tgt_text.configure(height=display_lines)
         scroll = self._tgt_scroll
-        if scroll is not None:
-            self._tgt_text.configure(yscrollcommand=None)
-            scroll.pack_forget()
-        self._scroll_mode = False
+        body = getattr(self, "_card_body", None)
 
-        try:
-            # Tall seed — same lesson as settings: never measure at a clipped height
-            self._win.geometry(f"{card_w}x{max(max_card_h + 240, 900)}")
-            self._win.update_idletasks()
-        except Exception:  # noqa: BLE001
-            pass
+        # Content height from lines — not from an expanded parent
+        natural_body = display_lines * line_h + 8
+        natural_h = CARD_HEAD_H + natural_body + status_h + CARD_FOOT_H + 6
 
-        need_h = self._measure_card_need_h()
-        # Heuristic floor if measure under-reports (Cyrillic wrap / spacing)
-        floor_h = CARD_CHROME_H + status_h + display_lines * line_h + 8
-        need_h = max(need_h, floor_h, CARD_MIN_H)
-
-        if need_h <= max_card_h:
-            card_h = need_h
-            self._scroll_mode = False
-        else:
-            card_h = max_card_h
-            self._scroll_mode = True
-            max_body_h = max(line_h, card_h - CARD_CHROME_H - status_h)
-            visible_lines = max(1, max_body_h // line_h)
-            self._tgt_text.configure(height=visible_lines)
+        if natural_h <= max_card_h:
+            # Shrink-wrap: no expand weight (otherwise empty air under short text)
+            if body is not None:
+                try:
+                    body.grid_rowconfigure(1, weight=0)
+                except Exception:  # noqa: BLE001
+                    pass
+            self._tgt_text.configure(height=display_lines)
             if scroll is not None:
-                scroll.pack(side="right", fill="y")
-                self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
-                scroll.configure(command=self._tgt_text.yview)
-                card_w = min(max(card_w + 14, CARD_MIN_W), max_card_w)
+                self._tgt_text.configure(yscrollcommand=None)
+                scroll.pack_forget()
+            self._scroll_mode = False
+            # Prefer Text reqheight when it agrees with line count (±1 line)
+            body_h = natural_body
+            try:
+                self._tgt_text.update_idletasks()
+                req = int(self._tgt_text.winfo_reqheight())
+                lo = display_lines * line_h - line_h
+                hi = display_lines * line_h + line_h + 8
+                if lo <= req <= hi:
+                    body_h = req + 6
+            except Exception:  # noqa: BLE001
+                pass
+            card_h = max(CARD_MIN_H, CARD_HEAD_H + body_h + status_h + CARD_FOOT_H + 6)
+            # Safety: never exceed monitor; if we would, fall through to scroll path
+            if card_h > max_card_h:
+                natural_h = card_h  # trigger scroll branch below
+            else:
+                self._cur_w = card_w
+                self._cur_h = card_h
+                self._update_read_highlight()
+                return
+
+        # Cap to monitor — pin foot, body expands + scrolls
+        card_h = max_card_h
+        self._scroll_mode = True
+        if body is not None:
+            try:
+                body.grid_rowconfigure(1, weight=1)
+            except Exception:  # noqa: BLE001
+                pass
+        max_body_h = max(line_h, card_h - CARD_CHROME_H - status_h)
+        visible_lines = max(1, max_body_h // line_h)
+        self._tgt_text.configure(height=visible_lines)
+        if scroll is not None:
+            scroll.pack(side="right", fill="y")
+            self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
+            scroll.configure(command=self._tgt_text.yview)
+            card_w = min(max(card_w + 14, CARD_MIN_W), max_card_w)
 
         self._cur_w = card_w
         self._cur_h = card_h
@@ -893,8 +911,12 @@ class ChivoblyaPopup:
     def _place(self, w: int, h: int, x: int, y: int) -> None:
         # Cap to monitor work area so geometry never claims more than can fit
         max_w, max_h = max_popup_size_at(int(x), int(y), frac=0.9)
-        w = min(int(w), max_w)
-        h = min(int(h), max_h)
+        w = max(1, min(int(w), max_w))
+        h = max(CARD_MIN_H if self._mode == "card" else 1, min(int(h), max_h))
+        # Hard ceiling: never taller than 85% work area for cards (anti-skyscraper)
+        if self._mode == "card":
+            _mw, mh = max_popup_size_at(int(x), int(y), frac=0.85)
+            h = min(h, mh)
         self._cur_w, self._cur_h = w, h
         px, py = clamp_popup(int(x), int(y), w, h)
         if self._win is None:
@@ -905,8 +927,8 @@ class ChivoblyaPopup:
         except Exception:  # noqa: BLE001
             logutil.exc("geometry")
             return
-        # If foot is still clipped (DPI / under-measure), grow and re-clamp once
-        if self._mode != "card":
+        # If foot clipped on shrink-wrap, bump a little (not to monitor max)
+        if self._mode != "card" or self._scroll_mode:
             return
         foot = getattr(self, "_card_foot", None)
         if foot is None:
@@ -915,26 +937,11 @@ class ChivoblyaPopup:
             foot.update_idletasks()
             need_bottom = int(foot.winfo_y()) + int(foot.winfo_height()) + 2
             got = int(self._win.winfo_height())
-            if need_bottom <= got:
+            if need_bottom <= got + 1:
                 return
-            grow = need_bottom - got
+            grow = min(need_bottom - got + 2, 48)  # small pad only — never skyscrape
             new_h = min(h + grow, max_h)
             if new_h <= h:
-                # Can't grow — force scroll so foot stays in budget
-                if self._tgt_text is not None and not self._scroll_mode:
-                    self._scroll_mode = True
-                    line_h = max(
-                        int(self._tgt_font.metrics("linespace")) if self._tgt_font else CARD_LINE_H,
-                        14,
-                    )
-                    body_budget = max(line_h, new_h - CARD_CHROME_H)
-                    vis = max(1, body_budget // line_h)
-                    self._tgt_text.configure(height=vis)
-                    scroll = self._tgt_scroll
-                    if scroll is not None:
-                        scroll.pack(side="right", fill="y")
-                        self._tgt_text.configure(yscrollcommand=self._on_tgt_yscroll)
-                        scroll.configure(command=self._tgt_text.yview)
                 return
             self._cur_h = new_h
             px, py = clamp_popup(int(x), int(y), w, new_h)
