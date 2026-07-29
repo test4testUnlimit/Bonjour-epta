@@ -36,11 +36,9 @@ import pyperclip
 from . import logutil
 
 MARKER_PREFIX = "__bonjur_"
-# uuid hex + delimiters; also accept any leftover junk after prefix
 _MARKER_RE = re.compile(r"^\s*" + re.escape(MARKER_PREFIX) + r"[0-9a-fA-F]*__?\s*$")
 _CLIP_LOCK = threading.Lock()
 
-# Large selections: Ctrl+C can take >1s; keep polling for the clipboard change.
 _HARD_CAP_S = 5.0
 _STABLE_POLLS = 3
 _STABLE_GAP_S = 0.04
@@ -52,7 +50,6 @@ def _clipboard_seq() -> int:
         return 0
     try:
         import ctypes
-
         return int(ctypes.windll.user32.GetClipboardSequenceNumber())
     except Exception:  # noqa: BLE001
         return 0
@@ -61,7 +58,6 @@ def _clipboard_seq() -> int:
 def _mods_down_win() -> bool:
     """True if any of Win/Shift/Alt/Ctrl is currently down (GetAsyncKeyState)."""
     import ctypes
-
     user32 = ctypes.windll.user32
     keys = (
         0x5B,  # VK_LWIN
@@ -84,14 +80,14 @@ def _wait_mods_up(timeout_s: float = 2.0) -> bool:
     t0 = time.perf_counter()
     if not _mods_down_win():
         return True
-    log.debug("waiting for modifiers release…")
+    log.debug("waiting for modifiers release...")
     while time.perf_counter() - t0 < timeout_s:
         if not _mods_down_win():
             log.debug("modifiers up after %.0fms", (time.perf_counter() - t0) * 1000)
             time.sleep(0.03)
             return True
         time.sleep(0.01)
-    log.warning("modifiers still down after %.1fs — proceed anyway", timeout_s)
+    log.warning("modifiers still down after %.1fs -- proceed anyway", timeout_s)
     return False
 
 
@@ -164,7 +160,6 @@ def _send_ctrl_c() -> bool:
             return True
     try:
         import keyboard
-
         keyboard.send("ctrl+c")
         return True
     except Exception:  # noqa: BLE001
@@ -191,31 +186,27 @@ def _clip_set(text: str) -> bool:
 
 
 def _is_marker(text: str | None) -> bool:
-    """True for our clipboard probe — strip whitespace/newlines; prefix is enough."""
+    """True for our clipboard probe -- strip whitespace/newlines; prefix is enough."""
     if not text:
         return False
     t = text.strip("\x00").strip()
     if not t:
         return False
-    # any clipboard value that is (only) our marker, with optional trailing junk newlines
     if t.startswith(MARKER_PREFIX):
-        # pure marker form, or marker + only whitespace already stripped
         if _MARKER_RE.match(t) or t.endswith("__"):
             return True
-        # truncated / partial marker still not real user text
         if len(t) < 80 and all(c.isalnum() or c in "_-" for c in t):
             return True
     return False
 
 
 def sanitize_selection(text: str | None) -> str:
-    """Strip + drop marker — call at every boundary (hotkey, watcher, paste)."""
+    """Strip + drop marker -- call at every boundary (hotkey, watcher, paste)."""
     if not text:
         return ""
     t = text.strip("\x00").strip()
     if not t or _is_marker(t):
         return ""
-    # marker embedded as whole first line only (paranoia)
     first = t.splitlines()[0].strip() if t else ""
     if _is_marker(first) and len(t) < 100:
         return ""
@@ -243,11 +234,8 @@ def get_selected_text(
     """
     Crow-style selection grab via clipboard sequence number (same-text reselect
     safe, never writes a probe to the clipboard). Never raises.
-    settle_s: soft wait for the clipboard change after Ctrl+C; extended to a hard
-    cap for large/slow copies. Never returns a marker string.
     """
     log = logutil.get()
-    # serialize: dual mouse-up / hotkey+chip must not interleave Ctrl+C
     if not _CLIP_LOCK.acquire(timeout=3.0):
         log.warning("get_selected_text: clip lock busy")
         return ""
@@ -270,27 +258,32 @@ def _get_selected_text_locked(
     log = logutil.get()
     log.debug(
         "get_selected_text SEQ restore=%s settle=%.2f fallback=%s",
-        restore_clipboard,
-        settle_s,
-        clipboard_fallback,
+        restore_clipboard, settle_s, clipboard_fallback,
     )
+
+    # FIX (bugs #1 + #3): snapshot AFTER modifiers are released.
+    # Old code took `previous` and `seq_before` BEFORE _wait_mods_up().
+    # If the user pressed Ctrl+C/X during the up-to-2s wait, their real
+    # copy landed on the clipboard but `previous` still held stale text.
+    # On restore we wiped the user's copy -- the "floating" paste bug.
+    # Also `seq_before` went stale during the wait, causing false-positive
+    # "clipboard changed" detection from unrelated writes.
 
     previous = ""
     try:
-        previous = _clip_get()
-    except Exception:  # noqa: BLE001
-        logutil.exc("clip previous")
-    if _is_marker(previous):
-        previous = ""
-    log.debug("clip previous len=%s head=%r", len(previous), previous[:80])
-
-    # NOTE: we do NOT write anything to the clipboard here. Change is detected
-    # via the sequence number (win32) or content diff (fallback). This is what
-    # makes a probe/marker leak into the user's paste impossible.
-    seq_before = _clipboard_seq()
-
-    try:
         _wait_mods_up(2.0)
+
+        # Snapshot clipboard NOW -- modifiers are up, no user Ctrl+C/X race.
+        try:
+            previous = _clip_get()
+        except Exception:  # noqa: BLE001
+            logutil.exc("clip previous")
+        if _is_marker(previous):
+            previous = ""
+        log.debug("clip previous len=%s head=%r", len(previous), previous[:80])
+
+        # Sequence number taken right before Ctrl+C -- no stale gap.
+        seq_before = _clipboard_seq()
 
         if not _send_ctrl_c():
             log.warning("Ctrl+C send failed")
@@ -298,7 +291,7 @@ def _get_selected_text_locked(
                 return sanitize_selection(previous)
             return ""
 
-        # Wait for the clipboard to change. Soft settle_s, hard cap for big text.
+        # Wait for the clipboard to change.
         soft = max(float(settle_s), 0.25)
         hard = max(soft, min(_HARD_CAP_S, soft * 4.0 if soft < 2 else _HARD_CAP_S))
         deadline_soft = time.perf_counter() + soft
@@ -309,29 +302,25 @@ def _get_selected_text_locked(
             time.sleep(0.03)
             polls += 1
 
-            # Has the clipboard changed since our Ctrl+C?
-            if seq_before:  # win32: authoritative, works for identical re-copy
+            if seq_before:
                 if _clipboard_seq() == seq_before:
                     if time.perf_counter() > deadline_soft:
-                        break  # nothing copyable (e.g. selection not text)
+                        break
                     continue
             try:
                 got = _clip_get()
             except Exception:  # noqa: BLE001
                 continue
             if not got:
-                # changed but empty text (image / non-text copy) — bail after soft
                 if time.perf_counter() > deadline_soft:
                     break
                 continue
             if not seq_before and got == previous:
-                # no seq API: can't distinguish; wait for real diff
                 if time.perf_counter() > deadline_soft:
                     break
                 continue
 
-            # Real content — for large blobs wait until length stabilizes
-            # (some apps fill the clipboard in stages).
+            # Real content -- wait until length stabilizes (large blobs).
             candidate = got
             stable = 1
             last_len = len(candidate)
@@ -350,7 +339,6 @@ def _get_selected_text_locked(
                     last_len = len(again)
                     stable = 1
             if stable < 2 and last_len > 50_000:
-                # huge text still growing — one more beat
                 time.sleep(0.08)
                 try:
                     again = _clip_get()
@@ -375,7 +363,7 @@ def _get_selected_text_locked(
         if clipboard_fallback and previous and not _is_marker(previous):
             fb = sanitize_selection(previous)
             if fb:
-                log.info("empty selection → fallback previous len=%s", len(fb))
+                log.info("empty selection -> fallback previous len=%s", len(fb))
                 return fb
 
         log.warning("selection empty polls=%s", polls)

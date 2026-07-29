@@ -1,4 +1,4 @@
-"""Watch mouse drag / double-click → capture selection → show «чивобля?»."""
+"""Watch mouse drag / double-click -> capture selection -> show chip."""
 
 from __future__ import annotations
 
@@ -15,16 +15,12 @@ try:
 except ImportError:  # pragma: no cover
     mouse = None  # type: ignore
 
-# drag threshold in px — below this may still be double-click word select
 DRAG_PX = 6
 DOUBLE_CLICK_MS = 420
 MIN_CHARS = 1
 MAX_CHARS = 8000
-# ignore identical selection re-pops for a short window
 DEDUP_MS = 900
-# settle after mouse-up before Ctrl+C (Electron/Nova needs a bit more than browsers)
 SETTLE_S = 0.18
-# soft wait after Ctrl+C; selection.py extends to hard cap while marker remains
 CAPTURE_SETTLE_S = 1.2
 
 
@@ -35,10 +31,6 @@ class SelectionWatcher:
         *,
         should_ignore: Callable[[int, int], bool] | None = None,
     ) -> None:
-        """
-        on_selection(text, screen_x, screen_y)
-        should_ignore(x, y) → True if cursor is over our own UI (skip capture)
-        """
         self.on_selection = on_selection
         self.should_ignore = should_ignore or (lambda _x, _y: False)
         self._down_pos: tuple[int, int] | None = None
@@ -63,7 +55,7 @@ class SelectionWatcher:
                 return
             try:
                 self._down_pos = mouse.get_position()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 self._down_pos = None
             self._down_ts = time.perf_counter()
 
@@ -72,13 +64,12 @@ class SelectionWatcher:
                 return
             try:
                 pos = mouse.get_position()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 return
             now = time.perf_counter()
             down = self._down_pos
             self._down_pos = None
 
-            # skip clicks on our chip / main window
             if self.should_ignore(pos[0], pos[1]):
                 self._last_up_ts = now
                 self._last_up_pos = pos
@@ -88,7 +79,6 @@ class SelectionWatcher:
             if down is not None:
                 dragged = _dist(down, pos) >= DRAG_PX
 
-            # double-click word/line select: two ups close in time & space, little/no drag
             is_double = False
             if self._last_up_pos is not None:
                 dt_ms = (now - self._last_up_ts) * 1000.0
@@ -101,14 +91,12 @@ class SelectionWatcher:
             if not dragged and not is_double:
                 return
 
-            # capture off UI/hook thread
             threading.Thread(
                 target=self._capture_and_fire,
                 args=(pos[0], pos[1]),
                 daemon=True,
             ).start()
 
-        # mouse library registers global hooks
         self._handlers.append(mouse.on_button(on_down, buttons=("left",), types=("down",)))
         self._handlers.append(mouse.on_button(on_up, buttons=("left",), types=("up",)))
 
@@ -119,7 +107,7 @@ class SelectionWatcher:
         for h in self._handlers:
             try:
                 mouse.unhook(h)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         self._handlers.clear()
 
@@ -130,29 +118,41 @@ class SelectionWatcher:
         self._enabled = True
 
     def _capture_and_fire(self, x: int, y: int) -> None:
-        # non-blocking: drop duplicate mouse-up while a capture is in flight
         if not self._cap_lock.acquire(blocking=False):
-            logutil.get().debug("watcher skip — capture already running")
+            logutil.get().debug("watcher skip -- capture already running")
             return
-        was_enabled = self._enabled
-        self._enabled = False
+        # FIX bug #2: Don't touch self._enabled here.
+        # Old code saved/restored _enabled, which overwrote pause() calls
+        # made by on_hotkey_fire during the capture window (1-5s).
+        # _busy already blocks re-entry via on_up check.
         self._busy = True
         try:
             time.sleep(SETTLE_S)
-            # no clipboard_fallback: chip must show *selection*, not stale clipboard
+
+            # If paused during settle (e.g. hotkey fired), bail out.
+            if not self._enabled:
+                logutil.get().debug("watcher skip -- paused during settle")
+                return
+
             try:
                 text = get_selected_text(
                     restore_clipboard=True,
                     settle_s=CAPTURE_SETTLE_S,
                     clipboard_fallback=False,
                 )
-            except Exception:  # noqa: BLE001 — never kill watcher thread
+            except Exception:
                 logutil.exc("watcher get_selected_text")
                 return
             text = sanitize_selection(text)
             if not text or len(text) < MIN_CHARS or len(text) > MAX_CHARS:
                 logutil.get().debug("watcher skip empty/short/long/marker len=%s", len(text or ""))
                 return
+
+            # Re-check after long capture -- pause() may have been called.
+            if not self._enabled:
+                logutil.get().debug("watcher skip -- paused after capture")
+                return
+
             now = time.perf_counter()
             if text == self._last_text and (now - self._last_fire_ts) * 1000 < DEDUP_MS:
                 logutil.get().debug("watcher dedup")
@@ -162,11 +162,10 @@ class SelectionWatcher:
             logutil.get().info("watcher fire len=%s at=%s,%s", len(text), x, y)
             try:
                 self.on_selection(text, x, y)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logutil.exc("watcher on_selection")
         finally:
             self._busy = False
-            self._enabled = was_enabled
             self._cap_lock.release()
 
 
