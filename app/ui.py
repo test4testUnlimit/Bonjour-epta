@@ -775,7 +775,27 @@ class TranslatorApp(ctk.CTk):
         self._end_translate_progress_ui()
 
     def _on_src_paste(self, _e=None) -> None:
+        """Handle Ctrl+V: paste clipboard into source box, then maybe auto-translate."""
+        try:
+            inner = self._inner(self._src_box)
+            # Get clipboard content
+            text = ""
+            try:
+                text = self.clipboard_get()
+            except Exception:
+                pass
+            if text:
+                # If there is a selection, delete it first
+                try:
+                    if inner.tag_ranges("sel"):
+                        inner.delete("sel.first", "sel.last")
+                except Exception:
+                    pass
+                inner.insert("insert", text)
+        except Exception:
+            pass
         self.after(50, self._maybe_instant)
+        return "break"  # prevent double-paste from default handler
 
     def _maybe_instant(self) -> None:
         if cfg.get().instant_translate and self.get_source_text().strip():
