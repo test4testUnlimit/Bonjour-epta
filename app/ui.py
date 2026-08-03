@@ -101,6 +101,11 @@ class TranslatorApp(ctk.CTk):
             self.lift()
             self.focus_force()
             apply_app_icon(self)
+            # Focus source box so Ctrl+V works immediately
+            try:
+                self._inner(self._src_box).focus_set()
+            except Exception:
+                pass
         except Exception:  # noqa: BLE001
             pass
 
@@ -356,9 +361,13 @@ class TranslatorApp(ctk.CTk):
             self._src_box.grid(
                 row=1, column=0, sticky="nsew", padx=T.INSET, pady=(0, T.INSET)
             )
-            self._src_box.bind("<<Paste>>", self._on_src_paste)
-            self._src_box.bind("<Control-v>", self._on_src_paste)
-            self._src_box.bind("<Control-V>", self._on_src_paste)
+            # Bind paste on inner tk.Text so Ctrl+V reliably reaches the handler
+            _inner_src = self._inner(self._src_box)
+            _inner_src.bind("<<Paste>>", self._on_src_paste)
+            _inner_src.bind("<Control-v>", self._on_src_paste)
+            _inner_src.bind("<Control-V>", self._on_src_paste)
+            # Auto-focus source box so paste works immediately
+            self._src_box.after(100, lambda: _inner_src.focus_set())
         else:
             codes = langs.codes_for_target()
             self._tgt_label_to_code = {langs.label_of(c): c for c in codes}
@@ -870,6 +879,7 @@ class TranslatorApp(ctk.CTk):
                 pass
             try:
                 self.focus_force()
+                self._inner(self._src_box).focus_set()
             except Exception:  # noqa: BLE001
                 pass
             ok = bool(got)
