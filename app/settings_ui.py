@@ -255,7 +255,7 @@ class SettingsWindow(ctk.CTkToplevel):
     def _measure_and_show(self, attempt: int = 0) -> None:
         """Measure content while hidden, set final size, center, then show."""
         try:
-            # Seed tall so pack lays out all children unconstrained
+            # Seed tall off-screen so pack lays out all children unconstrained
             self.geometry(f"{_WIN_W}x1200+-9999+-9999")
             self.update_idletasks()
         except Exception:
@@ -264,12 +264,19 @@ class SettingsWindow(ctk.CTkToplevel):
         if bottom < 80 and attempt < 25:
             self.after(20, lambda: self._measure_and_show(attempt + 1))
             return
-        # Use only content bottom — CTk reqheight is inflated by ~200px
-        measured = max(bottom + 12, 300)
-        # Cap to 92% of work area
+        # content_bottom is in physical (DPI-scaled) pixels,
+        # but geometry() takes logical units. Compute the DPI scale
+        # from the seeded window: winfo_height (physical) / 1200 (logical).
+        phys_h = max(int(self.winfo_height()), 1)
+        scale = phys_h / 1200.0
+        if scale < 0.5 or scale > 4.0:
+            scale = 1.0
+        # Convert physical content height to logical geometry units
+        measured = max(int(round((bottom + 12) / scale)), 300)
+        # Cap to 92% of work area (work_area returns physical pixels)
         try:
             _wx, _wy, _ww, wah = work_area()
-            cap = max(int(wah * 0.92), 300)
+            cap = max(int(round(wah * 0.92 / scale)), 300)
             if measured > cap:
                 measured = cap
         except Exception:
