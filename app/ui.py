@@ -135,7 +135,7 @@ class TranslatorApp(ctk.CTk):
         mark.grid_rowconfigure(0, weight=1)
         ctk.CTkLabel(
             mark,
-            text="bonjour",
+            text="Bonjour",
             font=ui_font(T.FONT_BRAND_SIZE),
             text_color=T.INK,
         ).grid(row=0, column=0, sticky="s")
@@ -147,10 +147,10 @@ class TranslatorApp(ctk.CTk):
         ).grid(row=0, column=1, sticky="s")
         ctk.CTkLabel(
             mark,
-            text=f" v{APP_VERSION}",
-            font=ui_font(12),
+            text=f" {APP_VERSION}",
+            font=ui_font(T.FONT_VERSION_SIZE),
             text_color=T.INK_SOFT,
-        ).grid(row=0, column=2, sticky="s")
+        ).grid(row=0, column=2, sticky="s", pady=(0, 8))
         # circular arrow — hard kill + relaunch (dev reload without TC)
         ctk.CTkButton(
             mark,

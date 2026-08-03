@@ -60,7 +60,7 @@ def setup() -> logging.Logger:
             log.warning("cannot open log %s: %s", p, exc)
 
     _CONFIGURED = True
-    log.info("=== bonjur session start ===")
+    log.info("=== Bonjour session start ===")
     return log
 
 

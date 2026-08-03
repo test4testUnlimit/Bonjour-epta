@@ -45,7 +45,7 @@ _STABLE_GAP_S = 0.04
 
 
 def _clipboard_seq() -> int:
-    """Windows clipboard sequence number — bumps on every write. 0 if unavailable."""
+    """Windows clipboard sequence number -- bumps on every write. 0 if unavailable."""
     if sys.platform != "win32":
         return 0
     try:
@@ -73,7 +73,7 @@ def _mods_down_win() -> bool:
 
 
 def _wait_mods_up(timeout_s: float = 2.0) -> bool:
-    """Crow: while (GetAsyncKeyState(...)) {} — with timeout so we never hang."""
+    """Crow: while (GetAsyncKeyState(...)) {} -- with timeout so we never hang."""
     if sys.platform != "win32":
         return True
     log = logutil.get()
@@ -92,11 +92,22 @@ def _wait_mods_up(timeout_s: float = 2.0) -> bool:
 
 
 def _send_ctrl_c_win() -> bool:
-    """Crow: INPUT[4] Ctrl down, C down, C up, Ctrl up via SendInput."""
+    """Crow-style: AttachThreadInput + SendInput Ctrl+C.
+
+    Critical fix: AttachThreadInput is required so that SendInput reaches the
+    foreground window even when bonjur runs as a background tray process.
+    Without it, Windows silently drops the injected keystrokes until the
+    process receives real keyboard input (e.g. via a hotkey press).
+    This caused the chip to appear only after the first hotkey use.
+    Crow Translate (C++) does the same attach/detach around SendInput.
+    """
     import ctypes
     from ctypes import wintypes
 
     user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    log = logutil.get()
+
     INPUT_KEYBOARD = 1
     KEYEVENTF_KEYUP = 0x0002
     VK_CONTROL = 0x11
@@ -140,6 +151,25 @@ def _send_ctrl_c_win() -> bool:
         inp.union.ki = KEYBDINPUT(vk, 0, flags, 0, None)
         return inp
 
+    # Crow fix: attach our thread to the foreground window input queue
+    # so SendInput keystrokes are not silently dropped by Windows.
+    attached = False
+    fg_tid = 0
+    my_tid = 0
+    try:
+        fg_hwnd = user32.GetForegroundWindow()
+        if fg_hwnd:
+            fg_tid = int(user32.GetWindowThreadProcessId(fg_hwnd, None))
+            my_tid = int(kernel32.GetCurrentThreadId())
+            if fg_tid and my_tid and fg_tid != my_tid:
+                if user32.AttachThreadInput(my_tid, fg_tid, True):
+                    attached = True
+                    log.debug("AttachThreadInput %s to %s ok", my_tid, fg_tid)
+                else:
+                    log.debug("AttachThreadInput %s to %s failed (non-fatal)", my_tid, fg_tid)
+    except Exception:  # noqa: BLE001
+        logutil.exc("AttachThreadInput setup")
+
     try:
         arr = (INPUT * 4)(
             key(VK_CONTROL, 0),
@@ -152,6 +182,13 @@ def _send_ctrl_c_win() -> bool:
     except Exception:  # noqa: BLE001
         logutil.exc("SendInput Ctrl+C")
         return False
+    finally:
+        # Always detach, even if SendInput failed
+        if attached:
+            try:
+                user32.AttachThreadInput(my_tid, fg_tid, False)
+            except Exception:  # noqa: BLE001
+                pass
 
 
 def _send_ctrl_c() -> bool:

@@ -43,12 +43,13 @@ TOOL_GAP = 8
 
 FONT_UI = "Segoe UI"
 FONT_MDL2 = "Segoe MDL2 Assets"
-GLYPH_SETTINGS = "\uE713"  # gear — not the old blurry «snowflake» png
+GLYPH_SETTINGS = "\uE713"  # gear
 GLYPH_RESTART = "\uE72C"  # circular refresh arrow (Segoe MDL2)
 FONT_UI_SIZE = 13
 FONT_BODY_SIZE = 13
-FONT_BRAND_SIZE = 21
-FONT_BRAND_CYR_SIZE = 16
+FONT_BRAND_SIZE = 18
+FONT_BRAND_CYR_SIZE = 18
+FONT_VERSION_SIZE = 9
 
 THEME_LIGHT = "light"
 THEME_DARK = "dark"
@@ -87,10 +88,8 @@ _LIGHT = {
     "CLEAR_HOVER": "#f3e8e6",
     "SETTINGS_BG": "#eceae4",
     "SETTINGS_CARD": "#ffffff",
-    # switches: track must read on white card (§76 unity with black accent)
     "SWITCH_ON": "#111111",
     "SWITCH_OFF": "#8a8a82",
-    # mid gray knob — читается и на чёрном треке, и на белой карточке
     "SWITCH_KNOB": "#d4d4cc",
     "SWITCH_KNOB_HOVER": "#c4c4bc",
     "READ_BG": "#ebeae4",
@@ -177,7 +176,7 @@ def _read_version() -> str:
 
 
 APP_VERSION = _read_version()
-APP_NAME = "bonjour epta"
+APP_NAME = "Bonjour"
 BRAND_LATIN = "epta"
 BRAND_CYR = "ёпта"
 TAGLINE = "Хочешь в Париж — учи язык"

@@ -33,9 +33,8 @@ class SettingsWindow(ctk.CTkToplevel):
     def __init__(self, master: ctk.CTk) -> None:
         super().__init__(master)
         self.title(T.APP_NAME)
-        # Tall seed so pack lays out unconstrained (measuring at 1px height
-        # under-reports children and clips the bottom on DPI-scaled screens).
-        self.geometry(f"{_WIN_W}x1200")
+        # Position off-screen so layout works but user sees nothing
+        self.geometry(f"{_WIN_W}x1200+-9999+-9999")
         self.minsize(400, 280)
         self.configure(fg_color=T.SETTINGS_BG)
         self.resizable(False, False)
@@ -241,98 +240,78 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(side="right")
 
         self.protocol("WM_DELETE_WINDOW", self._close)
-        self.after_idle(lambda: self._fit_to_content(0))
+        self.after_idle(lambda: self._measure_and_show(0))
 
     def _content_bottom(self) -> int:
-        """Lowest pixel of direct children (client coords). Not winfo_reqheight —
-        CTkFrame reqheight is inflated by ~200px."""
         bottom = 0
         for ch in self.winfo_children():
             try:
                 bottom = max(bottom, int(ch.winfo_y()) + int(ch.winfo_height()))
-            except Exception:  # noqa: BLE001
+            except Exception:
                 pass
         return bottom
 
-    def _geo_scale(self) -> tuple[float, float, int, int]:
-        """Return (sx, sy, geo_w, geo_h). Tk geometry is logical; winfo is DPI-scaled."""
-        m = re.match(r"(\d+)x(\d+)", self.geometry() or "")
-        if not m:
-            return 1.0, 1.0, _WIN_W, 600
-        gw, gh = int(m.group(1)), int(m.group(2))
-        ww, wh = max(int(self.winfo_width()), 1), max(int(self.winfo_height()), 1)
-        sx = ww / float(gw) if gw > 0 else 1.0
-        sy = wh / float(gh) if gh > 0 else 1.0
-        # Guard nonsense (minimized / not mapped)
-        if sx < 0.5 or sx > 4.0:
-            sx = 1.0
-        if sy < 0.5 or sy > 4.0:
-            sy = 1.0
-        return sx, sy, gw, gh
 
-    def _fit_to_content(self, _attempt: int = 0) -> None:
-        """Fit height to full content on any DPI / scale / work-area size.
-
-        Must measure after an unconstrained layout (seed height 1200), then convert
-        client px → geometry units via observed DPI scale. Never measure at height=1.
-        """
+    def _measure_and_show(self, attempt: int = 0) -> None:
+        """Measure content while hidden, set final size, center, then show."""
         try:
+            # Seed tall so pack lays out all children unconstrained
+            self.geometry(f"{_WIN_W}x1200+-9999+-9999")
             self.update_idletasks()
-        except Exception:  # noqa: BLE001
+        except Exception:
             return
-
-        # Ensure unconstrained layout for measurement
-        if _attempt == 0:
-            self.geometry(f"{_WIN_W}x1200")
-            self.update_idletasks()
-
         bottom = self._content_bottom()
-        if bottom < 80 and _attempt < 25:
-            self.after(20, lambda: self._fit_to_content(_attempt + 1))
+        if bottom < 80 and attempt < 25:
+            self.after(20, lambda: self._measure_and_show(attempt + 1))
             return
-
-        need_client = max(bottom + 10, 200)  # client px (DPI-scaled)
-        sx, sy, _gw, _gh = self._geo_scale()
-        req_h = max(int(round(need_client / sy)) + 2, 200)
-        req_w = _WIN_W
-
-        # Cap to primary work area so window never exceeds visible desktop
+        # Use only content bottom — CTk reqheight is inflated by ~200px
+        measured = max(bottom + 12, 300)
+        # Cap to 92% of work area
         try:
-            _wx, _wy, _ww, wh = work_area()
-            # leave room for taskbar chrome / title; convert screen px → geometry
-            max_client = max(int(wh * 0.92), 280)
-            max_req_h = max(int(round(max_client / sy)), 280)
-            if req_h > max_req_h:
-                req_h = max_req_h
-        except Exception:  # noqa: BLE001
+            _wx, _wy, _ww, wah = work_area()
+            cap = max(int(wah * 0.92), 300)
+            if measured > cap:
+                measured = cap
+        except Exception:
             pass
-
-        self.geometry(f"{req_w}x{req_h}")
-        self.minsize(min(400, req_w), min(280, req_h))
+        self.geometry(f"{_WIN_W}x{measured}")
+        self.minsize(400, min(280, measured))
         self.update_idletasks()
+        self._center_on_parent()
+        self.lift()
+        self.focus_force()
 
-        # Verify: if still clipped (scale misread), grow once more from residual
-        got = max(int(self.winfo_height()), 1)
-        still = self._content_bottom()
-        if still > got - 6 and _attempt < 8:
-            deficit = still - got + 14
-            sx2, sy2, _a, _b = self._geo_scale()
-            grow = max(int(round(deficit / max(sy2, 0.01))), 8)
-            self.geometry(f"{req_w}x{req_h + grow}")
-            self.update_idletasks()
-
-        self._center_on_screen()
-
-    def _center_on_screen(self) -> None:
+    def _center_on_parent(self) -> None:
         try:
             self.update_idletasks()
             ww = int(self.winfo_width())
             wh = int(self.winfo_height())
             wx, wy, aw, ah = work_area()
-            x = wx + max((aw - ww) // 2, 0)
-            y = wy + max((ah - wh) // 2, 0)
+            # Try to center over parent window
+            master = self.master
+            use_parent = False
+            if master is not None:
+                try:
+                    mw = int(master.winfo_width())
+                    mh = int(master.winfo_height())
+                    # Only use parent coords if it is actually visible (not in tray)
+                    if mw > 1 and mh > 1 and str(master.state()) != "withdrawn":
+                        mx = int(master.winfo_rootx())
+                        my = int(master.winfo_rooty())
+                        x = mx + (mw - ww) // 2
+                        y = my + (mh - wh) // 2
+                        use_parent = True
+                except Exception:
+                    pass
+            if not use_parent:
+                # Fallback: center on screen
+                x = wx + (aw - ww) // 2
+                y = wy + (ah - wh) // 2
+            # Clamp to work area
+            x = max(wx, min(x, wx + aw - ww))
+            y = max(wy, min(y, wy + ah - wh))
             self.geometry(f"+{x}+{y}")
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
 
     def _theme_btn(

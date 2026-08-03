@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bonjur-epta — Crow-style: hotkey → grab selection → open window with text.
+"""Bonjour ёпта — Crow-style: hotkey → grab selection → open window with text.
 
 Crow default: Ctrl+Alt+E translates selection (no floating chip required).
 We keep optional «чивобля?» chip; click uses cached text (no second Ctrl+C).
