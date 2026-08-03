@@ -63,6 +63,9 @@ class TranslatorApp(ctk.CTk):
         cfg.on_change(self._on_settings_changed)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.bind("<Unmap>", self._on_unmap)
+        # Window-level net: Ctrl+V while focus sits on a button/frame still
+        # pastes into the source box (fires only if no widget handled it).
+        self.bind("<Control-KeyPress>", self._on_window_ctrl_key)
 
         self.after(80, lambda: apply_app_icon(self))
 
@@ -363,9 +366,7 @@ class TranslatorApp(ctk.CTk):
             )
             # Bind paste on inner tk.Text so Ctrl+V reliably reaches the handler
             _inner_src = self._inner(self._src_box)
-            _inner_src.bind("<<Paste>>", self._on_src_paste)
-            _inner_src.bind("<Control-v>", self._on_src_paste)
-            _inner_src.bind("<Control-V>", self._on_src_paste)
+            self._bind_clipboard_keys(_inner_src)
             # Auto-focus source box so paste works immediately
             self._src_box.after(100, lambda: _inner_src.focus_set())
         else:
@@ -774,28 +775,137 @@ class TranslatorApp(ctk.CTk):
         self.clear_target()
         self._end_translate_progress_ui()
 
-    def _on_src_paste(self, _e=None) -> None:
+    # ── clipboard keys ────────────────────────────────────────────────────
+    # Windows virtual key codes — layout independent. Tk reports keysym by the
+    # *active* layout, so with a Cyrillic layout Ctrl+V arrives as
+    # <Control-Cyrillic_em> and never matches <Control-v>: the class binding
+    # runs instead (which just moves/extends the selection). Match on keycode.
+    _VK_A, _VK_C, _VK_V, _VK_X = 65, 67, 86, 88
+
+    def _bind_clipboard_keys(self, widget) -> None:
+        """Layout-independent Ctrl+V/C/X/A + Shift+Insert on a tk.Text."""
+        widget.bind("<<Paste>>", self._on_src_paste)
+        widget.bind("<Shift-Insert>", self._on_src_paste)
+        widget.bind("<Control-KeyPress>", self._on_ctrl_key)
+
+    def _on_ctrl_key(self, event):
+        keycode = getattr(event, "keycode", 0)
+        keysym = (getattr(event, "keysym", "") or "").lower()
+        if keycode == self._VK_V or keysym in ("v", "cyrillic_em"):
+            return self._on_src_paste(event)
+        if keycode == self._VK_C or keysym in ("c", "cyrillic_es"):
+            return self._on_src_copy(event)
+        if keycode == self._VK_X or keysym in ("x", "cyrillic_che"):
+            return self._on_src_cut(event)
+        if keycode == self._VK_A or keysym in ("a", "cyrillic_ef"):
+            return self._on_src_select_all(event)
+        return None  # let every other Ctrl+key keep its default behaviour
+
+    def _on_window_ctrl_key(self, event):
+        """Fallback for Ctrl+V when focus is not in a text widget."""
+        keycode = getattr(event, "keycode", 0)
+        keysym = (getattr(event, "keysym", "") or "").lower()
+        if keycode != self._VK_V and keysym not in ("v", "cyrillic_em"):
+            return None
+        try:
+            focused = self.focus_get()
+        except Exception:  # noqa: BLE001
+            focused = None
+        import tkinter as tk
+
+        if isinstance(focused, (tk.Text, tk.Entry)):
+            return None  # the widget binding already handled it
+        try:
+            self._inner(self._src_box).focus_set()
+        except Exception:  # noqa: BLE001
+            pass
+        return self._on_src_paste(event)
+
+    def _read_clipboard(self) -> str:
+        """Clipboard text, with a Win32 fallback (Tk can fail on CF_UNICODETEXT)."""
+        for kwargs in ({}, {"type": "UTF8_STRING"}, {"type": "STRING"}):
+            try:
+                text = self.clipboard_get(**kwargs)
+                if text:
+                    return text
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            text = pyperclip.paste()
+            if text:
+                return text
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            import ctypes
+
+            u32, k32 = ctypes.windll.user32, ctypes.windll.kernel32
+            CF_UNICODETEXT = 13
+            if not u32.OpenClipboard(0):
+                return ""
+            try:
+                handle = u32.GetClipboardData(CF_UNICODETEXT)
+                if not handle:
+                    return ""
+                ptr = k32.GlobalLock(handle)
+                if not ptr:
+                    return ""
+                try:
+                    return ctypes.c_wchar_p(ptr).value or ""
+                finally:
+                    k32.GlobalUnlock(handle)
+            finally:
+                u32.CloseClipboard()
+        except Exception:  # noqa: BLE001
+            return ""
+
+    def _on_src_paste(self, _e=None):
         """Handle Ctrl+V: paste clipboard into source box, then maybe auto-translate."""
         try:
             inner = self._inner(self._src_box)
-            # Get clipboard content
-            text = ""
-            try:
-                text = self.clipboard_get()
-            except Exception:
-                pass
+            text = self._read_clipboard()
             if text:
-                # If there is a selection, delete it first
                 try:
                     if inner.tag_ranges("sel"):
                         inner.delete("sel.first", "sel.last")
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 inner.insert("insert", text)
-        except Exception:
-            pass
+                inner.see("insert")
+        except Exception:  # noqa: BLE001
+            logutil.exc("src paste")
         self.after(50, self._maybe_instant)
         return "break"  # prevent double-paste from default handler
+
+    def _on_src_copy(self, _e=None):
+        try:
+            inner = self._inner(self._src_box)
+            if inner.tag_ranges("sel"):
+                self.clipboard_clear()
+                self.clipboard_append(inner.get("sel.first", "sel.last"))
+        except Exception:  # noqa: BLE001
+            logutil.exc("src copy")
+        return "break"
+
+    def _on_src_cut(self, _e=None):
+        try:
+            inner = self._inner(self._src_box)
+            if inner.tag_ranges("sel"):
+                self.clipboard_clear()
+                self.clipboard_append(inner.get("sel.first", "sel.last"))
+                inner.delete("sel.first", "sel.last")
+        except Exception:  # noqa: BLE001
+            logutil.exc("src cut")
+        return "break"
+
+    def _on_src_select_all(self, _e=None):
+        try:
+            inner = self._inner(self._src_box)
+            inner.tag_add("sel", "1.0", "end-1c")
+            inner.mark_set("insert", "1.0")
+        except Exception:  # noqa: BLE001
+            logutil.exc("src select all")
+        return "break"
 
     def _maybe_instant(self) -> None:
         if cfg.get().instant_translate and self.get_source_text().strip():
