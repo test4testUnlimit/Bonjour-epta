@@ -1,0 +1,323 @@
+{
+  "id": "corp",
+  "title": "Корп-сленг и переписка",
+  "priority": 11,
+  "entries": [
+    {
+      "term": "EOD",
+      "expansion": "End of Day",
+      "ru": "До конца рабочего дня",
+      "where": "«Send it by EOD» — сегодня до вечера. По часовому поясу отправителя, если не сказано иначе.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "EOW",
+      "expansion": "End of Week",
+      "ru": "До конца недели",
+      "where": "Обычно пятница вечер.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "EOM",
+      "expansion": "End of Month",
+      "ru": "До конца месяца",
+      "where": "В теме письма EOM может также значить End of Message — весь текст в заголовке, тела нет.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "EOQ",
+      "expansion": "End of Quarter",
+      "ru": "До конца квартала",
+      "where": "Отчётная точка: под неё подгоняют отгрузки и метрики.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "EOY",
+      "expansion": "End of Year",
+      "ru": "До конца года",
+      "domain": ["corp"]
+    },
+    {
+      "term": "COB",
+      "expansion": "Close of Business",
+      "ru": "К концу рабочего дня",
+      "where": "То же, что EOD, чаще в британском и финансовом обиходе.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "ETA",
+      "expansion": "Estimated Time of Arrival",
+      "ru": "Ожидаемый срок",
+      "where": "«What's the ETA?» — когда будет готово. Не обязательно про доставку.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "OOO",
+      "expansion": "Out of Office",
+      "ru": "Не на месте / в отпуске",
+      "where": "Статус в календаре и автоответчик.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "PTO",
+      "expansion": "Paid Time Off",
+      "ru": "Оплачиваемый отпуск",
+      "where": "В США общий счётчик отпуска и отгулов. Осторожно: в производстве PTO — ещё и Power Take-Off, вал отбора мощности.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "FYI",
+      "expansion": "For Your Information",
+      "ru": "К сведению",
+      "where": "Пересылка без требования действия. Если нужно действие — пишут FYA (For Your Action).",
+      "domain": ["corp"]
+    },
+    {
+      "term": "TL;DR",
+      "expansion": "Too Long; Didn't Read",
+      "ru": "Кратко: суть в одну фразу",
+      "where": "Строка-выжимка в начале длинного письма.",
+      "domain": ["corp"],
+      "aliases": ["TLDR"]
+    },
+    {
+      "term": "ASAP",
+      "expansion": "As Soon As Possible",
+      "ru": "Как можно скорее",
+      "domain": ["corp"]
+    },
+    {
+      "term": "WFH",
+      "expansion": "Work From Home",
+      "ru": "Работа из дома",
+      "domain": ["corp"]
+    },
+    {
+      "term": "RTO",
+      "expansion": "Return to Office",
+      "ru": "Возврат в офис",
+      "where": "Политика присутствия. В ИТ-контексте RTO — ещё и Recovery Time Objective.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "OKR",
+      "expansion": "Objectives and Key Results",
+      "ru": "Цели и ключевые результаты",
+      "where": "Квартальная рамка целей: одна цель — три-четыре измеримых результата.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "KPI",
+      "expansion": "Key Performance Indicator",
+      "ru": "Ключевой показатель",
+      "where": "Метрика, по которой оценивают участок: OEE, FPY, UPH, DT.",
+      "domain": ["corp", "manufacturing"]
+    },
+    {
+      "term": "SLA",
+      "expansion": "Service Level Agreement",
+      "ru": "Соглашение об уровне обслуживания",
+      "where": "Обещанный срок реакции и восстановления — по нему меряют MTTA и MTTR.",
+      "domain": ["corp", "it"]
+    },
+    {
+      "term": "RACI",
+      "expansion": "Responsible, Accountable, Consulted, Informed",
+      "ru": "Исполнитель, ответственный, консультант, информируемый",
+      "where": "Матрица ролей: Accountable всегда один, иначе спрашивать будет не с кого.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "ROI",
+      "expansion": "Return on Investment",
+      "ru": "Возврат на вложения",
+      "where": "Оправдание закупки: за сколько окупится. В машинном зрении ROI — совсем другое: область интереса на кадре.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "ROI",
+      "expansion": "Region of Interest",
+      "ru": "Область интереса на изображении",
+      "where": "Прямоугольник на кадре, внутри которого камера что-то ищет или мерит. Настраивается в рецепте инспекции.",
+      "domain": ["vision", "automation"]
+    },
+    {
+      "term": "TCO",
+      "expansion": "Total Cost of Ownership",
+      "ru": "Совокупная стоимость владения",
+      "where": "Цена покупки плюс обслуживание, запчасти, простои и обучение за весь срок службы.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "MVP",
+      "expansion": "Minimum Viable Product",
+      "ru": "Минимально жизнеспособный продукт",
+      "where": "Самая маленькая версия, на которой уже видно, работает идея или нет.",
+      "domain": ["corp", "it"]
+    },
+    {
+      "term": "PoC",
+      "expansion": "Proof of Concept",
+      "ru": "Проверка концепции",
+      "where": "Быстрый прототип для ответа «получится ли вообще». Осторожно: PoC также Point of Contact — контактное лицо.",
+      "domain": ["corp", "engineering"],
+      "aliases": ["POC"]
+    },
+    {
+      "term": "RFQ",
+      "expansion": "Request for Quotation",
+      "ru": "Запрос коммерческого предложения",
+      "where": "Требования готовы, спрашивают цену и срок.",
+      "domain": ["corp", "purchasing"]
+    },
+    {
+      "term": "RFI",
+      "expansion": "Request for Information",
+      "ru": "Запрос информации",
+      "where": "Раньше RFQ: узнать, кто вообще это умеет.",
+      "domain": ["corp", "purchasing"]
+    },
+    {
+      "term": "RFP",
+      "expansion": "Request for Proposal",
+      "ru": "Запрос предложений",
+      "where": "Задача описана, поставщик предлагает своё решение и цену.",
+      "domain": ["corp", "purchasing"]
+    },
+    {
+      "term": "PO",
+      "expansion": "Purchase Order",
+      "ru": "Заказ на закупку",
+      "where": "Без номера PO поставщик обычно не отгружает и счёт не примут к оплате.",
+      "domain": ["corp", "purchasing"]
+    },
+    {
+      "term": "SOW",
+      "expansion": "Statement of Work",
+      "ru": "Техническое задание к договору",
+      "where": "Что именно делается, к какому сроку и что считается приёмкой.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "NDA",
+      "expansion": "Non-Disclosure Agreement",
+      "ru": "Соглашение о неразглашении",
+      "domain": ["corp", "legal"]
+    },
+    {
+      "term": "SME",
+      "expansion": "Subject Matter Expert",
+      "ru": "Профильный эксперт",
+      "where": "Человек, к которому идут за ответом по конкретной теме. В экономике SME — малый и средний бизнес.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "WIP",
+      "expansion": "Work in Progress",
+      "ru": "Незавершённое производство / в работе",
+      "where": "На производстве — детали между операциями; в переписке — «ещё не готово».",
+      "domain": ["corp", "manufacturing"]
+    },
+    {
+      "term": "TBD",
+      "expansion": "To Be Determined",
+      "ru": "Будет определено позже",
+      "where": "В чертеже или плане — дыра, которую кто-то обязан закрыть.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "TBC",
+      "expansion": "To Be Confirmed",
+      "ru": "Требует подтверждения",
+      "domain": ["corp"]
+    },
+    {
+      "term": "AKA",
+      "expansion": "Also Known As",
+      "ru": "Он же",
+      "domain": ["corp"]
+    },
+    {
+      "term": "IMO",
+      "expansion": "In My Opinion",
+      "ru": "По-моему",
+      "where": "Смягчает: это мнение, а не решение. IMHO — то же, но с «humble».",
+      "domain": ["corp"],
+      "aliases": ["IMHO"]
+    },
+    {
+      "term": "IIRC",
+      "expansion": "If I Recall Correctly",
+      "ru": "Если правильно помню",
+      "where": "Прямой сигнал, что факт стоит перепроверить.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "PTAL",
+      "expansion": "Please Take Another Look",
+      "ru": "Посмотри ещё раз",
+      "where": "В код-ревью: правки внесены, жду повторного взгляда.",
+      "domain": ["corp", "it"]
+    },
+    {
+      "term": "LGTM",
+      "expansion": "Looks Good To Me",
+      "ru": "По-моему нормально — согласовано",
+      "where": "Одобрение ревью.",
+      "domain": ["corp", "it"]
+    },
+    {
+      "term": "NIT",
+      "expansion": "Nitpick",
+      "ru": "Мелкое замечание, не блокирующее",
+      "where": "В ревью помечает придирку, которую можно и проигнорировать.",
+      "domain": ["corp", "it"]
+    },
+    {
+      "term": "HC",
+      "expansion": "Headcount",
+      "ru": "Численность персонала",
+      "where": "«No HC for that» — ставки не выделены.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "FTE",
+      "expansion": "Full-Time Equivalent",
+      "ru": "Эквивалент полной занятости",
+      "where": "Единица трудозатрат: 0.5 FTE — половина человека на полгода или человек на полставки.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "OT",
+      "expansion": "Overtime",
+      "ru": "Сверхурочные",
+      "domain": ["corp", "manufacturing"]
+    },
+    {
+      "term": "FY",
+      "expansion": "Fiscal Year",
+      "ru": "Финансовый год",
+      "where": "Отчётные 12 месяцев компании. FY26 может начинаться не в январе — зависит от компании.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "QoQ",
+      "expansion": "Quarter over Quarter",
+      "ru": "Квартал к кварталу",
+      "domain": ["corp"]
+    },
+    {
+      "term": "YoY",
+      "expansion": "Year over Year",
+      "ru": "Год к году",
+      "where": "Сравнение с тем же периодом прошлого года — снимает сезонность.",
+      "domain": ["corp"]
+    },
+    {
+      "term": "WoW",
+      "expansion": "Week over Week",
+      "ru": "Неделя к неделе",
+      "domain": ["corp"]
+    }
+  ]
+}

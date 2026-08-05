@@ -5,7 +5,7 @@ from app.selection import (
     MARKER_PREFIX, _is_marker, _clip_get, _clip_set,
     _clipboard_seq, _ensure_not_marker_on_clipboard,
     _send_ctrl_c, _wait_mods_up, get_selected_text,
-    sanitize_selection, _CLIP_LOCK,
+    sanitize_selection, _CLIP_LOCK, _restore_verdict,
 )
 
 class TestSanitize:
@@ -122,6 +122,82 @@ class TestLarge:
         r,_=_run([10]+[11]*20,["old","A"*10000,"A"*50000]+["A"*100000]*4, settle=1.0); assert len(r)==100000
     def test_huge(self):
         r,_=_run([10]+[11]*20,["old","B"*60000]+["B"*60001]*4, settle=1.5); assert len(r)>=60000
+
+class TestRestoreVerdict:
+    """The clipboard goes back only when it is still ours to give back."""
+
+    def _v(self, prev="old", before=10, after=11, cur=11, copied=False, marker=False):
+        with (
+            patch("app.selection._clipboard_seq", return_value=cur),
+            patch("app.selection.copy_guard.copied_since", return_value=copied),
+        ):
+            return _restore_verdict(prev, before, after, 0.0, prev_marker=marker)
+
+    def test_happy(self): assert self._v()[0] is True
+    def test_user_copied(self):
+        ok, why = self._v(copied=True); assert ok is False; assert "user copied" in why
+    def test_untouched(self):
+        ok, why = self._v(before=10, after=0, cur=10); assert ok is False; assert "untouched" in why
+    def test_someone_else_wrote(self):
+        ok, why = self._v(after=11, cur=12); assert ok is False; assert "another app" in why
+    def test_empty_prev(self):
+        ok, why = self._v(prev=""); assert ok is False; assert "empty" in why
+    def test_empty_prev_marker(self): assert self._v(prev="", marker=True)[0] is True
+    def test_no_seq_platform(self): assert self._v(before=0, after=0, cur=0)[0] is True
+
+
+class TestUserCopyWins:
+    """The reported bug: Ctrl+C during a capture must survive."""
+
+    def test_capture_does_not_wipe_user_copy(self):
+        with patch("app.selection.copy_guard.copied_since") as cs_since:
+            # False for the fast-path check, True by the time we would restore
+            cs_since.side_effect = [False, True]
+            r, cs = _run([10, 11, 11, 11], ["old", "mine", "mine", "mine"])
+        assert r == "mine"
+        cs.assert_not_called()
+
+    def test_fresh_user_copy_skips_injection(self):
+        with (
+            patch("app.selection.copy_guard.copied_since", return_value=True),
+            patch("app.selection.copy_guard.recent", return_value=True),
+            patch("app.selection._send_ctrl_c") as send,
+            patch("app.selection._clip_get", return_value="what the user copied"),
+            patch("app.selection._clip_set") as cs,
+        ):
+            got = get_selected_text(restore_clipboard=True, settle_s=0.25, since=0.0)
+        assert got == "what the user copied"
+        send.assert_not_called()
+        cs.assert_not_called()
+
+    def test_stuck_ctrl_never_injects(self):
+        with (
+            patch("app.selection._wait_mods_up", return_value=False),
+            patch("app.selection._send_ctrl_c") as send,
+            patch("app.selection._clip_get", return_value="x"),
+            patch("app.selection._clip_set") as cs,
+        ):
+            assert get_selected_text(restore_clipboard=True, settle_s=0.25) == ""
+        send.assert_not_called()
+        cs.assert_not_called()
+
+    def test_stuck_ctrl_falls_back_to_clipboard(self):
+        with (
+            patch("app.selection._wait_mods_up", return_value=False),
+            patch("app.selection._send_ctrl_c") as send,
+            patch("app.selection._clip_get", return_value="prev"),
+            patch("app.selection._clip_set"),
+        ):
+            got = get_selected_text(restore_clipboard=True, settle_s=0.25, clipboard_fallback=True)
+        assert got == "prev"
+        send.assert_not_called()
+
+    def test_nothing_copied_no_pointless_write(self):
+        """Ctrl+C produced no change — writing anything would kill rich formats."""
+        r, cs = _run([10] * 20, ["old"] * 20)
+        assert r == ""
+        cs.assert_not_called()
+
 
 class TestRace:
     def test_lock_timeout(self):

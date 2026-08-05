@@ -22,6 +22,19 @@ Global lock: concurrent watcher threads must not interleave Ctrl+C/restore.
 
 sanitize_selection / _is_marker stay as defence-in-depth: strip any stray
 __bonjur_* left on the clipboard by an older build still running elsewhere.
+
+Ctrl+C "works every other time" — three rules were missing:
+
+  1) Never inject Ctrl+C while the user physically holds Ctrl. Our injection
+     ends with a Ctrl KEYUP; with the real key still down the foreground app
+     now believes Ctrl is released, so the user's own Ctrl+C does nothing at
+     all until they let go and press again. That is the "перехватывает".
+  2) Never put the old clipboard back over a write we did not make. If the
+     user's Ctrl+C lands inside our capture window, restoring wipes exactly
+     what they just copied.
+  3) Never restore when our Ctrl+C changed nothing. A pointless text-only
+     write still re-owns the clipboard: it cancels Excel's marching ants and
+     drops the HTML/RTF/image flavours the user actually had.
 """
 
 from __future__ import annotations
@@ -33,7 +46,7 @@ import time
 
 import pyperclip
 
-from . import logutil
+from . import copy_guard, logutil
 
 MARKER_PREFIX = "__bonjur_"
 _MARKER_RE = re.compile(r"^\s*" + re.escape(MARKER_PREFIX) + r"[0-9a-fA-F]*__?\s*$")
@@ -42,6 +55,8 @@ _CLIP_LOCK = threading.Lock()
 _HARD_CAP_S = 5.0
 _STABLE_POLLS = 3
 _STABLE_GAP_S = 0.04
+# a user Ctrl+C this fresh means the clipboard already holds their selection
+USER_COPY_S = 1.2
 
 
 def _clipboard_seq() -> int:
@@ -87,7 +102,7 @@ def _wait_mods_up(timeout_s: float = 2.0) -> bool:
             time.sleep(0.03)
             return True
         time.sleep(0.01)
-    log.warning("modifiers still down after %.1fs -- proceed anyway", timeout_s)
+    log.warning("modifiers still down after %.1fs -- caller must not inject", timeout_s)
     return False
 
 
@@ -177,7 +192,9 @@ def _send_ctrl_c_win() -> bool:
             key(VK_C, KEYEVENTF_KEYUP),
             key(VK_CONTROL, KEYEVENTF_KEYUP),
         )
-        n = user32.SendInput(4, ctypes.byref(arr), ctypes.sizeof(INPUT))
+        # tell copy_guard these four events are ours, not a user copy
+        with copy_guard.injecting():
+            n = user32.SendInput(4, ctypes.byref(arr), ctypes.sizeof(INPUT))
         return int(n) == 4
     except Exception:  # noqa: BLE001
         logutil.exc("SendInput Ctrl+C")
@@ -197,7 +214,8 @@ def _send_ctrl_c() -> bool:
             return True
     try:
         import keyboard
-        keyboard.send("ctrl+c")
+        with copy_guard.injecting():
+            keyboard.send("ctrl+c")
         return True
     except Exception:  # noqa: BLE001
         return False
@@ -262,15 +280,42 @@ def _ensure_not_marker_on_clipboard(previous: str) -> None:
         pass
 
 
+def _restore_verdict(
+    previous: str,
+    seq_before: int,
+    seq_after: int,
+    since: float,
+    *,
+    prev_marker: bool = False,
+) -> tuple[bool, str]:
+    """Put the old clipboard back only when nothing else has claimed it."""
+    if copy_guard.copied_since(since):
+        return False, "user copied during capture"
+    cur = _clipboard_seq()
+    if seq_before and cur and cur == seq_before:
+        return False, "clipboard untouched — nothing to put back"
+    if seq_after and cur and cur != seq_after:
+        return False, "clipboard rewritten by another app"
+    if not previous and not prev_marker:
+        return False, "previous was empty — never blank a live clipboard"
+    return True, ""
+
+
 def get_selected_text(
     restore_clipboard: bool = True,
     settle_s: float = 1.0,
     *,
     clipboard_fallback: bool = False,
+    since: float | None = None,
 ) -> str:
     """
     Crow-style selection grab via clipboard sequence number (same-text reselect
     safe, never writes a probe to the clipboard). Never raises.
+
+    `since` — perf_counter stamp of the gesture that asked for this capture
+    (mouse-up, hotkey press). A user Ctrl+C after that stamp means their own
+    copy is already on the clipboard: we read it instead of injecting, and we
+    never restore over it.
     """
     log = logutil.get()
     if not _CLIP_LOCK.acquire(timeout=3.0):
@@ -281,6 +326,7 @@ def get_selected_text(
             restore_clipboard=restore_clipboard,
             settle_s=settle_s,
             clipboard_fallback=clipboard_fallback,
+            since=time.perf_counter() if since is None else since,
         )
     finally:
         _CLIP_LOCK.release()
@@ -291,6 +337,7 @@ def _get_selected_text_locked(
     restore_clipboard: bool,
     settle_s: float,
     clipboard_fallback: bool,
+    since: float,
 ) -> str:
     log = logutil.get()
     log.debug(
@@ -308,15 +355,33 @@ def _get_selected_text_locked(
 
     previous = ""
     try:
-        _wait_mods_up(2.0)
+        # The user pressed Ctrl+C themselves after the gesture -- their
+        # selection is already on the clipboard. Reading it is faster than
+        # injecting, and touching nothing means their copy survives intact.
+        if copy_guard.copied_since(since) and copy_guard.recent(USER_COPY_S):
+            time.sleep(0.06)  # let the target app finish writing
+            own = sanitize_selection(_clip_get())
+            if own:
+                log.info("user Ctrl+C in flight -- reuse clipboard len=%s", len(own))
+                return own
+
+        # Never inject while a modifier is physically held: our trailing
+        # Ctrl KEYUP would desync the foreground app and swallow the user's
+        # own Ctrl+C until they release and press again.
+        if not _wait_mods_up(2.0):
+            log.warning("modifiers stuck down -- skip injecting Ctrl+C")
+            if clipboard_fallback:
+                return sanitize_selection(_clip_get())
+            return ""
 
         # Snapshot clipboard NOW -- modifiers are up, no user Ctrl+C/X race.
         try:
             previous = _clip_get()
         except Exception:  # noqa: BLE001
             logutil.exc("clip previous")
-        if _is_marker(previous):
-            previous = ""
+        prev_marker = _is_marker(previous)
+        if prev_marker:
+            previous = ""  # a probe from an ancient build — wipe, never re-serve
         log.debug("clip previous len=%s head=%r", len(previous), previous[:80])
 
         # Sequence number taken right before Ctrl+C -- no stale gap.
@@ -335,6 +400,7 @@ def _get_selected_text_locked(
         deadline_hard = time.perf_counter() + hard
         polls = 0
         selected = ""
+        seq_after = 0
         while time.perf_counter() < deadline_hard:
             time.sleep(0.03)
             polls += 1
@@ -386,11 +452,18 @@ def _get_selected_text_locked(
 
             selected = sanitize_selection(candidate)
             if selected:
+                seq_after = _clipboard_seq()
                 log.debug("clip changed after %s polls len=%s", polls, len(selected))
                 break
 
         if restore_clipboard:
-            _clip_set(previous)
+            ok, why = _restore_verdict(
+                previous, seq_before, seq_after, since, prev_marker=prev_marker
+            )
+            if ok:
+                _clip_set(previous)
+            else:
+                log.info("clipboard left as is: %s", why)
 
         selected = sanitize_selection(selected)
         if selected:
@@ -408,7 +481,7 @@ def _get_selected_text_locked(
     except Exception:  # noqa: BLE001
         logutil.exc("get_selected_text fatal")
         try:
-            if restore_clipboard:
+            if restore_clipboard and previous and not copy_guard.copied_since(since):
                 _clip_set(previous)
         except Exception:  # noqa: BLE001
             pass

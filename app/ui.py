@@ -8,11 +8,15 @@ from collections.abc import Callable
 import customtkinter as ctk
 import pyperclip
 
+from . import acronyms
+from . import ai_client, ai_config, ai_token, assistant
 from . import languages as langs
 from . import logutil
 from . import settings as cfg
 from . import theme as T
 from . import translators as tr
+from .acro_panel import AcronymPanel
+from .ai_panel import AiPanel
 from .restart import schedule_relaunch
 from .settings_ui import SettingsWindow
 from .theme import apply_appearance, apply_theme, mdl2_font, ui_font
@@ -32,8 +36,11 @@ class TranslatorApp(ctk.CTk):
         apply_theme(s.ui_theme)
         # native Windows caption, empty title text
         self.title("")
-        self.geometry("1000x560")
-        self.minsize(760, 440)
+        # v2.0 added the AI group to the toolbar. The ⇄ is placed at relx=0.5, so
+        # the left side only ever gets half the width: measured, mark + the group
+        # stop fitting under ~975 and the swap starts painting over «объясни».
+        self.geometry("1120x600")
+        self.minsize(990, 460)
         self.configure(fg_color=T.BG)
         self._theme_pref = s.ui_theme
 
@@ -53,6 +60,14 @@ class TranslatorApp(ctk.CTk):
         self._progress_after_id: str | None = None
         self._progress_tick = 0
         self._tgt_progress = False
+        self._progress_word = "переводим"
+        self._ai_job = 0
+        self._token_after_id: str | None = None
+
+        # dictionaries load off the UI thread — first explain() just waits for it
+        self._acro_packs = dict(s.acronym_packs or {})
+        acronyms.set_enabled(self._acro_packs)
+        acronyms.warm()
 
         self._shell = ctk.CTkFrame(
             self, fg_color=T.BG, border_width=0, corner_radius=0
@@ -60,6 +75,10 @@ class TranslatorApp(ctk.CTk):
         self._shell.pack(fill="both", expand=True)
 
         self._build(self._shell)
+        # subscribed once, not per _build — a theme switch rebuilds every widget
+        # but _sync_ai_group looks them up fresh each time it runs
+        ai_token.on_change(self._on_token_change)
+        self._watch_token()
         cfg.on_change(self._on_settings_changed)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.bind("<Unmap>", self._on_unmap)
@@ -173,6 +192,24 @@ class TranslatorApp(ctk.CTk):
             border_width=0,
             command=self._restart_client,
         ).grid(row=0, column=3, sticky="s", padx=(6, 0), pady=(0, 1))
+        # book stack — the dictionary in one click, no acronym in the text needed
+        ctk.CTkButton(
+            mark,
+            text=T.GLYPH_DICT,
+            font=mdl2_font(14),
+            width=26,
+            height=26,
+            corner_radius=13,
+            fg_color="transparent",
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK_SOFT,
+            border_width=0,
+            command=lambda: self.open_acro_window(),
+        ).grid(row=0, column=4, sticky="s", padx=(2, 0), pady=(0, 1))
+
+        # AI lives on the left: the right side is already full, and the ⇄ sits
+        # dead centre over the pane gap, so anything wide there gets painted on
+        self._build_ai_group(toolbar).pack(side="left", padx=(T.GAP, 0), pady=vpad)
 
         self._btn_swap = ctk.CTkButton(
             toolbar,
@@ -259,6 +296,12 @@ class TranslatorApp(ctk.CTk):
 
         self._right = self._make_pane(panes, "target")
         self._right.grid(row=0, column=2, sticky="nsew")
+
+        # AI answer strip, then the acronym strip — both full width under the
+        # panes, both packed only when they have something; the panes give up
+        # the height and the footer, living in `parent`, does not move
+        self._ai_panel = AiPanel(content)
+        self._acro = AcronymPanel(content, on_open_dict=self.open_acro_window)
 
         # footer: tagline слева · hotkey справа (без центрального статуса)
         foot = ctk.CTkFrame(parent, fg_color=T.BG, height=T.FOOT_H)
@@ -367,8 +410,10 @@ class TranslatorApp(ctk.CTk):
             # Bind paste on inner tk.Text so Ctrl+V reliably reaches the handler
             _inner_src = self._inner(self._src_box)
             self._bind_clipboard_keys(_inner_src)
-            # Auto-focus source box so paste works immediately
-            self._src_box.after(100, lambda: _inner_src.focus_set())
+            # Auto-focus source box so paste works immediately. A theme switch
+            # rebuilds this pane, but the timer it left behind still fires — and
+            # Tk does not cancel it just because the widget was destroyed.
+            self._src_box.after(100, lambda w=_inner_src: self._focus_if_alive(w))
         else:
             codes = langs.codes_for_target()
             self._tgt_label_to_code = {langs.label_of(c): c for c in codes}
@@ -390,6 +435,9 @@ class TranslatorApp(ctk.CTk):
             self._tgt_box.grid(
                 row=1, column=0, sticky="nsew", padx=T.INSET, pady=(0, T.INSET)
             )
+            # Ctrl+C on the translation: Tk's own <Control-c> never fires on a
+            # Cyrillic layout, so the most-copied box in the app was dead there
+            self._bind_copy_keys(self._inner(self._tgt_box))
 
         if side == "target":
             self._tgt_pane = frame
@@ -399,8 +447,11 @@ class TranslatorApp(ctk.CTk):
         return frame
 
     def _textbox(self, parent) -> ctk.CTkTextbox:
+        # low natural height on purpose — the pane grows by expand, so the
+        # acronym strip below can always claim the height it asks for
         return ctk.CTkTextbox(
             parent,
+            height=120,
             fg_color=T.FIELD,
             text_color=T.INK,
             border_width=1,
@@ -442,6 +493,168 @@ class TranslatorApp(ctk.CTk):
             text_color=T.INK,
             command=self.open_settings,
         )
+
+    # ── AI group ─────────────────────────────────────────────────────────
+    # One fenced-off block so it can grey out as a unit: without ~/.bonjur-epta/
+    # ai.json or without a live token there is nothing here that can work.
+
+    AI_INNER_H = 22
+
+    def _build_ai_group(self, parent) -> ctk.CTkFrame:
+        # No pack_propagate(False) here: frozen, the frame would keep CTk's default
+        # 200px while the children ask for ~232, and pack squeezes the last button
+        # until its own label spills over the neighbour. Every child is a fixed
+        # size, so letting the frame hug them gives the same ROW_H and always fits.
+        self._ai_group = ctk.CTkFrame(
+            parent,
+            corner_radius=T.ROW_H // 2,
+            fg_color=T.SURFACE,
+            border_width=1,
+            border_color=T.LINE,
+        )
+
+        h = self.AI_INNER_H
+        pad = (T.ROW_H - h) // 2
+
+        self._btn_token = ctk.CTkButton(
+            self._ai_group,
+            text=T.GLYPH_TOKEN,
+            font=mdl2_font(12),
+            width=28,
+            height=h,
+            corner_radius=h // 2,
+            fg_color="transparent",
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK_SOFT,
+            border_width=0,
+            command=self.paste_ai_token,
+        )
+        self._btn_token.pack(side="left", padx=(3, 0), pady=pad)
+
+        # heights pinned to the buttons' — a default-height label would make the
+        # whole group taller than every other control in the toolbar
+        self._token_dot = ctk.CTkLabel(
+            self._ai_group,
+            text="●",
+            width=12,
+            height=h,
+            font=ui_font(11),
+            text_color=T.INK_FAINT,
+            anchor="center",
+        )
+        self._token_dot.pack(side="left", pady=pad)
+
+        # fixed width — the group must not twitch every time a minute ticks off
+        self._token_lbl = ctk.CTkLabel(
+            self._ai_group,
+            text="",
+            width=28,
+            height=h,
+            font=ui_font(10),
+            text_color=T.INK_FAINT,
+            anchor="w",
+        )
+        self._token_lbl.pack(side="left", padx=(2, 0), pady=pad)
+
+        # a floor, not the final size: CTkButton never renders narrower than its
+        # own label plus padding, so the group ends up label-driven either way
+        self._btn_polish = self._ai_btn("причесать", self.polish_now, 64)
+        self._btn_polish.pack(side="left", padx=(2, 0), pady=pad)
+        self._btn_explain = self._ai_btn("объясни", self.explain_now, 54)
+        self._btn_explain.pack(side="left", padx=(2, 5), pady=pad)
+
+        self._sync_ai_group()
+        return self._ai_group
+
+    def _ai_btn(self, text: str, cmd: Callable, w: int) -> ctk.CTkButton:
+        return ctk.CTkButton(
+            self._ai_group,
+            text=text,
+            width=w,
+            height=self.AI_INNER_H,
+            corner_radius=self.AI_INNER_H // 2,
+            fg_color="transparent",
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK,
+            border_width=0,
+            font=ui_font(11),
+            command=cmd,
+        )
+
+    def _ai_configured(self) -> bool:
+        """The feature exists at all: switched on in settings and endpoint known."""
+        try:
+            return bool(cfg.get().ai_enabled) and ai_config.configured()
+        except Exception:  # noqa: BLE001
+            return False
+
+    def _sync_ai_group(self) -> None:
+        """Repaint the dot, the minutes left, and whether the buttons can be pressed."""
+        if not hasattr(self, "_ai_group"):
+            return
+        left = ai_token.seconds_left()
+
+        if not self._ai_configured():
+            dot, note = T.INK_FAINT, ""
+        elif not ai_token.present():
+            dot, note = T.INK_FAINT, "нет"
+        elif left <= 0:
+            dot, note = T.ERR, "истёк"
+        elif left < 15 * 60:
+            dot, note = T.WARN, f"{left // 60}м"
+        else:
+            dot, note = T.OK, f"{left // 60}м"
+
+        usable = self._ai_configured() and left > 0
+        state = "normal" if usable else "disabled"
+        try:
+            self._token_dot.configure(text_color=dot)
+            self._token_lbl.configure(text=note)
+            self._btn_token.configure(
+                state="normal" if self._ai_configured() else "disabled"
+            )
+            self._btn_polish.configure(state=state)
+            self._btn_explain.configure(state=state)
+            # inert group sinks into the toolbar; live one lifts off it
+            self._ai_group.configure(fg_color=T.SURFACE if usable else T.BG)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _watch_token(self) -> None:
+        """The label counts down on its own; the watcher thread only fires on changes."""
+        self._sync_ai_group()
+        try:
+            self._token_after_id = self.after(30_000, self._watch_token)
+        except Exception:  # noqa: BLE001
+            self._token_after_id = None
+
+    def _on_token_change(self) -> None:
+        """Called from the renew thread — hop back onto Tk before touching widgets."""
+        try:
+            self.after(0, self._sync_ai_group)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def paste_ai_token(self) -> None:
+        ok, msg = ai_token.paste_from_clipboard()
+        self._sync_ai_group()
+        self._flash_foot(("✓ " if ok else "") + msg, ok)
+
+    def _flash_foot(self, text: str, ok: bool = True) -> None:
+        """Say something in the footer for four seconds, then put the hotkey back."""
+
+        def restore() -> None:
+            # a theme switch in the meantime replaced the label we captured
+            try:
+                self._hk_foot.configure(text=self._hotkey_footer(), text_color=T.INK_FAINT)
+            except Exception:  # noqa: BLE001
+                pass
+
+        try:
+            self._hk_foot.configure(text=text, text_color=T.OK if ok else T.ERR)
+            self.after(4000, restore)
+        except Exception:  # noqa: BLE001
+            pass
 
     def _ghost(self, parent, text: str, cmd: Callable, w: int = 88) -> ctk.CTkButton:
         return ctk.CTkButton(
@@ -497,6 +710,22 @@ class TranslatorApp(ctk.CTk):
             return
         self._settings_win = SettingsWindow(self)
 
+    def open_acro_window(self, term: str = "") -> None:
+        """Dictionary window — from the strip's «словарь», settings, or an unknown word."""
+        from .acro_window import AcroWindow
+
+        win = getattr(self, "_acro_win", None)
+        if win is not None:
+            try:
+                if win.winfo_exists():
+                    win.lift()
+                    win.focus_set()
+                    win.search_for(term)
+                    return
+            except Exception:  # noqa: BLE001
+                pass
+        self._acro_win = AcroWindow(self, term=term, on_changed=self._refresh_acronyms)
+
     def open_style_picker(self) -> None:
         from .style_picker import StylePickerWindow
 
@@ -534,6 +763,12 @@ class TranslatorApp(ctk.CTk):
                 self._hk_foot.configure(text=self._hotkey_footer())
             except Exception:  # noqa: BLE001
                 pass
+            packs = s.acronym_packs if isinstance(s.acronym_packs, dict) else {}
+            if packs != getattr(self, "_acro_packs", None):
+                self._acro_packs = dict(packs)
+                acronyms.set_enabled(packs)
+            self._sync_ai_group()
+            self._refresh_acronyms()
 
         try:
             self.after(0, apply)
@@ -542,6 +777,14 @@ class TranslatorApp(ctk.CTk):
 
     def _restyle_theme(self, preference: str) -> None:
         """Rebuild chrome so palette tokens stick after light/dark/auto switch."""
+        # On Windows CTk repaints the titlebar by withdrawing and re-showing the
+        # window, remembering whoever had focus and restoring it via after(1).
+        # Everything it could remember is about to be destroyed below, so park
+        # focus on the root first — the 100ms timer in _build takes it back.
+        try:
+            self.focus_set()
+        except Exception:  # noqa: BLE001
+            pass
         apply_theme(preference)
         src = ""
         tgt = ""
@@ -586,6 +829,7 @@ class TranslatorApp(ctk.CTk):
             self._tgt_combo.set(langs.label_of(tgt_lang))
         except Exception:  # noqa: BLE001
             pass
+        self._refresh_acronyms(src)
 
     def _on_provider_ui(self, label: str) -> None:
         pid = self._provider_map.get(label, tr.DEFAULT_PROVIDER_ID)
@@ -641,6 +885,15 @@ class TranslatorApp(ctk.CTk):
     def _inner(self, box: ctk.CTkTextbox):
         return getattr(box, "_textbox", None) or box
 
+    @staticmethod
+    def _focus_if_alive(widget) -> None:
+        """For focus scheduled with after(): the widget may be gone by the time it fires."""
+        try:
+            if widget.winfo_exists():
+                widget.focus_set()
+        except Exception:  # noqa: BLE001
+            pass
+
     def set_source_text(self, text: str) -> None:
         from . import logutil
         from .selection import sanitize_selection
@@ -681,6 +934,33 @@ class TranslatorApp(ctk.CTk):
             (got or "") == text,
             (got or "")[:80],
         )
+        self._refresh_acronyms(got or "")
+
+    def _refresh_acronyms(self, text: str | None = None) -> None:
+        """Local dict lookup — runs on the UI thread, ahead of the translation."""
+        panel = getattr(self, "_acro", None)
+        if panel is None:
+            return
+        try:
+            if not cfg.get().acronyms_enabled:
+                panel.hide()
+                return
+            src = self.get_source_text() if text is None else text
+            rep = acronyms.explain(src)
+            panel.render(rep)
+            if rep:
+                logutil.get().debug(
+                    "acronyms %s hits, %s unknown, %.2f ms",
+                    rep.count,
+                    len(rep.unknown),
+                    rep.ms,
+                )
+        except Exception:  # noqa: BLE001
+            logutil.exc("acronyms refresh")
+            try:
+                panel.hide()
+            except Exception:  # noqa: BLE001
+                pass
 
     def get_source_text(self) -> str:
         inner = self._inner(self._src_box)
@@ -709,16 +989,17 @@ class TranslatorApp(ctk.CTk):
                 pass
             self._progress_after_id = None
 
-    def _show_translate_progress(self) -> None:
+    def _show_translate_progress(self, word: str = "переводим") -> None:
         """Clear stale translation and show calm loading state."""
         self._cancel_progress_anim()
         self._tgt_progress = True
+        self._progress_word = word
         try:
             self._tgt_box.configure(text_color=T.INK_FAINT)
             self._tgt_pane.configure(border_color=T.INK_SOFT, border_width=2)
         except Exception:  # noqa: BLE001
             pass
-        self.set_target_text("переводим")
+        self.set_target_text(word)
         self._progress_tick = 0
         self._progress_anim()
 
@@ -734,7 +1015,7 @@ class TranslatorApp(ctk.CTk):
             return
         self._progress_tick = (self._progress_tick + 1) % 4
         dots = "." * self._progress_tick
-        self.set_target_text(f"переводим{dots}")
+        self.set_target_text(f"{self._progress_word}{dots}")
         try:
             self._progress_after_id = self.after(420, self._progress_anim)
         except Exception:  # noqa: BLE001
@@ -743,18 +1024,12 @@ class TranslatorApp(ctk.CTk):
     def copy_source(self) -> None:
         t = self.get_source_text()
         if t:
-            try:
-                pyperclip.copy(t)
-            except Exception as exc:  # noqa: BLE001
-                logutil.get().warning("copy source: %s", exc)
+            self._to_clipboard(t)
 
     def copy_target(self) -> None:
         t = self._inner(self._tgt_box).get("1.0", "end-1c")
         if t:
-            try:
-                pyperclip.copy(t)
-            except Exception as exc:  # noqa: BLE001
-                logutil.get().warning("copy target: %s", exc)
+            self._to_clipboard(t)
 
     def clear_source(self) -> None:
         self.set_source_text("")
@@ -764,6 +1039,7 @@ class TranslatorApp(ctk.CTk):
 
     def clear_all(self) -> None:
         self._translate_job += 1
+        self._ai_job += 1
         self._cancel_progress_anim()
         self._busy = False
         self._btn_translate.configure(state="normal")
@@ -773,7 +1049,9 @@ class TranslatorApp(ctk.CTk):
             pass
         self.clear_source()
         self.clear_target()
+        self._ai_panel.hide()
         self._end_translate_progress_ui()
+        self._sync_ai_group()
 
     # ── clipboard keys ────────────────────────────────────────────────────
     # Windows virtual key codes — layout independent. Tk reports keysym by the
@@ -788,17 +1066,26 @@ class TranslatorApp(ctk.CTk):
         widget.bind("<Shift-Insert>", self._on_src_paste)
         widget.bind("<Control-KeyPress>", self._on_ctrl_key)
 
+    def _bind_copy_keys(self, widget) -> None:
+        """Copy / cut / select-all only — Ctrl+V keeps Tk's own behaviour."""
+        widget.bind("<Control-KeyPress>", self._on_ctrl_copy_key)
+
     def _on_ctrl_key(self, event):
         keycode = getattr(event, "keycode", 0)
         keysym = (getattr(event, "keysym", "") or "").lower()
         if keycode == self._VK_V or keysym in ("v", "cyrillic_em"):
             return self._on_src_paste(event)
+        return self._on_ctrl_copy_key(event)
+
+    def _on_ctrl_copy_key(self, event):
+        keycode = getattr(event, "keycode", 0)
+        keysym = (getattr(event, "keysym", "") or "").lower()
         if keycode == self._VK_C or keysym in ("c", "cyrillic_es"):
-            return self._on_src_copy(event)
+            return self._copy_selection(getattr(event, "widget", None))
         if keycode == self._VK_X or keysym in ("x", "cyrillic_che"):
-            return self._on_src_cut(event)
+            return self._copy_selection(getattr(event, "widget", None), cut=True)
         if keycode == self._VK_A or keysym in ("a", "cyrillic_ef"):
-            return self._on_src_select_all(event)
+            return self._select_all(getattr(event, "widget", None))
         return None  # let every other Ctrl+key keep its default behaviour
 
     def _on_window_ctrl_key(self, event):
@@ -874,42 +1161,68 @@ class TranslatorApp(ctk.CTk):
                 inner.see("insert")
         except Exception:  # noqa: BLE001
             logutil.exc("src paste")
-        self.after(50, self._maybe_instant)
+        self.after(50, self._after_edit)
         return "break"  # prevent double-paste from default handler
 
-    def _on_src_copy(self, _e=None):
-        try:
-            inner = self._inner(self._src_box)
-            if inner.tag_ranges("sel"):
-                self.clipboard_clear()
-                self.clipboard_append(inner.get("sel.first", "sel.last"))
-        except Exception:  # noqa: BLE001
-            logutil.exc("src copy")
-        return "break"
+    def _text_widget(self, widget):
+        """The tk.Text the key landed in — the source box when in doubt."""
+        if widget is not None and hasattr(widget, "tag_ranges"):
+            return widget
+        return self._inner(self._src_box)
 
-    def _on_src_cut(self, _e=None):
+    def _to_clipboard(self, text: str) -> None:
+        """pyperclip, not Tk.
+
+        clipboard_append leaves Tk as the clipboard *owner* with delayed
+        rendering: the text is served from this process on demand. Bonjour
+        hides to tray and the window can be withdrawn or gone by the time the
+        user pastes — then the paste arrives empty. pyperclip hands Windows a
+        real memory block and walks away.
+        """
         try:
-            inner = self._inner(self._src_box)
-            if inner.tag_ranges("sel"):
-                self.clipboard_clear()
-                self.clipboard_append(inner.get("sel.first", "sel.last"))
+            pyperclip.copy(text)
+            return
+        except Exception:  # noqa: BLE001
+            logutil.exc("clipboard copy")
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(text)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _copy_selection(self, widget=None, *, cut: bool = False):
+        inner = self._text_widget(widget)
+        try:
+            if not inner.tag_ranges("sel"):
+                return "break"
+            text = inner.get("sel.first", "sel.last")
+            if text:
+                self._to_clipboard(text)
+            if cut:
                 inner.delete("sel.first", "sel.last")
+                if inner is self._inner(self._src_box):
+                    self.after(50, self._after_edit)
         except Exception:  # noqa: BLE001
-            logutil.exc("src cut")
+            logutil.exc("copy selection")
         return "break"
 
-    def _on_src_select_all(self, _e=None):
+    def _select_all(self, widget=None):
+        inner = self._text_widget(widget)
         try:
-            inner = self._inner(self._src_box)
             inner.tag_add("sel", "1.0", "end-1c")
             inner.mark_set("insert", "1.0")
         except Exception:  # noqa: BLE001
-            logutil.exc("src select all")
+            logutil.exc("select all")
         return "break"
 
     def _maybe_instant(self) -> None:
         if cfg.get().instant_translate and self.get_source_text().strip():
             self.translate_now()
+
+    def _after_edit(self) -> None:
+        """Paste: acronyms are local, so they show even when instant is off."""
+        self._refresh_acronyms()
+        self._maybe_instant()
 
     def swap_direction(self) -> None:
         src_text = self.get_source_text()
@@ -932,6 +1245,7 @@ class TranslatorApp(ctk.CTk):
         text = self.get_source_text().strip()
         if not text:
             return
+        self._refresh_acronyms(text)  # local — lands before the network answers
         self._translate_job += 1
         job = self._translate_job
         self._busy = True
@@ -963,6 +1277,100 @@ class TranslatorApp(ctk.CTk):
             return
         self._hk_foot.configure(text_color=T.INK_FAINT)
         self.set_target_text(result.text)
+
+    # ── AI actions ────────────────────────────────────────────────────────
+
+    def _ai_start(self) -> bool:
+        """Common gate: refuse politely, then lock the toolbar for one request."""
+        if not self._ai_configured():
+            self._flash_foot("ИИ выключен — нет ai.json", False)
+            return False
+        ok, why = ai_client.available()
+        if not ok:
+            self._flash_foot(why, False)
+            self._sync_ai_group()
+            return False
+        self._translate_job += 1  # a translation in flight must not land on top
+        self._ai_job += 1
+        self._busy = True
+        self._btn_translate.configure(state="disabled")
+        self._btn_polish.configure(state="disabled")
+        self._btn_explain.configure(state="disabled")
+        return True
+
+    def _ai_done(self) -> None:
+        self._cancel_progress_anim()
+        self._busy = False
+        self._btn_translate.configure(state="normal")
+        self._end_translate_progress_ui()
+        self._sync_ai_group()
+
+    def _ai_failed(self, msg: str, job: int, clear: bool = False) -> None:
+        if job != self._ai_job:
+            return
+        self._ai_done()
+        if clear:
+            self.set_target_text("")
+        self._ai_panel.show_error(msg)
+        self._flash_foot(msg, False)
+
+    def _ai_thread(self, call: Callable, land: Callable, job: int, clear: bool) -> None:
+        def work() -> None:
+            try:
+                out = call()
+            except ai_client.AiError as exc:
+                msg = str(exc)
+                self.after(0, lambda: self._ai_failed(msg, job, clear))
+                return
+            except Exception:  # noqa: BLE001
+                logutil.exc("ai request")
+                self.after(0, lambda: self._ai_failed("не получилось", job, clear))
+                return
+            self.after(0, lambda: land(out))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def polish_now(self) -> None:
+        """Rough Russian on the left → clean English on the right, reasons below."""
+        text = self.get_source_text().strip()
+        if not text or not self._ai_start():
+            return
+        job = self._ai_job
+        self._show_translate_progress("причесываем")
+        self._ai_panel.hide()
+        self._ai_thread(
+            lambda: assistant.polish(text),
+            lambda p: self._apply_polish(p, job),
+            job,
+            clear=True,
+        )
+
+    def _apply_polish(self, p, job: int) -> None:
+        if job != self._ai_job:
+            return
+        self._ai_done()
+        self.set_target_text(p.english)
+        self._ai_panel.show_polish(p.russian, p.why)
+
+    def explain_now(self) -> None:
+        """What the phrase actually means — the target pane stays untouched."""
+        text = self.get_source_text().strip()
+        if not text or not self._ai_start():
+            return
+        job = self._ai_job
+        self._ai_panel.show_wait("разбираемся…")
+        self._ai_thread(
+            lambda: assistant.explain_phrase(text),
+            lambda answer: self._apply_explain(answer, job),
+            job,
+            clear=False,
+        )
+
+    def _apply_explain(self, answer: str, job: int) -> None:
+        if job != self._ai_job:
+            return
+        self._ai_done()
+        self._ai_panel.show_text("ИИ · объяснил", answer)
 
     def bring_with_selection(self, text: str) -> None:
         """Fill source on UI thread. Chip click is already on main thread → run now."""

@@ -220,6 +220,16 @@ class SettingsWindow(ctk.CTkToplevel):
             command=self._reset_hotkey,
         ).pack(side="left", padx=(8, 0))
 
+        ctk.CTkFrame(card, fg_color=T.LINE, height=1).pack(
+            fill="x", padx=inner_pad, pady=(0, 8)
+        )
+        self._build_acronyms(card, inner_pad, switch_kw)
+
+        ctk.CTkFrame(card, fg_color=T.LINE, height=1).pack(
+            fill="x", padx=inner_pad, pady=(0, 8)
+        )
+        self._build_ai(card, inner_pad, switch_kw)
+
         foot = ctk.CTkFrame(self, fg_color="transparent")
         foot.pack(fill="x", padx=pad, pady=(0, 6))
         self._status = ctk.CTkLabel(
@@ -559,6 +569,208 @@ class SettingsWindow(ctk.CTkToplevel):
             return
         self._status.configure(text="сохранено")
 
+    # ── acronyms ──────────────────────────────────────────────────────────
+    def _build_acronyms(self, card, inner_pad: int, switch_kw: dict) -> None:
+        """Toggle + exactly which dictionaries are loaded and from where."""
+        from . import acronyms
+
+        head = ctk.CTkFrame(card, fg_color="transparent", height=T.BAR_H)
+        head.pack(fill="x", padx=inner_pad)
+        head.pack_propagate(False)
+        ctk.CTkLabel(
+            head, text="акронимы", text_color=T.INK, font=ui_font(12, "bold")
+        ).pack(side="left")
+        btn_kw = dict(
+            height=T.CTRL_H,
+            corner_radius=T.CORNER_SM,
+            fg_color=T.SURFACE,
+            border_width=1,
+            border_color=T.LINE,
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK_SOFT,
+            font=ui_font(11),
+        )
+        ctk.CTkButton(
+            head, text="папка паков", width=96, command=self._open_packs_dir, **btn_kw
+        ).pack(side="right")
+        ctk.CTkButton(
+            head, text="словарь…", width=84, command=self._open_dictionary, **btn_kw
+        ).pack(side="right", padx=(0, 6))
+
+        self._acro_on = ctk.CTkSwitch(
+            card,
+            text="разбирать акронимы в главном окне",
+            **dict(switch_kw, command=self._apply_acronyms),
+        )
+        self._acro_on.pack(anchor="w", padx=inner_pad, pady=(4, 6))
+        if cfg.get().acronyms_enabled:
+            self._acro_on.select()
+
+        self._pack_boxes: dict[str, ctk.CTkCheckBox] = {}
+        listing = ctk.CTkFrame(
+            card,
+            fg_color=T.FIELD,
+            corner_radius=T.CORNER_SM,
+            border_width=1,
+            border_color=T.LINE,
+        )
+        listing.pack(fill="x", padx=inner_pad, pady=(0, inner_pad))
+
+        found = acronyms.packs()
+        if not found:
+            ctk.CTkLabel(
+                listing,
+                text="словарей нет",
+                text_color=T.INK_FAINT,
+                font=ui_font(11),
+            ).pack(anchor="w", padx=8, pady=6)
+        for i, p in enumerate(found):
+            where = "локально" if p.origin == "local" else "в репо"
+            pady = (6, 3) if i == 0 else (0, 3 if i < len(found) - 1 else 6)
+            if p.error:
+                ctk.CTkLabel(
+                    listing,
+                    text=f"{p.id} · не читается",
+                    text_color=T.ERR,
+                    font=ui_font(11),
+                ).pack(anchor="w", padx=8, pady=pady)
+                continue
+            cb = ctk.CTkCheckBox(
+                listing,
+                text=f"{p.title} · {p.count} · {where}",
+                width=20,
+                checkbox_width=16,
+                checkbox_height=16,
+                corner_radius=3,
+                border_width=1,
+                fg_color=T.SWITCH_ON,
+                hover_color=T.SWITCH_ON,
+                border_color=T.LINE_STRONG,
+                checkmark_color=T.SURFACE,
+                text_color=T.INK,
+                font=ui_font(11),
+                command=self._apply_acronyms,
+            )
+            cb.pack(anchor="w", padx=8, pady=pady)
+            if acronyms.is_enabled(p.id):
+                cb.select()
+            self._pack_boxes[p.id] = cb
+
+    # ── AI helper ─────────────────────────────────────────────────────────
+    def _build_ai(self, card, inner_pad: int, switch_kw: dict) -> None:
+        """Switch, model, and a plain answer to «why are the buttons grey»."""
+        from . import ai_config, ai_token
+
+        ctk.CTkLabel(
+            card, text="ИИ-помощник", text_color=T.INK, font=ui_font(12, "bold")
+        ).pack(anchor="w", padx=inner_pad)
+
+        self._ai_on = ctk.CTkSwitch(
+            card,
+            text="кнопки «причесать» и «объясни» в главном окне",
+            **dict(switch_kw, command=self._apply_ai),
+        )
+        self._ai_on.pack(anchor="w", padx=inner_pad, pady=(4, 6))
+        if cfg.get().ai_enabled:
+            self._ai_on.select()
+
+        mrow = ctk.CTkFrame(card, fg_color="transparent")
+        mrow.pack(fill="x", padx=inner_pad, pady=(0, 4))
+        ctk.CTkLabel(mrow, text="модель", text_color=T.INK_FAINT, font=ui_font(11)).pack(
+            anchor="w"
+        )
+        # empty string = whatever ai.json says, so the config stays the default
+        self._ai_default = f"как в ai.json ({ai_config.model() or '—'})"
+        self._ai_model = ctk.CTkComboBox(
+            mrow,
+            values=[self._ai_default, *ai_config.models()],
+            width=260,
+            height=T.CTRL_H,
+            command=lambda _v: self._apply_ai(),
+            fg_color=T.FIELD,
+            border_color=T.LINE,
+            button_color=T.LINE_STRONG,
+            button_hover_color=T.INK_SOFT,
+            text_color=T.INK,
+            dropdown_fg_color=T.SURFACE,
+            dropdown_text_color=T.INK,
+            font=ui_font(12),
+        )
+        self._ai_model.set(cfg.get().ai_model or self._ai_default)
+        self._ai_model.pack(anchor="w", pady=(3, 0))
+        tune_combobox(self._ai_model)
+
+        self._ai_state = ctk.CTkLabel(
+            card,
+            text="",
+            text_color=T.INK_FAINT,
+            font=ui_font(10),
+            anchor="w",
+            justify="left",
+            wraplength=420,
+        )
+        self._ai_state.pack(anchor="w", padx=inner_pad, pady=(6, inner_pad))
+        self._sync_ai_state()
+        ai_token.on_change(self._on_ai_token)
+
+    def _sync_ai_state(self) -> None:
+        from . import ai_config, ai_token
+
+        if not ai_config.configured():
+            text = f"нет настроек шлюза — положи ai.json сюда:\n{ai_config.where()}"
+        elif not ai_token.present():
+            text = "токен не вставлен — нажми 🔑 в главном окне (сначала букмарклет в Chrome)"
+        else:
+            left = ai_token.seconds_left()
+            who = ai_token.user() or "токен"
+            text = f"{who} · {left // 60}м осталось" if left else f"{who} · истёк"
+        try:
+            self._ai_state.configure(text=text)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _on_ai_token(self) -> None:
+        try:
+            self.after(0, self._sync_ai_state)
+        except Exception:  # noqa: BLE001
+            pass  # window already closed
+
+    def _apply_ai(self) -> None:
+        picked = self._ai_model.get()
+        cfg.update(
+            ai_enabled=bool(self._ai_on.get()),
+            ai_model="" if picked == self._ai_default else picked,
+        )
+        self._status.configure(text="ИИ · применено")
+
+    def _apply_acronyms(self) -> None:
+        cfg.update(
+            acronyms_enabled=bool(self._acro_on.get()),
+            acronym_packs={pid: bool(cb.get()) for pid, cb in self._pack_boxes.items()},
+        )
+        self._status.configure(text="словари · применено")
+
+    def _open_dictionary(self) -> None:
+        open_win = getattr(self.master, "open_acro_window", None)
+        if open_win is None:
+            self._status.configure(text="словарь недоступен")
+            return
+        self._close()
+        try:
+            open_win("")
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _open_packs_dir(self) -> None:
+        import os
+
+        from . import acronyms
+
+        try:
+            os.startfile(str(acronyms.local_dir()))  # noqa: S606
+        except Exception:  # noqa: BLE001
+            self._status.configure(text="не удалось открыть папку")
+
     def _stop_capture(self) -> None:
         if self._capture_hook is not None and keyboard is not None:
             try:
@@ -572,5 +784,8 @@ class SettingsWindow(ctk.CTkToplevel):
             pass
 
     def _close(self) -> None:
+        from . import ai_token
+
         self._stop_capture()
+        ai_token.off_change(self._on_ai_token)
         self.destroy()

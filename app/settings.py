@@ -27,6 +27,10 @@ class AppSettings:
     ui_theme: str = "light"  # light | dark | auto
     hotkey: dict = field(default_factory=lambda: HotkeySpec().to_dict())
     chip_style_id: int = 1  # see app/chip_styles.py — user picks in style window
+    acronyms_enabled: bool = True  # acronym block under the panes
+    acronym_packs: dict = field(default_factory=dict)  # pack id → on/off, missing = on
+    ai_enabled: bool = True  # AI group in the title bar; needs ~/.bonjur-epta/ai.json
+    ai_model: str = ""  # empty = whatever ai.json says
 
     def hotkey_spec(self) -> HotkeySpec:
         raw = HotkeySpec.from_dict(self.hotkey if isinstance(self.hotkey, dict) else None)
@@ -47,6 +51,8 @@ class AppSettings:
             base.provider_id = tr.DEFAULT_PROVIDER_ID
         if not isinstance(base.hotkey, dict):
             base.hotkey = HotkeySpec().to_dict()
+        if not isinstance(base.acronym_packs, dict):
+            base.acronym_packs = {}
         theme = str(base.ui_theme or "light").strip().lower()
         if theme not in ("light", "dark", "auto"):
             theme = "light"

@@ -156,11 +156,15 @@ def _looks_code_or_junk(text: str) -> bool:
     return False
 
 
-def should_offer_chip(text: str, *, target_lang: str) -> bool:
+def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool:
     """
     True → show «чивобля?» near selection.
     Skip: empty, digits/symbols, code/paths/ids/junk, text already in target script.
     Hotkey path is unaffected — only the floating chip.
+
+    `acronym_scan(text) -> bool` is asked only about text already in the target
+    language, and only after the cheap filters have passed — so the dictionary
+    is touched for the handful of selections that would otherwise be dropped.
     """
     t = (text or "").strip()
     if not t:
@@ -197,5 +201,13 @@ def should_offer_chip(text: str, *, target_lang: str) -> bool:
         return True
 
     if expected and dominant == expected:
-        return False  # already looks like the language you're translating into
+        # Already the language you translate into — the chip only earns its
+        # place if the text hides acronyms («Отправь PPAP до EOW»), which a
+        # translator would copy across untouched.
+        if acronym_scan is None:
+            return False
+        try:
+            return bool(acronym_scan(t))
+        except Exception:  # noqa: BLE001
+            return False
     return True

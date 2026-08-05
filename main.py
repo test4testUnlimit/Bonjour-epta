@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import sys
 import threading
+import time
 import traceback
 
 # Kept alive for process lifetime (Win32 single-instance mutex handle).
@@ -31,6 +32,7 @@ def _try_single_instance(startup: bool) -> bool:
 
 
 def main() -> int:
+    from app import acronyms
     from app import dpi
     from app import logutil
     from app import settings as cfg
@@ -128,6 +130,15 @@ def main() -> int:
             pass
         return False
 
+    def has_acronyms(text: str) -> bool:
+        """Russian text with «PPAP до EOW» — the chip is the only way to the block."""
+        if not cfg.get().acronyms_enabled:
+            return False
+        try:
+            return acronyms.quick_scan(text) > 0
+        except Exception:  # noqa: BLE001
+            return False
+
     def on_selection_detected(text: str, x: int, y: int) -> None:
         log.info("selection cache len=%s at=%s,%s head=%r", len(text), x, y, text[:80])
         last_selection[0] = text or ""
@@ -137,7 +148,7 @@ def main() -> int:
         # use UI target if app has it, else settings
         target = getattr(app, "_target_lang", None)
         target_code = target.get() if target is not None else (s.target_lang or "ru")
-        if not should_offer_chip(text, target_lang=target_code):
+        if not should_offer_chip(text, target_lang=target_code, acronym_scan=has_acronyms):
             log.debug(
                 "skip chip — not useful for target=%s head=%r",
                 target_code,
@@ -156,6 +167,7 @@ def main() -> int:
     def on_hotkey_fire() -> None:
         """Crow path: hotkey → requestSelection → fill window."""
         log.info("HOTKEY FIRE (Crow path) spec=%s", cfg.get().hotkey_spec().label())
+        fired_at = time.perf_counter()
         for sw in watcher_holder:
             try:
                 sw.pause()
@@ -174,6 +186,7 @@ def main() -> int:
                 restore_clipboard=True,
                 settle_s=1.5,  # soft; hard cap ~5s while large copy still on marker
                 clipboard_fallback=True,
+                since=fired_at,
             )
             selected = sanitize_selection(selected)
             log.info(
@@ -220,6 +233,15 @@ def main() -> int:
 
     def start_hooks() -> None:
         status_bits: list[str] = []
+        # must be first: everything below leans on it to tell a real user
+        # Ctrl+C apart from the one we inject ourselves
+        try:
+            from app import copy_guard
+
+            log.info("copy guard: %s", "on" if copy_guard.start() else "off")
+        except Exception:  # noqa: BLE001
+            logutil.exc("copy guard start")
+
         try:
             hk = TranslateHotkey(on_fire=on_hotkey_fire, spec=cfg.get().hotkey_spec())
             hk.start()

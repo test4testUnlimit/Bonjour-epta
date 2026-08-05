@@ -93,7 +93,7 @@ class SelectionWatcher:
 
             threading.Thread(
                 target=self._capture_and_fire,
-                args=(pos[0], pos[1]),
+                args=(pos[0], pos[1], now),
                 daemon=True,
             ).start()
 
@@ -117,7 +117,7 @@ class SelectionWatcher:
     def resume(self) -> None:
         self._enabled = True
 
-    def _capture_and_fire(self, x: int, y: int) -> None:
+    def _capture_and_fire(self, x: int, y: int, since: float | None = None) -> None:
         if not self._cap_lock.acquire(blocking=False):
             logutil.get().debug("watcher skip -- capture already running")
             return
@@ -139,6 +139,9 @@ class SelectionWatcher:
                     restore_clipboard=True,
                     settle_s=CAPTURE_SETTLE_S,
                     clipboard_fallback=False,
+                    # mouse-up stamp: a Ctrl+C after it is the user copying
+                    # what they just selected, not a stale clipboard
+                    since=since,
                 )
             except Exception:
                 logutil.exc("watcher get_selected_text")

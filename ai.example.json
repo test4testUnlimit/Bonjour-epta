@@ -1,0 +1,18 @@
+{
+  "_comment": "Copy to ~/.bonjur-epta/ai.json and fill in. The real file stays on your machine — corporate hosts and GUIDs never go into git. Without it the AI buttons stay grey and the translator works as usual. `models` is optional: it replaces the built-in list in the settings picker.",
+
+  "host": "backend.example.com",
+  "path": "/v2/agents/<agent-slug>/chats",
+  "origin": "https://chat.example.com",
+  "agent_slug": "<agent-slug>",
+  "model": "claude-opus-4-6",
+  "models": ["claude-opus-4-6", "claude-sonnet-5", "gemini-3.1-pro"],
+
+  "oauth": {
+    "_comment": "Only needed for silent token renewal. Omit and the token simply expires.",
+    "host": "login.microsoftonline.com",
+    "tenant": "<tenant-guid>",
+    "client_id": "<client-id-guid>",
+    "scope": "api://<client-id-guid>/Chats.Response offline_access openid profile email"
+  }
+}

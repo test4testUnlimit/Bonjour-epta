@@ -45,6 +45,8 @@ FONT_UI = "Segoe UI"
 FONT_MDL2 = "Segoe MDL2 Assets"
 GLYPH_SETTINGS = "\uE713"  # gear
 GLYPH_RESTART = "\uE72C"  # circular refresh arrow (Segoe MDL2)
+GLYPH_DICT = "\uE8F1"  # stack of books — acronym dictionary
+GLYPH_TOKEN = "\uE192"  # key — paste the AI token
 FONT_UI_SIZE = 13
 FONT_BODY_SIZE = 13
 FONT_BRAND_SIZE = 18
@@ -78,6 +80,7 @@ _LIGHT = {
     "CHIP_HOVER": "#ecece6",
     "CHIP_INK": "#1a1a1a",
     "OK": "#1a7f4b",
+    "WARN": "#b06f00",
     "ERR": "#b42318",
     "TITLE_BG": "#ecece8",
     "TITLE_BTN_HOVER": "#e0e0da",
@@ -93,6 +96,7 @@ _LIGHT = {
     "SWITCH_KNOB": "#d4d4cc",
     "SWITCH_KNOB_HOVER": "#c4c4bc",
     "READ_BG": "#ebeae4",
+    "LINK": "#215d9c",
 }
 
 _DARK = {
@@ -112,6 +116,7 @@ _DARK = {
     "CHIP_HOVER": "#363632",
     "CHIP_INK": "#f2f2ef",
     "OK": "#3dba6e",
+    "WARN": "#e0a63a",
     "ERR": "#e85a50",
     "TITLE_BG": "#222220",
     "TITLE_BTN_HOVER": "#32322e",
@@ -127,6 +132,7 @@ _DARK = {
     "SWITCH_KNOB": "#3a3a36",
     "SWITCH_KNOB_HOVER": "#4a4a46",
     "READ_BG": "#2a2a26",
+    "LINK": "#7ab4e8",
 }
 
 # active tokens (mutated by apply_theme)
@@ -146,6 +152,7 @@ CHIP_BORDER = _LIGHT["CHIP_BORDER"]
 CHIP_HOVER = _LIGHT["CHIP_HOVER"]
 CHIP_INK = _LIGHT["CHIP_INK"]
 OK = _LIGHT["OK"]
+WARN = _LIGHT["WARN"]
 ERR = _LIGHT["ERR"]
 TITLE_BG = _LIGHT["TITLE_BG"]
 TITLE_BTN_HOVER = _LIGHT["TITLE_BTN_HOVER"]
@@ -161,6 +168,7 @@ SWITCH_OFF = _LIGHT["SWITCH_OFF"]
 SWITCH_KNOB = _LIGHT["SWITCH_KNOB"]
 SWITCH_KNOB_HOVER = _LIGHT["SWITCH_KNOB_HOVER"]
 READ_BG = _LIGHT["READ_BG"]
+LINK = _LIGHT["LINK"]
 
 _resolved: str = THEME_LIGHT
 _preference: str = THEME_LIGHT
@@ -212,9 +220,9 @@ def apply_theme(preference: str | None = None) -> str:
     global _resolved, _preference
     global BG, SURFACE, FIELD, LINE, LINE_STRONG, INK, INK_SOFT, INK_FAINT
     global ACCENT, ACCENT_HOVER, ON_ACCENT, CHIP_BG, CHIP_BORDER, CHIP_HOVER, CHIP_INK
-    global OK, ERR, TITLE_BG, TITLE_BTN_HOVER, TITLE_CLOSE_HOVER, TITLE_CLOSE_HOVER_FG
+    global OK, WARN, ERR, TITLE_BG, TITLE_BTN_HOVER, TITLE_CLOSE_HOVER, TITLE_CLOSE_HOVER_FG
     global CLEAR_TINT, CLEAR_BORDER, CLEAR_HOVER, SETTINGS_BG, SETTINGS_CARD
-    global SWITCH_ON, SWITCH_OFF, SWITCH_KNOB, SWITCH_KNOB_HOVER, READ_BG
+    global SWITCH_ON, SWITCH_OFF, SWITCH_KNOB, SWITCH_KNOB_HOVER, READ_BG, LINK
 
     pref = (preference or THEME_LIGHT).strip().lower()
     if pref not in THEME_CHOICES:
