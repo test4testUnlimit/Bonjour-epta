@@ -7,7 +7,7 @@ import threading
 import time
 from collections.abc import Callable
 
-from . import logutil
+from . import input_arbiter, logutil
 from .selection import get_selected_text, sanitize_selection
 
 try:
@@ -89,6 +89,13 @@ class SelectionWatcher:
             self._last_up_pos = pos
 
             if not dragged and not is_double:
+                return
+
+            # Dragging over a lock screen must produce nothing at all: no
+            # capture thread, no Ctrl+C, no clipboard read. The check is here
+            # rather than deeper down so we do not even take the clip lock.
+            if input_arbiter.busy():
+                logutil.get().debug("watcher skip -- input held by another app")
                 return
 
             threading.Thread(

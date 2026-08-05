@@ -32,6 +32,7 @@ class TranslateHotkey:
         self._last_ts = 0.0
         self._hook = None
         self._lock = threading.Lock()
+        self._firing = False
 
     def start(self) -> None:
         if keyboard is None:
@@ -91,10 +92,31 @@ class TranslateHotkey:
         self._hook = keyboard.hook(_handler, suppress=False)
 
     def _fire(self) -> None:
-        try:
-            self.on_fire()
-        except Exception:  # noqa: BLE001
-            pass
+        """Hand off to a worker thread and get out of the way immediately.
+
+        `keyboard` runs every handler in sequence on one shared queue thread
+        (`_generic.GenericListener.process`). on_fire() grabs a selection, which
+        can take up to ~7 s (2 s waiting for modifiers to come up plus a 5 s
+        clipboard cap). Running it here stalls the queue for that whole time, so
+        copy_guard sees the user's Ctrl+C late and stamps it with the wrong
+        perf_counter — the clipboard protection was going blind at exactly the
+        moment the user was copying.
+        """
+        with self._lock:
+            if self._firing:
+                return  # one grab at a time; a second press would fight the first
+            self._firing = True
+
+        def _run() -> None:
+            try:
+                self.on_fire()
+            except Exception:  # noqa: BLE001
+                pass
+            finally:
+                with self._lock:
+                    self._firing = False
+
+        threading.Thread(target=_run, name="hotkey-fire", daemon=True).start()
 
     def reconfigure(self, spec: HotkeySpec) -> None:
         self.spec = spec

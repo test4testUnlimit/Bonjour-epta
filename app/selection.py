@@ -46,7 +46,7 @@ import time
 
 import pyperclip
 
-from . import copy_guard, logutil
+from . import copy_guard, input_arbiter, logutil
 
 MARKER_PREFIX = "__bonjur_"
 _MARKER_RE = re.compile(r"^\s*" + re.escape(MARKER_PREFIX) + r"[0-9a-fA-F]*__?\s*$")
@@ -122,6 +122,14 @@ def _send_ctrl_c_win() -> bool:
     user32 = ctypes.windll.user32
     kernel32 = ctypes.windll.kernel32
     log = logutil.get()
+
+    # A lock screen (or a TimeWatcher series) owns the keyboard. Injecting into
+    # it types our Ctrl+C into whatever is behind it and, worse, our trailing
+    # Ctrl KEYUP desyncs the modifier state of the app that does have focus.
+    # See MemPalace general/input-arbiter.
+    if input_arbiter.busy():
+        log.info("input is held by another app — not injecting Ctrl+C")
+        return False
 
     INPUT_KEYBOARD = 1
     KEYEVENTF_KEYUP = 0x0002
@@ -212,6 +220,8 @@ def _send_ctrl_c() -> bool:
     if sys.platform == "win32":
         if _send_ctrl_c_win():
             return True
+    if input_arbiter.busy():
+        return False
     try:
         import keyboard
         with copy_guard.injecting():

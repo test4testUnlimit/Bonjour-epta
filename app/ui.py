@@ -36,11 +36,12 @@ class TranslatorApp(ctk.CTk):
         apply_theme(s.ui_theme)
         # native Windows caption, empty title text
         self.title("")
-        # v2.0 added the AI group to the toolbar. The ⇄ is placed at relx=0.5, so
-        # the left side only ever gets half the width: measured, mark + the group
-        # stop fitting under ~975 and the swap starts painting over «объясни».
+        # the ⇄ is pinned to the pane split, so both toolbar flanks are mirrored
+        # to the same width: the widest one (west, ~500px: brand ↻ Google 📚
+        # перевести) is paid for twice, + 52 for the ⇄ column + 20 padding.
+        # Below ~1075 the west flank starts clipping «перевести», hence 1090.
         self.geometry("1120x600")
-        self.minsize(990, 460)
+        self.minsize(1090, 460)
         self.configure(fg_color=T.BG)
         self._theme_pref = s.ui_theme
 
@@ -142,75 +143,43 @@ class TranslatorApp(ctk.CTk):
 
     def _build(self, parent: ctk.CTkFrame) -> None:
         """
-        Full-width toolbar (pack) + 3-col pane grid:
-          [ brand ………… ⇄ ………… Google · перевести · … ]   ← whole content width
-          [ source pane ] | MID_W | [ target pane ]         ← mirror panes
+        Full-width toolbar (3-col grid) + 3-col pane grid, sharing one axis:
+          [ brand ↻ Google 📚 перевести ][ ⇄ ][ очистить AI ⚙ ]  ← content width
+          [ source pane ]      |  MID_W  |      [ target pane ]  ← mirror panes
+        The ⇄ column is the middle one, so it lands exactly over the pane split.
         Tools must not live only in the right pane column (overflow → paint-over).
         """
         content = ctk.CTkFrame(parent, fg_color=T.BG)
         content.pack(fill="both", expand=True, padx=T.PAD, pady=(T.GAP, 0))
 
-        # ── toolbar one line: brand | ⇄ (true center over panes) | tools ──
+        # ── toolbar: 3 grid columns, one optical axis ─────────────────────
+        #   col0 (weight 1) │ col1 = ⇄ │ col2 (weight 1)
+        # Both flanks share a uniform group, so they are always equally wide and
+        # the ⇄ sits dead centre of the content — the same centre as the MID_W
+        # gap between the panes below it.
+        # Not place(relx=0.5) — that floats over the row and painted over
+        # «объясни» on a narrow window. Grid columns reserve their space, so
+        # nothing can ever be drawn on top of anything else.
+        # Every cell is ROW_H tall and centred in HEAD_H (vpad), including the
+        # brand: it used to be bottom-anchored (sticky="s") and sat ~8px below
+        # every pill next to it.
         toolbar = ctk.CTkFrame(content, fg_color="transparent", height=T.HEAD_H)
         toolbar.pack(fill="x", pady=(0, T.GAP))
-        toolbar.pack_propagate(False)
+        toolbar.grid_propagate(False)
+        toolbar.grid_rowconfigure(0, weight=1)
+        toolbar.grid_columnconfigure(0, weight=1, uniform="flank")
+        toolbar.grid_columnconfigure(1, weight=0)
+        toolbar.grid_columnconfigure(2, weight=1, uniform="flank")
 
         vpad = (T.HEAD_H - T.ROW_H) // 2
+        icon_pad = (T.HEAD_H - 26) // 2
 
-        mark = ctk.CTkFrame(toolbar, fg_color="transparent", height=T.HEAD_H)
-        mark.pack(side="left", fill="y")
-        mark.grid_rowconfigure(0, weight=1)
-        ctk.CTkLabel(
-            mark,
-            text="Bonjour",
-            font=ui_font(T.FONT_BRAND_SIZE),
-            text_color=T.INK,
-        ).grid(row=0, column=0, sticky="s")
-        ctk.CTkLabel(
-            mark,
-            text=f" {T.BRAND_CYR}",
-            font=ui_font(T.FONT_BRAND_CYR_SIZE, "bold"),
-            text_color=T.INK,
-        ).grid(row=0, column=1, sticky="s")
-        ctk.CTkLabel(
-            mark,
-            text=f" {APP_VERSION}",
-            font=ui_font(T.FONT_VERSION_SIZE),
-            text_color=T.INK_SOFT,
-        ).grid(row=0, column=2, sticky="s", pady=(0, 8))
-        # circular arrow — hard kill + relaunch (dev reload without TC)
-        ctk.CTkButton(
-            mark,
-            text=T.GLYPH_RESTART,
-            font=mdl2_font(13),
-            width=26,
-            height=26,
-            corner_radius=13,
-            fg_color="transparent",
-            hover_color=T.CHIP_HOVER,
-            text_color=T.INK_SOFT,
-            border_width=0,
-            command=self._restart_client,
-        ).grid(row=0, column=3, sticky="s", padx=(6, 0), pady=(0, 1))
-        # book stack — the dictionary in one click, no acronym in the text needed
-        ctk.CTkButton(
-            mark,
-            text=T.GLYPH_DICT,
-            font=mdl2_font(14),
-            width=26,
-            height=26,
-            corner_radius=13,
-            fg_color="transparent",
-            hover_color=T.CHIP_HOVER,
-            text_color=T.INK_SOFT,
-            border_width=0,
-            command=lambda: self.open_acro_window(),
-        ).grid(row=0, column=4, sticky="s", padx=(2, 0), pady=(0, 1))
+        west = ctk.CTkFrame(toolbar, fg_color="transparent")
+        west.grid(row=0, column=0, sticky="nsew")
+        east = ctk.CTkFrame(toolbar, fg_color="transparent")
+        east.grid(row=0, column=2, sticky="nsew")
 
-        # AI lives on the left: the right side is already full, and the ⇄ sits
-        # dead centre over the pane gap, so anything wide there gets painted on
-        self._build_ai_group(toolbar).pack(side="left", padx=(T.GAP, 0), pady=vpad)
-
+        # — ⇄ swap (6): middle column = the pane split, top of the window —
         self._btn_swap = ctk.CTkButton(
             toolbar,
             text="⇄",
@@ -225,13 +194,82 @@ class TranslatorApp(ctk.CTk):
             text_color=T.INK,
             command=self.swap_direction,
         )
-        self._btn_swap.place(relx=0.5, rely=0.5, anchor="center")
+        self._btn_swap.grid(row=0, column=1, padx=T.TOOL_GAP)
 
-        tools = ctk.CTkFrame(toolbar, fg_color="transparent", height=T.ROW_H)
-        tools.pack(side="right", pady=vpad)
+        # ── east flank — reads очистить · AI · ⚙ ──────────────────────────
+        # — «очистить» (7) hugs the west edge of its column, mirroring
+        #   «перевести» on the other side: both sit one TOOL_GAP off the ⇄
+        #   (the gap is the ⇄ cell's own padx), whatever the window width —
+        self._ghost(east, "очистить", self.clear_all, w=80).pack(
+            side="left", pady=vpad,
+        )
 
-        prov_wrap = ctk.CTkFrame(tools, fg_color="transparent", height=T.ROW_H)
-        prov_wrap.pack(side="left", padx=(0, T.TOOL_GAP))
+        # — ⚙ settings (far right, flush with the content edge) —
+        self._settings_btn(east).pack(side="right", pady=vpad)
+
+        # — AI group (8) —
+        self._build_ai_group(east).pack(side="right", padx=(0, T.TOOL_GAP), pady=vpad)
+
+        # ── west flank — brand ↻ · Google ● · 📚 from the left, перевести at the ⇄
+        # — «перевести» (5) hugs the east edge of its column: packed first so a
+        #   narrow window eats into the middle of the flank, not into the pill —
+        self._btn_translate = ctk.CTkButton(
+            west,
+            text="перевести",
+            width=96,
+            height=T.ROW_H,
+            corner_radius=T.ROW_H // 2,
+            fg_color=T.ACCENT,
+            hover_color=T.ACCENT_HOVER,
+            text_color=T.ON_ACCENT,
+            font=ui_font(13, "bold"),
+            command=self.translate_now,
+        )
+        self._btn_translate.pack(side="right", pady=vpad)
+
+        # — brand mark (1) + restart (2) —
+        mark = ctk.CTkFrame(west, fg_color="transparent", height=T.HEAD_H)
+        mark.pack(side="left", fill="y")
+        # one full-height row + sticky="" → every child rides the same centre
+        # line as the pills to its right
+        mark.grid_rowconfigure(0, weight=1)
+        ctk.CTkLabel(
+            mark,
+            text="Bonjour",
+            font=ui_font(T.FONT_BRAND_SIZE),
+            text_color=T.INK,
+        ).grid(row=0, column=0, sticky="")
+        ctk.CTkLabel(
+            mark,
+            text=f" {T.BRAND_CYR}",
+            font=ui_font(T.FONT_BRAND_CYR_SIZE, "bold"),
+            text_color=T.INK,
+        ).grid(row=0, column=1, sticky="")
+        # bottom pad on a centred cell = lift: the version rides as a superscript
+        ctk.CTkLabel(
+            mark,
+            text=f" {APP_VERSION}",
+            font=ui_font(T.FONT_VERSION_SIZE),
+            text_color=T.INK_SOFT,
+        ).grid(row=0, column=2, sticky="", pady=(0, 10))
+        # circular arrow — hard kill + relaunch (dev reload without TC)
+        ctk.CTkButton(
+            mark,
+            text=T.GLYPH_RESTART,
+            font=mdl2_font(13),
+            width=26,
+            height=26,
+            corner_radius=13,
+            fg_color="transparent",
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK_SOFT,
+            border_width=0,
+            command=self._restart_client,
+        ).grid(row=0, column=3, sticky="", padx=(T.TOOL_GAP, 0))
+
+        # — provider combo + dot (3) —
+        prov_wrap = ctk.CTkFrame(west, fg_color="transparent", height=T.ROW_H)
+        prov_wrap.pack(side="left", padx=(T.GAP, 0), pady=vpad)
         self._provider_map = {label: pid for pid, label, _ in tr.list_providers()}
         provider_labels = [label for _, label, _ in tr.list_providers()]
         default_label = next(
@@ -258,26 +296,23 @@ class TranslatorApp(ctk.CTk):
             text_color=T.INK_FAINT,
             anchor="center",
         )
-        self._provider_dot.pack(side="left", padx=(T.GAP, 0))
+        # the dot belongs to the combo — kept tighter than the inter-tool gap
+        self._provider_dot.pack(side="left", padx=(6, 0))
 
-        self._btn_translate = ctk.CTkButton(
-            tools,
-            text="перевести",
-            width=96,
-            height=T.ROW_H,
-            corner_radius=T.ROW_H // 2,
-            fg_color=T.ACCENT,
-            hover_color=T.ACCENT_HOVER,
-            text_color=T.ON_ACCENT,
-            font=ui_font(13, "bold"),
-            command=self.translate_now,
-        )
-        self._btn_translate.pack(side="left", padx=(T.TOOL_GAP, 0))
-
-        self._ghost(tools, "очистить", self.clear_all, w=80).pack(
-            side="left", padx=(T.TOOL_GAP, 0)
-        )
-        self._settings_btn(tools).pack(side="left", padx=(T.TOOL_GAP, 0))
+        # — book stack (4): the dictionary in one click, no acronym needed —
+        ctk.CTkButton(
+            west,
+            text=T.GLYPH_DICT,
+            font=mdl2_font(14),
+            width=26,
+            height=26,
+            corner_radius=13,
+            fg_color="transparent",
+            hover_color=T.CHIP_HOVER,
+            text_color=T.INK_SOFT,
+            border_width=0,
+            command=lambda: self.open_acro_window(),
+        ).pack(side="left", padx=(T.TOOL_GAP, 0), pady=icon_pad)
 
         # ── panes: 3-col grid, gap = MID_W only ─────────────
         panes = ctk.CTkFrame(content, fg_color=T.BG)
@@ -369,13 +404,15 @@ class TranslatorApp(ctk.CTk):
         bar.grid_columnconfigure(1, weight=1)
         bar.grid_propagate(False)
 
+        # the stretchy middle column: keep air on both sides so a long role or a
+        # narrow pane never lets the caption touch the combo or the buttons
         ctk.CTkLabel(
             bar,
             text=role,
             font=ui_font(11),
             text_color=T.INK_FAINT,
             anchor="center",
-        ).grid(row=0, column=1, sticky="ew")
+        ).grid(row=0, column=1, sticky="ew", padx=T.BTN_GAP)
 
         btns = ctk.CTkFrame(bar, fg_color="transparent")
         btns.grid(row=0, column=2, sticky="e")

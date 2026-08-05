@@ -11,6 +11,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 from collections.abc import Callable
 
+import customtkinter as ctk
 import pyperclip
 
 from . import dpi
@@ -33,15 +34,23 @@ CHIP_W_SPLIT = 148
 
 # Card shrink-wraps to text (Lebedev: size = content, no empty air).
 # Grows for long translations; scroll only past ~85% work-area height.
-CARD_MIN_W = 220  # both foot pills must fit
+CARD_MIN_W = 240  # both foot pills must fit
 CARD_MAX_W = 420
 CARD_MIN_H = 72
-CARD_BODY_FONT_SIZE = 11
 CARD_WRAP_CHARS = 48  # max chars before wrap; short text uses fewer
-CARD_LINE_H = 17
-CARD_FOOT_H = 34
-CARD_HEAD_H = 26
+CARD_LINE_H = 21
+CARD_FOOT_H = 36
+CARD_HEAD_H = 28
+CARD_STATUS_H = 22
 CARD_PAD_X = 10
+
+# Card typography = main window typography. Sizes are logical px, scaled the
+# way CustomTkinter scales a CTkFont (see _card_font). Raw tk point sizes are
+# multiplied by `tk scaling` (~1.67 here) on top and come out a fifth taller.
+CARD_BODY_FONT_SIZE = T.FONT_BODY_SIZE  # 13 — as in both text panes
+CARD_HEAD_FONT_SIZE = 11  # as the «исходник» / «акронимы» captions
+CARD_CLOSE_FONT_SIZE = 12
+CARD_SMALL_FONT_SIZE = 11  # status line + foot pills
 # head + foot + borders + body pads — foot must always fit inside geometry
 CARD_CHROME_H = CARD_HEAD_H + CARD_FOOT_H + 16
 # colors live in theme tokens — read T.* at paint time (theme can switch)
@@ -171,6 +180,14 @@ class ChivoblyaPopup:
             return False
 
     # ── build ───────────────────────────────────────────────
+    def _card_font(self, size: int, weight: str = "normal") -> tuple:
+        """Main-window font at `size` logical px — negative tk size = pixels."""
+        try:
+            scale = float(ctk.ScalingTracker.get_widget_scaling(self._master))
+        except Exception:  # noqa: BLE001
+            scale = 1.0
+        return (T.FONT_UI, -abs(round(size * (scale or 1.0))), weight)
+
     def _ensure_win(self) -> None:
         if self._win is not None:
             return
@@ -200,7 +217,7 @@ class ChivoblyaPopup:
         lang_lbl = tk.Label(
             head,
             text="",
-            font=(T.FONT_UI, 8),
+            font=self._card_font(CARD_HEAD_FONT_SIZE),
             fg=T.INK_SOFT,
             bg=T.SURFACE,
             anchor="w",
@@ -209,7 +226,7 @@ class ChivoblyaPopup:
         close = tk.Label(
             head,
             text="✕",
-            font=(T.FONT_UI, 9),
+            font=self._card_font(CARD_CLOSE_FONT_SIZE),
             fg=T.INK_SOFT,
             bg=T.SURFACE,
             cursor="hand2",
@@ -224,8 +241,10 @@ class ChivoblyaPopup:
         actions = tk.Frame(foot, bg=T.CHIP_BG)
         actions.pack(padx=8, pady=5, anchor="w")
 
-        # translation body — compact font; grow window for long text, scroll only at cap
-        self._tgt_font = tkfont.Font(family=T.FONT_UI, size=CARD_BODY_FONT_SIZE)
+        # translation body — same size as the main window; grow window for long
+        # text, scroll only at cap
+        body_px = self._card_font(CARD_BODY_FONT_SIZE)[1]
+        self._tgt_font = tkfont.Font(family=T.FONT_UI, size=body_px)
         tgt_outer = tk.Frame(body, bg=T.SURFACE)
         tgt_scroll = tk.Scrollbar(tgt_outer, orient="vertical")
         tgt = tk.Text(
@@ -255,7 +274,12 @@ class ChivoblyaPopup:
         tgt_outer.grid(row=1, column=0, sticky="nsew", padx=10, pady=(2, 4))
 
         status = tk.Label(
-            body, text="", font=(T.FONT_UI, 7), fg=T.INK_SOFT, bg=T.SURFACE, anchor="w"
+            body,
+            text="",
+            font=self._card_font(CARD_SMALL_FONT_SIZE),
+            fg=T.INK_SOFT,
+            bg=T.SURFACE,
+            anchor="w",
         )
         status.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 2))
 
@@ -385,7 +409,7 @@ class ChivoblyaPopup:
         lab = tk.Label(
             outer,
             text=text,
-            font=("Segoe UI", 8),
+            font=self._card_font(CARD_SMALL_FONT_SIZE),
             fg=ink,
             bg=bg,
             padx=8,
@@ -700,29 +724,38 @@ class ChivoblyaPopup:
         return max(int(font.measure(ln)) for ln in lines)
 
     def _estimate_wrapped_lines(self, text: str, inner_px: int) -> int:
-        """Font-measure wrap count — reliable when Text.count(displaylines) is None/wrong."""
+        """Font-measure wrap count — reliable when Text.count(displaylines) is None/wrong.
+
+        Word-aware on purpose: `wrap="word"` never splits a word, so filling the
+        line char by char fits more per line than Tk does and the card comes out
+        a line short — with the last line cut off.
+        """
         if not text:
             return 1
         font = self._tgt_font
         inner_px = max(int(inner_px), 40)
         total = 0
         for para in text.split("\n"):
+            total += 1
             if not para:
-                total += 1
                 continue
             if font is None:
                 # ~avg char width 7px
-                total += max(1, (len(para) * 7 + inner_px - 1) // inner_px)
+                total += max(1, (len(para) * 7 + inner_px - 1) // inner_px) - 1
                 continue
+            space_w = int(font.measure(" "))
             line_w = 0
-            total += 1
-            for ch in para:
-                cw = int(font.measure(ch))
-                if line_w + cw > inner_px and line_w > 0:
+            for word in para.split(" "):
+                word_w = int(font.measure(word))
+                add = word_w if line_w == 0 else space_w + word_w
+                if line_w and line_w + add > inner_px:
                     total += 1
-                    line_w = cw
+                    line_w = word_w
                 else:
-                    line_w += cw
+                    line_w += add
+                while line_w > inner_px:  # a single word wider than the line
+                    total += 1
+                    line_w -= inner_px
         return max(1, total)
 
     def _count_display_lines(self, text: str, wrap_chars: int, inner_px: int) -> int:
@@ -773,7 +806,7 @@ class ChivoblyaPopup:
             try:
                 if st:
                     self._status_lbl.grid()
-                    status_h = 16
+                    status_h = CARD_STATUS_H
                 else:
                     self._status_lbl.grid_remove()
             except Exception:  # noqa: BLE001
