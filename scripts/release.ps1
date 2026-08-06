@@ -91,10 +91,10 @@ $ver = (Get-Content (Join-Path $root "VERSION") -First 1).Trim()
 $outName = "BonjurLauncher_$ver.exe"
 $outPath = Join-Path $releaseDir $outName
 Copy-Item $builtExe $outPath -Force
-# single email-friendly name
-$setupPath = Join-Path $releaseDir "bonjour-epta-setup.exe"
-Copy-Item $builtExe $setupPath -Force
+# One artifact, version in the name — a second unversioned copy only made it
+# ambiguous which build was actually sent.
+Get-ChildItem $releaseDir -Filter "bonjour-epta-setup.exe" -ErrorAction SilentlyContinue |
+    Remove-Item -Force -ErrorAction SilentlyContinue
 Write-Host ""
-Write-Host "Email this file (~$((Get-Item $setupPath).Length) bytes):"
-Write-Host "  $setupPath"
-Write-Host "Also: $outPath"
+Write-Host "Email this file (~$((Get-Item $outPath).Length) bytes):"
+Write-Host "  $outPath"

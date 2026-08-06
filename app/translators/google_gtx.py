@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import httpx
-
+from .. import netcerts
 from .base import ExampleItem, TranslateResult, Translator
 
 GTX_URL = "https://translate.googleapis.com/translate_a/single"
@@ -46,7 +45,7 @@ class GoogleGtxTranslator(Translator):
             ("q", text),
         ]
         try:
-            with httpx.Client(timeout=14.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=14.0, follow_redirects=True) as client:
                 r = client.get(GTX_URL, params=params)
                 r.raise_for_status()
                 data = r.json()

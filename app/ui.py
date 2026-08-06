@@ -1278,7 +1278,42 @@ class TranslatorApp(ctk.CTk):
         if cfg.get().instant_translate and self.get_source_text().strip():
             self.translate_now()
 
-    def translate_now(self) -> None:
+    def _set_lang(self, which: str, code: str) -> None:
+        """Move a combo + settings together — used by the auto-pick below."""
+        if which == "source":
+            self._source_lang.set(code)
+            self._src_combo.set(langs.label_of(code))
+            cfg.update(source_lang=code)
+        else:
+            self._target_lang.set(code)
+            self._tgt_combo.set(langs.label_of(code))
+            cfg.update(target_lang=code)
+
+    def _autopick_langs(self, text: str) -> tuple[str, str]:
+        """Aim the pair at the text — a wrong direction just returns it unchanged.
+
+        Two everyday cases: an explicit ru→en pair fed English (translate it the
+        other way), and a source language the text plainly is not written in.
+        """
+        source = self._source_lang.get()
+        target = self._target_lang.get()
+
+        want = langs.effective_target(target, source, text)
+        if want and want != target:
+            self._set_lang("source", target)
+            self._set_lang("target", want)
+            return target, want
+
+        if langs.script_mismatch(source, text):
+            source = "auto"
+            self._set_lang("source", source)
+
+        if source != "auto" and source == target:
+            target = langs.counterpart(source)
+            self._set_lang("target", target)
+        return source, target
+
+    def translate_now(self, *, _retry: bool = False) -> None:
         text = self.get_source_text().strip()
         if not text:
             return
@@ -1288,19 +1323,31 @@ class TranslatorApp(ctk.CTk):
         self._busy = True
         self._btn_translate.configure(state="disabled")
         self._show_translate_progress()
-        source, target, provider_id = (
-            self._source_lang.get(),
-            self._target_lang.get(),
-            self._provider.get(),
-        )
+        source, target = self._autopick_langs(text)
+        provider_id = self._provider.get()
 
         def work() -> None:
             result = tr.translate(text, source=source, target=target, provider_id=provider_id)
-            self.after(0, lambda: self._apply_result(result, job))
+            self.after(0, lambda: self._apply_result(result, job, _retry))
 
         threading.Thread(target=work, daemon=True).start()
 
-    def _apply_result(self, result: TranslateResult, job: int) -> None:
+    def _adopt_detected(self, result: TranslateResult, retried: bool) -> bool:
+        """Learn the real language from the answer and re-aim if it hit the target.
+
+        Asked to turn Russian into Russian, every provider echoes the text back —
+        which reads as «перевод не работает». True = a retry is on its way.
+        """
+        det = (result.detected_source or "").lower().split("-")[0]
+        if not det or det not in langs.LANG_LABELS:
+            return False
+        if det != self._target_lang.get() or retried:
+            return False
+        self._set_lang("target", langs.counterpart(det))
+        self.translate_now(_retry=True)
+        return True
+
+    def _apply_result(self, result: TranslateResult, job: int, retried: bool = False) -> None:
         if job != self._translate_job:
             return
         self._cancel_progress_anim()
@@ -1313,6 +1360,8 @@ class TranslatorApp(ctk.CTk):
             self.after(4000, lambda: self._hk_foot.configure(text_color=T.INK_FAINT))
             return
         self._hk_foot.configure(text_color=T.INK_FAINT)
+        if self._adopt_detected(result, retried):
+            return
         self.set_target_text(result.text)
 
     # ── AI actions ────────────────────────────────────────────────────────

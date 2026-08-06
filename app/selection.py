@@ -106,8 +106,11 @@ def _wait_mods_up(timeout_s: float = 2.0) -> bool:
     return False
 
 
-def _send_ctrl_c_win() -> bool:
+def _send_ctrl_c_win() -> bool | None:
     """Crow-style: AttachThreadInput + SendInput Ctrl+C.
+
+    Returns True on success, False when nothing was injected (caller may retry
+    another way), None when we injected part of the sequence and must not.
 
     Critical fix: AttachThreadInput is required so that SendInput reaches the
     foreground window even when bonjur runs as a background tray process.
@@ -171,8 +174,17 @@ def _send_ctrl_c_win() -> bool:
     def key(vk: int, flags: int = 0) -> INPUT:
         inp = INPUT()
         inp.type = INPUT_KEYBOARD
+        # wScan stays 0 on purpose: copy_guard tells our injected Ctrl+C from a
+        # real one by the missing scan code (see copy_guard._on_event).
         inp.union.ki = KEYBDINPUT(vk, 0, flags, 0, None)
         return inp
+
+    def send(*events: INPUT) -> int:
+        arr = (INPUT * len(events))(*events)
+        return int(user32.SendInput(len(events), ctypes.byref(arr), ctypes.sizeof(INPUT)))
+
+    def ctrl_is_down() -> bool:
+        return bool(user32.GetAsyncKeyState(VK_CONTROL) & 0x8000)
 
     # Crow fix: attach our thread to the foreground window input queue
     # so SendInput keystrokes are not silently dropped by Windows.
@@ -193,21 +205,42 @@ def _send_ctrl_c_win() -> bool:
     except Exception:  # noqa: BLE001
         logutil.exc("AttachThreadInput setup")
 
+    # Never let the C out on its own. If Ctrl is not registered as down when the
+    # C keydown lands, the foreground app types the character instead of copying
+    # — on a Russian layout that key is «с», and it overwrites the very selection
+    # we came to read. Hence: press Ctrl, prove it took, only then tap C, and put
+    # Ctrl back up no matter what happens in between.
+    ctrl_down = False
     try:
-        arr = (INPUT * 4)(
-            key(VK_CONTROL, 0),
-            key(VK_C, 0),
-            key(VK_C, KEYEVENTF_KEYUP),
-            key(VK_CONTROL, KEYEVENTF_KEYUP),
-        )
-        # tell copy_guard these four events are ours, not a user copy
+        # tell copy_guard these events are ours, not a user copy
         with copy_guard.injecting():
-            n = user32.SendInput(4, ctypes.byref(arr), ctypes.sizeof(INPUT))
-        return int(n) == 4
+            if send(key(VK_CONTROL, 0)) != 1:
+                log.warning("SendInput refused Ctrl down")
+                return False
+            ctrl_down = True
+
+            for _ in range(6):  # ~18ms — the input queue needs a moment
+                if ctrl_is_down():
+                    break
+                time.sleep(0.003)
+            else:
+                log.warning("Ctrl never registered as down — not tapping C")
+                return None
+
+            if send(key(VK_C, 0), key(VK_C, KEYEVENTF_KEYUP)) != 2:
+                log.warning("SendInput refused C")
+                return None
+        return True
     except Exception:  # noqa: BLE001
         logutil.exc("SendInput Ctrl+C")
-        return False
+        return None if ctrl_down else False
     finally:
+        if ctrl_down:
+            try:
+                with copy_guard.injecting():
+                    send(key(VK_CONTROL, KEYEVENTF_KEYUP))
+            except Exception:  # noqa: BLE001
+                logutil.exc("SendInput Ctrl up")
         # Always detach, even if SendInput failed
         if attached:
             try:
@@ -218,8 +251,13 @@ def _send_ctrl_c_win() -> bool:
 
 def _send_ctrl_c() -> bool:
     if sys.platform == "win32":
-        if _send_ctrl_c_win():
+        res = _send_ctrl_c_win()
+        if res:
             return True
+        if res is None:
+            # Keys already went out. A second attempt through `keyboard` would
+            # double the injection — that is how a lone «с» gets typed.
+            return False
     if input_arbiter.busy():
         return False
     try:

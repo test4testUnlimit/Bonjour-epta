@@ -235,3 +235,24 @@ class TestRace:
             cg.side_effect = ["important", Exception("denied")]
             get_selected_text(restore_clipboard=True, settle_s=0.25)
             cs.assert_called()
+
+
+class TestCtrlCNoStrayChar:
+    """A C keystroke without Ctrl types «с» over the selection — never fall back twice."""
+
+    @patch("keyboard.send")
+    @patch("app.selection._send_ctrl_c_win", return_value=None)
+    @patch("app.selection.sys")
+    def test_partial_injection_does_not_retry(self, s, win, ks):
+        s.platform = "win32"
+        assert _send_ctrl_c() is False
+        ks.assert_not_called()
+
+    @patch("keyboard.send")
+    @patch("app.selection._send_ctrl_c_win", return_value=False)
+    @patch("app.selection.input_arbiter.busy", return_value=False)
+    @patch("app.selection.sys")
+    def test_nothing_injected_still_falls_back(self, s, busy, win, ks):
+        s.platform = "win32"
+        assert _send_ctrl_c() is True
+        ks.assert_called_once_with("ctrl+c")

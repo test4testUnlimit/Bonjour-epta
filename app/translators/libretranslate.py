@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import httpx
-
+from .. import netcerts
 from .base import TranslateResult, Translator
 
 # Public instance; may rate-limit. Prefer self-host later.
@@ -40,7 +39,7 @@ class LibreTranslateTranslator(Translator):
             body["api_key"] = api_key
 
         try:
-            with httpx.Client(timeout=15.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=15.0, follow_redirects=True) as client:
                 r = client.post(self.base_url, json=body)
                 r.raise_for_status()
                 data = r.json()

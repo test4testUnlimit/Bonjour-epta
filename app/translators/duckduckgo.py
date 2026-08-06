@@ -12,6 +12,7 @@ import re
 
 import httpx
 
+from .. import netcerts
 from .base import TranslateResult, Translator
 
 VQD_URL = "https://duckduckgo.com/"
@@ -44,7 +45,7 @@ class DuckDuckGoTranslator(Translator):
 
         headers = {"User-Agent": UA}
         try:
-            with httpx.Client(timeout=14.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=14.0, follow_redirects=True) as client:
                 vqd = self._fetch_vqd(client, headers)
                 params: dict[str, str] = {
                     "vqd": vqd,

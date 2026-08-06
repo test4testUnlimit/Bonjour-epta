@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import httpx
-
+from .. import netcerts
 from .base import TranslateResult, Translator
 
 FREE_URL = "https://api-free.deepl.com/v2/translate"
@@ -53,7 +52,7 @@ class DeepLTranslator(Translator):
         headers = {"Authorization": f"DeepL-Auth-Key {api_key}"}
 
         try:
-            with httpx.Client(timeout=12.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=12.0, follow_redirects=True) as client:
                 r = client.post(url, data=data, headers=headers)
                 r.raise_for_status()
                 payload = r.json()

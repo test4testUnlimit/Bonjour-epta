@@ -35,6 +35,7 @@ def main() -> int:
     from app import acronyms
     from app import dpi
     from app import logutil
+    from app import netcerts
     from app import settings as cfg
     from app.autostart import sync as sync_autostart
     from app.chip_offer import should_offer_chip
@@ -57,6 +58,7 @@ def main() -> int:
 
     set_app_user_model_id()  # before any HWND — taskbar uses our icon, not pythonw
     log = logutil.setup()
+    netcerts.install()  # trust the OS store, or a corporate proxy kills every provider
     log.info("main() start dpi=%s startup=%s", dpi_mode, startup)
 
     # Prefer Crow default hotkey if still on bare double-OEM3 and user never customized
@@ -148,6 +150,14 @@ def main() -> int:
         # use UI target if app has it, else settings
         target = getattr(app, "_target_lang", None)
         target_code = target.get() if target is not None else (s.target_lang or "ru")
+        src = getattr(app, "_source_lang", None)
+        source_code = src.get() if src is not None else (s.source_lang or "auto")
+        # An explicit ru→en pair fed English text is not "already readable" —
+        # it is the pair running backwards. Judging against the stale target is
+        # why the chip stopped appearing on English selections.
+        from app import languages as langs
+
+        target_code = langs.effective_target(target_code, source_code, text) or target_code
         if not should_offer_chip(text, target_lang=target_code, acronym_scan=has_acronyms):
             log.debug(
                 "skip chip — not useful for target=%s head=%r",

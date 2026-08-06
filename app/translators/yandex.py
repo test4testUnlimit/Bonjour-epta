@@ -11,8 +11,7 @@ from __future__ import annotations
 
 import uuid
 
-import httpx
-
+from .. import netcerts
 from .base import TranslateResult, Translator
 
 WEB_URL = "https://translate.yandex.net/api/v1/tr.json/translate"
@@ -59,7 +58,7 @@ class YandexTranslator(Translator):
             "User-Agent": "Bonjur-epta/0.1 (desktop; QOnlineTranslator-compat)",
         }
         try:
-            with httpx.Client(timeout=12.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=12.0, follow_redirects=True) as client:
                 # Crow posts empty body; params in query
                 r = client.post(WEB_URL, params=params, headers=headers, content=b"")
                 r.raise_for_status()
@@ -103,7 +102,7 @@ class YandexTranslator(Translator):
             "Content-Type": "application/json",
         }
         try:
-            with httpx.Client(timeout=12.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=12.0, follow_redirects=True) as client:
                 r = client.post(CLOUD_URL, json=body, headers=headers)
                 r.raise_for_status()
                 payload = r.json()

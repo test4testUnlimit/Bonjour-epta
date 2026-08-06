@@ -10,11 +10,10 @@ from __future__ import annotations
 
 import http.client
 import json
-import ssl
 import time
 import uuid
 
-from . import ai_config, ai_token, logutil
+from . import ai_config, ai_token, logutil, netcerts
 from . import settings as st
 
 STREAM_TIMEOUT = 120
@@ -85,7 +84,7 @@ def _headers() -> dict:
 def _open(timeout: int):
     """Swapped out in tests — the only place a socket is created."""
     return http.client.HTTPSConnection(
-        ai_config.host(), timeout=timeout, context=ssl.create_default_context()
+        ai_config.host(), timeout=timeout, context=netcerts.ssl_context()
     )
 
 

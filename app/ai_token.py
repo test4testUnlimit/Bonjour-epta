@@ -11,12 +11,11 @@ from __future__ import annotations
 import base64
 import http.client
 import json
-import ssl
 import threading
 import time
 import urllib.parse
 
-from . import ai_config, logutil
+from . import ai_config, logutil, netcerts
 
 # Renew when this little is left; the watcher wakes up this often.
 RENEW_BELOW_S = 300
@@ -194,7 +193,7 @@ def paste_from_clipboard() -> tuple[bool, str]:
 
 def _post_form(host: str, path: str, body: str, headers: dict, timeout: int = 15) -> dict:
     """Injected wholesale in tests — nothing else here touches the network."""
-    conn = http.client.HTTPSConnection(host, timeout=timeout, context=ssl.create_default_context())
+    conn = http.client.HTTPSConnection(host, timeout=timeout, context=netcerts.ssl_context())
     try:
         conn.request("POST", path, body=body.encode("utf-8"), headers=headers)
         resp = conn.getresponse()

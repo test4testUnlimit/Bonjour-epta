@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import httpx
-
+from .. import netcerts
 from .base import TranslateResult, Translator
 
 URL = "https://api.mymemory.translated.net/get"
@@ -35,7 +34,7 @@ class MyMemoryTranslator(Translator):
             params["key"] = api_key
 
         try:
-            with httpx.Client(timeout=12.0, follow_redirects=True) as client:
+            with netcerts.client(timeout=12.0, follow_redirects=True) as client:
                 r = client.get(URL, params=params)
                 r.raise_for_status()
                 data = r.json()

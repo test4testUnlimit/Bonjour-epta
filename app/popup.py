@@ -15,6 +15,7 @@ import customtkinter as ctk
 import pyperclip
 
 from . import dpi
+from . import languages as langs
 from . import logutil
 from . import settings as cfg
 from . import theme as T
@@ -592,6 +593,11 @@ class ChivoblyaPopup:
         s = cfg.get()
         source = s.source_lang or "auto"
         target = s.target_lang or "ru"
+        # Direction follows the text: an explicit ru→en pair handed English
+        # would otherwise be asked to translate English into English.
+        want = langs.effective_target(target, source, text)
+        if want and want != target:
+            source, target = target, want
         provider = s.provider_id
         logutil.get().info(
             "mini translate start job=%s provider=%s %s→%s",
