@@ -15,8 +15,13 @@ def hwnd_of(widget: Any) -> int:
 
         widget.update_idletasks()
         wid = int(widget.winfo_id())
-        # CTk/Tk: parent of the inner frame is the real toplevel HWND
-        parent = ctypes.windll.user32.GetParent(wid)
+        user32 = ctypes.windll.user32
+        # Prefer outermost ancestor — winfo_id is an inner child on Tk.
+        GA_ROOT = 2
+        root = int(user32.GetAncestor(wid, GA_ROOT) or 0)
+        if root:
+            return root
+        parent = int(user32.GetParent(wid) or 0)
         return int(parent or wid)
     except Exception:
         return 0

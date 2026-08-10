@@ -1,4 +1,4 @@
-"""System tray icon with menu: open / settings / exit.
+"""System tray icon with menu: open / settings / был баг / exit.
 
 pystray runs the icon in its own thread; menu callbacks are marshalled back
 to the Tk main thread via app.after(0, ...).
@@ -7,10 +7,27 @@ to the Tk main thread via app.after(0, ...).
 from __future__ import annotations
 
 import threading
+import webbrowser
+from pathlib import Path
 from typing import Any
 
 from . import app_icon
+from . import bug_report
 from . import theme as T
+
+
+def _repro_html_path() -> Path | None:
+    here = Path(__file__).resolve().parent
+    candidates = [
+        here / "assets" / "repro-field-bugs.html",
+        here.parent / "repro-field-bugs.html",
+        here.parent / "notes" / "repro-field-bugs.html",
+        here.parent / "release" / "repro-field-bugs.html",
+    ]
+    for p in candidates:
+        if p.is_file():
+            return p
+    return None
 
 
 def _load_image():
@@ -36,12 +53,32 @@ class TrayIcon:
         def on_settings(_icon, _item):
             self._marshal(lambda: self._app.open_settings())
 
+        def on_repro(_icon, _item):
+            self._marshal(self._open_repro)
+
+        def on_bug_extra(_icon, _item):
+            self._marshal(lambda: bug_report.report(bug_report.KIND_EXTRA_S, app=self._app))
+
+        def on_bug_chip(_icon, _item):
+            self._marshal(lambda: bug_report.report(bug_report.KIND_NO_CHIP, app=self._app))
+
+        def on_bug_describe(_icon, _item):
+            self._marshal(lambda: bug_report.open_describe(self._app))
+
         def on_exit(_icon, _item):
             self._marshal(self._quit)
+
+        bug_menu = pystray.Menu(
+            pystray.MenuItem("дополнительная «с»", on_bug_extra),
+            pystray.MenuItem("нет чипа при выделении", on_bug_chip),
+            pystray.MenuItem("описать…", on_bug_describe),
+        )
 
         return pystray.Menu(
             pystray.MenuItem("открыть", on_open, default=True),
             pystray.MenuItem("настройки", on_settings),
+            pystray.MenuItem("страница повтора багов", on_repro),
+            pystray.MenuItem("был баг", bug_menu),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("выход", on_exit),
         )
@@ -63,6 +100,23 @@ class TrayIcon:
                 self._app.focus_force()
         except Exception:  # noqa: BLE001
             pass
+
+    def _open_repro(self) -> None:
+        path = _repro_html_path()
+        if path is None:
+            try:
+                st = getattr(self._app, "_status", None)
+                if st is not None:
+                    st.set("нет repro-field-bugs.html")
+            except Exception:  # noqa: BLE001
+                pass
+            return
+        try:
+            webbrowser.open(path.resolve().as_uri())
+        except Exception:  # noqa: BLE001
+            from . import logutil
+
+            logutil.exc("open repro html")
 
     def _quit(self) -> None:
         """Tray exit always fully quits (bypasses close-to-tray)."""

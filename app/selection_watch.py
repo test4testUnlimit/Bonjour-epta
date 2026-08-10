@@ -20,7 +20,7 @@ DOUBLE_CLICK_MS = 420
 MIN_CHARS = 1
 MAX_CHARS = 8000
 DEDUP_MS = 900
-SETTLE_S = 0.18
+SETTLE_S = 0.08  # was 0.18 — RTL / end-of-line selections clear faster in Firefox
 CAPTURE_SETTLE_S = 1.2
 
 
@@ -98,9 +98,27 @@ class SelectionWatcher:
                 logutil.get().debug("watcher skip -- input held by another app")
                 return
 
+            kind = "double" if is_double else "drag"
+            drag_dx = 0
+            drag_dy = 0
+            if down is not None:
+                drag_dx = int(pos[0] - down[0])
+                drag_dy = int(pos[1] - down[1])
+            # Chip at mouse-UP — where the selection ended / cursor released.
+            chip_x = int(pos[0])
+            chip_y = int(pos[1])
+            logutil.get().info(
+                "watcher click kind=%s at=%s,%s drag_dx=%s drag_dy=%s",
+                kind,
+                chip_x,
+                chip_y,
+                drag_dx,
+                drag_dy,
+            )
+
             threading.Thread(
                 target=self._capture_and_fire,
-                args=(pos[0], pos[1], now),
+                args=(chip_x, chip_y, now),
                 daemon=True,
             ).start()
 
@@ -155,7 +173,16 @@ class SelectionWatcher:
                 return
             text = sanitize_selection(text)
             if not text or len(text) < MIN_CHARS or len(text) > MAX_CHARS:
-                logutil.get().debug("watcher skip empty/short/long/marker len=%s", len(text or ""))
+                logutil.get().info(
+                    "watcher empty capture len=%s — no chip (peers may race clipboard)",
+                    len(text or ""),
+                )
+                try:
+                    from . import peers
+
+                    peers.log_snapshot("watcher empty peers")
+                except Exception:  # noqa: BLE001
+                    pass
                 return
 
             # Re-check after long capture -- pause() may have been called.

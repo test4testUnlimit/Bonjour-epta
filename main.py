@@ -60,6 +60,14 @@ def main() -> int:
     log = logutil.setup()
     netcerts.install()  # trust the OS store, or a corporate proxy kills every provider
     log.info("main() start dpi=%s startup=%s", dpi_mode, startup)
+    try:
+        from app import diag, peers
+
+        peers.log_snapshot("startup peers")
+        diag.start()
+        diag.log_snapshot("SNAP_START")
+    except Exception:  # noqa: BLE001
+        logutil.exc("diag/peers start")
 
     # Prefer Crow default hotkey if still on bare double-OEM3 and user never customized
     # (sanitize already fixed Ctrl+Z). Offer Ctrl+Alt+E as product default for new installs.
@@ -164,6 +172,12 @@ def main() -> int:
                 target_code,
                 (text or "")[:40],
             )
+            try:
+                from app import auto_catch
+
+                auto_catch.note_chip_skip_mangled(text, app=app)
+            except Exception:  # noqa: BLE001
+                pass
             return
 
         def show() -> None:
@@ -247,8 +261,10 @@ def main() -> int:
         # Ctrl+C apart from the one we inject ourselves
         try:
             from app import copy_guard
+            from app import auto_catch  # noqa: F401 — registers AUTOMARK kinds
 
             log.info("copy guard: %s", "on" if copy_guard.start() else "off")
+            log.info("auto_catch ready")
         except Exception:  # noqa: BLE001
             logutil.exc("copy guard start")
 
@@ -302,6 +318,12 @@ def main() -> int:
         if event is not None and event.widget is not app:
             return
         log.info("app destroy")
+        try:
+            from app import diag
+
+            diag.stop()
+        except Exception:  # noqa: BLE001
+            pass
         popup.destroy()
         for hk in hotkey_holder:
             try:

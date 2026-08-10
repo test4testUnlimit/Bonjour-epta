@@ -55,6 +55,12 @@ img.resize((256, 256), Image.Resampling.LANCZOS).save(r'$(Join-Path $staging 'ap
 "@
 }
 
+# field repro HTML (also under app/assets via the app/ copy below)
+$repro = Join-Path $root "notes\repro-field-bugs.html"
+if (Test-Path $repro) {
+    Copy-Item $repro (Join-Path $staging "repro-field-bugs.html") -Force
+}
+
 $appSrc = Join-Path $root "app"
 $appDst = Join-Path $staging "app"
 New-Item -ItemType Directory -Path $appDst -Force | Out-Null

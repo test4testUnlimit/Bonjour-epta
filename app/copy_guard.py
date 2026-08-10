@@ -91,9 +91,10 @@ def _on_event(event: object) -> None:
         sc = int(getattr(event, "scan_code", 0))
     except Exception:  # noqa: BLE001
         return
-    # `keyboard` reports `scan_code or -vk` (_winkeyboard.py:529). We inject by
-    # virtual key with wScan=0, so our own Ctrl+C shows up as -67 while a finger
-    # on the key always carries a real scan code, 46. Never a user copy.
+    # `keyboard` reports `scan_code or -vk` (_winkeyboard.py:529). Our inject
+    # now fills real scan codes + KEYEVENTF_SCANCODE; distinction from a finger
+    # press is `injecting()` (time window), not missing scan. Ignore negative
+    # vk-fallback codes from other synthesizers.
     if sc < 0:
         return
     if sc not in _COPY_SCANS:

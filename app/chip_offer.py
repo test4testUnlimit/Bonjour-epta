@@ -170,6 +170,21 @@ def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool
     if not t:
         return False
 
+    # Field H3: stray leading c made «cInturristo» look like camelCase junk.
+    # Evaluate chip usefulness on the peeled form (sanitize also peels).
+    try:
+        from . import auto_catch
+
+        reason = auto_catch.looks_stray_c(t)
+        if reason == "lone_c":
+            return False
+        if reason and reason.startswith("prefix_c+") and len(t) >= 2:
+            t = t[1:].lstrip()
+            if not t:
+                return False
+    except Exception:  # noqa: BLE001
+        pass
+
     letters = [c for c in t if c.isalpha()]
     if not letters:
         return False  # 123, 3.14, $50, dates without letters

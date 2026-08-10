@@ -1,6 +1,9 @@
 """File + stderr logging for copy-paste debug.
 
 Log file: ~/.bonjur-epta/bonjur.log  (also ./bonjur.log in project if writable)
+
+Timestamps include the date so BUGMARK lookback across sleep/midnight works.
+Rotate when a file exceeds ~8 MiB (keeps *.log.prev).
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from pathlib import Path
 
 _CONFIGURED = False
 LOG_NAME = "bonjur"
+_ROTATE_BYTES = 8 * 1024 * 1024
 
 
 def setup() -> logging.Logger:
@@ -26,7 +30,7 @@ def setup() -> logging.Logger:
 
     fmt = logging.Formatter(
         "%(asctime)s.%(msecs)03d | %(levelname)-5s | %(message)s",
-        datefmt="%H:%M:%S",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # always stderr (console window if started from terminal)
@@ -51,6 +55,7 @@ def setup() -> logging.Logger:
 
     for p in paths:
         try:
+            _rotate_if_huge(p)
             fh = logging.FileHandler(p, encoding="utf-8", mode="a")
             fh.setLevel(logging.DEBUG)
             fh.setFormatter(fmt)
@@ -60,8 +65,26 @@ def setup() -> logging.Logger:
             log.warning("cannot open log %s: %s", p, exc)
 
     _CONFIGURED = True
-    log.info("=== Bonjour session start ===")
+    try:
+        from . import theme as T
+
+        ver = T.APP_VERSION
+    except Exception:
+        ver = "?"
+    log.info("=== Bonjour session start ver=%s ===", ver)
     return log
+
+
+def _rotate_if_huge(path: Path) -> None:
+    try:
+        if not path.is_file() or path.stat().st_size < _ROTATE_BYTES:
+            return
+        prev = path.with_suffix(path.suffix + ".prev")
+        if prev.exists():
+            prev.unlink()
+        path.replace(prev)
+    except Exception:
+        pass
 
 
 def get() -> logging.Logger:

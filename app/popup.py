@@ -512,12 +512,13 @@ class ChivoblyaPopup:
                 self._outside_handlers.append(
                     mouse.on_button(on_down, buttons=("left",), types=("down",))
                 )
+                logutil.get().debug("outside dismiss armed")
             except Exception:  # noqa: BLE001
                 logutil.exc("arm outside dismiss")
 
         try:
-            # delay past the mouse-up that created the selection / opened the card
-            self._outside_arm_id = self._master.after(220, arm)
+            # Grace past the mouse-up that opened the chip; then LMB elsewhere hides.
+            self._outside_arm_id = self._master.after(400, arm)
         except Exception:  # noqa: BLE001
             pass
 
@@ -996,7 +997,22 @@ class ChivoblyaPopup:
             self._win.lift()
             self._win.attributes("-topmost", True)
             self._win.update_idletasks()
-            dpi.force_topmost(int(self._win.winfo_id()))
+            hwnd = 0
+            frame = 0
+            try:
+                from . import winframe
+
+                hwnd = int(winframe.hwnd_of(self._win) or 0)
+            except Exception:  # noqa: BLE001
+                hwnd = 0
+            try:
+                frame = int(str(self._win.wm_frame()), 16)
+            except Exception:  # noqa: BLE001
+                frame = 0
+            # Prefer outer frame / parent — raw winfo_id is often an inner child.
+            for h in (frame, hwnd, int(self._win.winfo_id() or 0)):
+                if h:
+                    dpi.force_topmost(int(h))
             logutil.get().info(
                 "popup mapped mode=%s root=(%s,%s) geo=%s",
                 self._mode,
@@ -1004,8 +1020,33 @@ class ChivoblyaPopup:
                 self._win.winfo_rooty(),
                 self._win.winfo_geometry(),
             )
+            # Firefox can steal z-order right after deiconify — re-pin twice.
+            try:
+                self._master.after(50, self._reassert_topmost)
+                self._master.after(200, self._reassert_topmost)
+            except Exception:  # noqa: BLE001
+                pass
         except Exception:  # noqa: BLE001
             logutil.exc("map_window")
+
+    def _reassert_topmost(self) -> None:
+        if self._win is None or not self._alive or not self._visible:
+            return
+        try:
+            self._win.attributes("-topmost", True)
+            self._win.lift()
+            from . import winframe
+
+            h = int(winframe.hwnd_of(self._win) or 0)
+            try:
+                frame = int(str(self._win.wm_frame()), 16)
+            except Exception:  # noqa: BLE001
+                frame = 0
+            for cand in (frame, h):
+                if cand:
+                    dpi.force_topmost(int(cand))
+        except Exception:  # noqa: BLE001
+            pass
 
     def _cancel_hide(self) -> None:
         if self._hide_after_id is not None:

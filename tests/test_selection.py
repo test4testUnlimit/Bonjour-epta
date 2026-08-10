@@ -24,6 +24,11 @@ class TestSanitize:
     def test_500k(self): assert len(sanitize_selection("B"*500000)) == 500000
     def test_tabs(self): assert sanitize_selection("a\tb") == "a\tb"
     def test_crlf(self): assert sanitize_selection("a\r\nb") == "a\r\nb"
+    def test_stray_lone_c(self): assert sanitize_selection("c") == ""
+    def test_stray_lone_cyr(self): assert sanitize_selection("с") == ""
+    def test_stray_prefix(self): assert sanitize_selection("cInturristo") == "Inturristo"
+    def test_normal_name(self): assert sanitize_selection("Inturristo") == "Inturristo"
+    def test_normal_phrase(self): assert sanitize_selection("Russo Inturristo") == "Russo Inturristo"
 
 class TestIsMarker:
     @pytest.mark.parametrize("v", [None, "", "   ", "Hello"])
@@ -94,8 +99,18 @@ def _run(sq, cv, restore=True, settle=0.25, fb=False, send=True):
         patch("app.selection._send_ctrl_c", return_value=send),
         patch("app.selection._clip_get") as cg,
         patch("app.selection._clip_set") as cs,
+        patch("app.auto_catch.note_empty_capture"),
+        patch("app.auto_catch.note_stray_selection"),
     ):
-        seq.side_effect=list(sq); cg.side_effect=list(cv)
+        sq = list(sq)
+        cv = list(cv)
+        # Retry path polls longer — pad constant-seq fixtures.
+        if len(set(sq)) == 1:
+            sq = sq * 8
+        if len(set(cv)) == 1:
+            cv = cv * 8
+        seq.side_effect = sq
+        cg.side_effect = cv
         return get_selected_text(restore_clipboard=restore, settle_s=settle, clipboard_fallback=fb), cs
 
 class TestGST:
@@ -137,7 +152,15 @@ class TestRestoreVerdict:
     def test_user_copied(self):
         ok, why = self._v(copied=True); assert ok is False; assert "user copied" in why
     def test_untouched(self):
-        ok, why = self._v(before=10, after=0, cur=10); assert ok is False; assert "untouched" in why
+        # After pre-clear, unchanged seq means copy failed — restore previous.
+        ok, why = self._v(before=10, after=0, cur=10)
+        assert ok is True
+        assert "pre-clear" in why or "restore" in why
+
+    def test_untouched_no_prev(self):
+        ok, why = self._v(prev="", before=10, after=0, cur=10)
+        assert ok is False
+        assert "untouched" in why
     def test_someone_else_wrote(self):
         ok, why = self._v(after=11, cur=12); assert ok is False; assert "another app" in why
     def test_empty_prev(self):
@@ -155,7 +178,9 @@ class TestUserCopyWins:
             cs_since.side_effect = [False, True]
             r, cs = _run([10, 11, 11, 11], ["old", "mine", "mine", "mine"])
         assert r == "mine"
-        cs.assert_not_called()
+        # pre-clear writes ""; must NOT restore "old" over the user's "mine"
+        assert call("") in cs.call_args_list
+        assert call("old") not in cs.call_args_list
 
     def test_fresh_user_copy_skips_injection(self):
         with (
@@ -193,10 +218,12 @@ class TestUserCopyWins:
         send.assert_not_called()
 
     def test_nothing_copied_no_pointless_write(self):
-        """Ctrl+C produced no change — writing anything would kill rich formats."""
+        """Ctrl+C produced no change — do not leave a blank clipboard if we had content."""
         r, cs = _run([10] * 20, ["old"] * 20)
         assert r == ""
-        cs.assert_not_called()
+        # pre-clear always writes ""; on failure we restore previous "old"
+        assert call("") in cs.call_args_list
+        assert call("old") in cs.call_args_list
 
 
 class TestRace:
@@ -256,3 +283,85 @@ class TestCtrlCNoStrayChar:
         s.platform = "win32"
         assert _send_ctrl_c() is True
         ks.assert_called_once_with("ctrl+c")
+
+
+class TestEmptyRetry:
+    """Field H2: clipboard untouched after inject → one retry."""
+
+    def test_retry_recovers(self):
+        seq = {"n": 10}
+
+        def clipboard_seq():
+            return seq["n"]
+
+        clips = [
+            r"C:\Users\x\ShareX\Screenshots\2026-08\a.png",
+            r"C:\Users\x\ShareX\Screenshots\2026-08\a.png",
+            "Inturristo",
+            "Inturristo",
+            "Inturristo",
+        ]
+        send_calls = {"n": 0}
+
+        def send_ok():
+            send_calls["n"] += 1
+            if send_calls["n"] >= 2:
+                seq["n"] = 11
+            return True
+
+        with (
+            patch("app.selection._clipboard_seq", side_effect=clipboard_seq),
+            patch("app.selection._wait_mods_up", return_value=True),
+            patch("app.selection._send_ctrl_c", side_effect=send_ok),
+            patch("app.selection._clip_get", side_effect=clips),
+            patch("app.selection._clip_set") as cs,
+            patch("app.selection.copy_guard.copied_since", return_value=False),
+            patch("app.selection.copy_guard.recent", return_value=False),
+            patch("app.auto_catch.note_empty_capture"),
+            patch("app.auto_catch.note_stray_selection"),
+        ):
+            got = get_selected_text(restore_clipboard=True, settle_s=0.2)
+        assert got == "Inturristo"
+        assert send_calls["n"] >= 2
+        assert call("") in cs.call_args_list  # pre-clear
+
+
+class TestPreClearSameText:
+    """H23: same sentence re-select must still bump clipboard after pre-clear."""
+
+    def test_preclear_then_copy(self):
+        seq = {"n": 5}
+
+        def clipboard_seq():
+            return seq["n"]
+
+        def clip_set(text):
+            # pre-clear or restore — bump seq so "change" is visible after copy
+            seq["n"] += 1
+            return True
+
+        clips = [
+            "Inturristo",  # previous (same as upcoming selection)
+            "Inturristo",  # after copy
+            "Inturristo",
+            "Inturristo",
+        ]
+
+        def send_ok():
+            seq["n"] += 1  # simulate Firefox write
+            return True
+
+        with (
+            patch("app.selection._clipboard_seq", side_effect=clipboard_seq),
+            patch("app.selection._wait_mods_up", return_value=True),
+            patch("app.selection._send_ctrl_c", side_effect=send_ok),
+            patch("app.selection._clip_get", side_effect=clips),
+            patch("app.selection._clip_set", side_effect=clip_set) as cs,
+            patch("app.selection.copy_guard.copied_since", return_value=False),
+            patch("app.selection.copy_guard.recent", return_value=False),
+            patch("app.auto_catch.note_empty_capture"),
+            patch("app.auto_catch.note_stray_selection"),
+        ):
+            got = get_selected_text(restore_clipboard=True, settle_s=0.2)
+        assert got == "Inturristo"
+        assert call("") in cs.call_args_list
