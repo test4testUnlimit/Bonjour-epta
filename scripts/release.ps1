@@ -1,20 +1,45 @@
 # Build a lightweight launcher exe (mirrors OpenWind release flow).
-# Output: release\BonjurLauncher.exe — the ONLY file to distribute.
+# Output: release\BonjurLauncher.exe - the ONLY file to distribute.
 # Recipients run it; launcher installs Python 3.12 via winget (if missing),
 # extracts embedded app.zip, pip-installs deps, then runs main.py.
+#
+# Versioning (see notes/versioning.md):
+#   -Bump patch  -> Z += 1            (default for code changes needing test/fix)
+#   -Bump minor  -> Y += 1, Z = 0     (significant change / new feature)
+#   -Bump major  -> X += 1, Y = 0, Z = 0   (ONLY when the user explicitly says so)
+#   (no -Bump)   -> build current VERSION as-is
 param(
-    [switch]$Bump
+    [ValidateSet("patch", "minor", "major")]
+    [string]$Bump
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
-# ── 0. VERSION is source of truth — sync into theme.py ────────────
+# ── 0. VERSION is source of truth ─────────────────────────────────
 $vf = Join-Path $root "VERSION"
 if (-not (Test-Path $vf)) { throw "Missing VERSION file at repo root" }
 $ver = (Get-Content $vf -First 1).Trim()
 if (-not $ver) { throw "VERSION file is empty" }
+
+# ── 0a. optional version bump ─────────────────────────────────────
+if ($Bump) {
+    if ($ver -notmatch '^\d+\.\d+\.\d+$') {
+        throw "VERSION '$ver' is not X.Y.Z - cannot bump automatically"
+    }
+    $parts = $ver.Split('.')
+    [int]$x = $parts[0]; [int]$y = $parts[1]; [int]$z = $parts[2]
+    switch ($Bump) {
+        "patch" { $z++ }
+        "minor" { $y++; $z = 0 }
+        "major" { $x++; $y = 0; $z = 0 }
+    }
+    $old = $ver
+    $ver = "$x.$y.$z"
+    Set-Content -Path $vf -Value $ver -NoNewline -Encoding ascii
+    Write-Host "Version bump ($Bump): $old -> $ver"
+}
 Write-Host "VERSION = $ver"
 
 # ── 1. always rebuild app.ico from app.png (multi-size) ───────────
