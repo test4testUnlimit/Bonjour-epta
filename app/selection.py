@@ -580,19 +580,6 @@ def _get_selected_text_locked(
                 return sanitize_selection(_clip_get())
             return ""
 
-        # Non-text already on the clipboard (ShareX/Greenshot image, Explorer
-        # files) BEFORE we inject: stay completely hands-off. Do not pre-clear,
-        # do not Ctrl+C, do not restore -- otherwise we wipe the user's image.
-        try:
-            if clip_formats.non_text_present():
-                log.info(
-                    "clipboard holds non-text (%s) -- hands off, no capture",
-                    clip_formats.describe(),
-                )
-                return ""
-        except Exception:  # noqa: BLE001
-            pass
-
         # Snapshot clipboard NOW -- modifiers are up, no user Ctrl+C/X race.
         try:
             previous = _clip_get()
@@ -606,7 +593,28 @@ def _get_selected_text_locked(
         # Firefox skips clipboard write when selection text already equals the
         # clipboard (same-sentence re-select). Pre-clear so a successful copy
         # always bumps the sequence number. Empty string only — restored after.
-        if not _clip_set(""):
+        # BUT never pre-clear when the clipboard holds an IMAGE/FILES (ShareX
+        # auto-copy image, Explorer copy): wiping it would destroy the user's
+        # screenshot. We still inject Ctrl+C so text selection captures + chip
+        # shows; _restore_verdict guards against restoring text over non-text.
+        # Product rule: TEXT selection -> chip; a SCREENSHOT/image -> stays
+        # ready to paste. Save the image before Ctrl+C; if the copy yields
+        # text we show the chip, if not we put the saved image back.
+        saved_image_dib = None
+        nontext_before = False
+        try:
+            nontext_before = clip_formats.non_text_present()
+            if nontext_before:
+                saved_image_dib = clip_formats.get_image_dib()
+        except Exception:  # noqa: BLE001
+            pass
+        if nontext_before:
+            log.info(
+                "clipboard holds non-text (%s) — saved image=%s, skip pre-clear",
+                clip_formats.describe(),
+                "yes" if saved_image_dib else "no",
+            )
+        elif not _clip_set(""):
             log.warning("clipboard pre-clear failed — same-text reselect may miss")
         else:
             log.debug("clipboard pre-cleared (same-text reselect guard)")
@@ -757,6 +765,13 @@ def _get_selected_text_locked(
                 log.info("empty selection -> fallback previous len=%s", len(fb))
                 return fb
 
+        # No text captured -> this was a screenshot / non-text gesture.
+        # Put the saved image back so it stays ready to paste (owner rule).
+        if saved_image_dib:
+            if clip_formats.set_image_dib(saved_image_dib):
+                log.info("no text -> restored saved image to clipboard")
+            else:
+                log.warning("no text -> failed to restore saved image")
         log.warning("selection empty polls=%s", polls)
         return ""
     except Exception:  # noqa: BLE001

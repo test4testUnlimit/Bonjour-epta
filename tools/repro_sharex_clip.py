@@ -1,11 +1,12 @@
-"""Repro / regression for the ShareX clipboard bug.
+"""Regression for the ShareX clipboard behaviour (owner rule).
 
-Bug: after ShareX copies an IMAGE to the clipboard, bonjur's selection grab
-restored stale TEXT over it, so the user pasted old text instead of the image.
+Owner rule: selecting TEXT -> chip (text captured); a SCREENSHOT/image with no
+text selected -> the image stays ready to paste.
 
-Puts a real bitmap (CF_DIB) on the clipboard via pure ctypes, then calls
-selection.get_selected_text() exactly like the mouse watcher does, and checks
-the clipboard STILL holds an image afterwards.
+Scenario A (screenshot, no text): image on clipboard, capture finds no text
+  -> image must survive (restored).
+Scenario B (text selected while image on clipboard): a fake Ctrl+C puts TEXT
+  on the clipboard -> get_selected_text returns that text (chip will show).
 
 Run:  python tools\\repro_sharex_clip.py   (no third-party deps)
 """
@@ -29,76 +30,65 @@ def _make_dib(w: int = 32, h: int = 16) -> bytes:
     pixels = bytes((200, 40, 40)) * w
     pad = b"\x00" * (row - w * 3)
     body = b"".join((pixels + pad) for _ in range(h))
-    header = struct.pack(
-        "<IiiHHIIiiII",
-        40, w, h, 1, 24, 0, len(body), 2835, 2835, 0, 0,
-    )
+    header = struct.pack("<IiiHHIIiiII", 40, w, h, 1, 24, 0, len(body), 2835, 2835, 0, 0)
     return header + body
 
 
-def _put_image_on_clipboard(dib: bytes) -> bool:
-    import ctypes
-    from ctypes import wintypes
+def _put_image() -> bool:
+    return clip_formats.set_image_dib(_make_dib())
 
-    user32 = ctypes.windll.user32
-    kernel32 = ctypes.windll.kernel32
 
-    # argtypes/restypes so 64-bit handles/pointers are not truncated
-    kernel32.GlobalAlloc.argtypes = [wintypes.UINT, ctypes.c_size_t]
-    kernel32.GlobalAlloc.restype = wintypes.HGLOBAL
-    kernel32.GlobalLock.argtypes = [wintypes.HGLOBAL]
-    kernel32.GlobalLock.restype = ctypes.c_void_p
-    kernel32.GlobalUnlock.argtypes = [wintypes.HGLOBAL]
-    user32.SetClipboardData.argtypes = [wintypes.UINT, wintypes.HANDLE]
-    user32.SetClipboardData.restype = wintypes.HANDLE
+def scenario_a() -> bool:
+    """Screenshot, no text selected -> image survives."""
+    from app import selection
 
-    if not user32.OpenClipboard(0):
-        return False
+    if not _put_image():
+        print("A SKIP: cannot set image")
+        return True
+    assert clip_formats.has_image(), "A setup failed"
+    out = selection.get_selected_text(restore_clipboard=True, settle_s=0.3)
+    still = clip_formats.has_image()
+    print("A: returned len=%s has_image_after=%s formats=%s" % (len(out or ""), still, clip_formats.describe()))
+    ok = still and not out
+    print("A:", "PASS image survived" if ok else "FAIL image lost")
+    return ok
+
+
+def scenario_b() -> bool:
+    """Text selected while image on clipboard -> chip text captured."""
+    from app import selection
+
+    if not _put_image():
+        print("B SKIP: cannot set image")
+        return True
+
+    import pyperclip
+
+    def fake_send_ctrl_c() -> bool:
+        pyperclip.copy("hello world selected text")
+        return True
+
+    orig = selection._send_ctrl_c
+    selection._send_ctrl_c = fake_send_ctrl_c  # type: ignore[assignment]
     try:
-        user32.EmptyClipboard()
-        h = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(dib))
-        if not h:
-            return False
-        ptr = kernel32.GlobalLock(h)
-        if not ptr:
-            return False
-        ctypes.memmove(ptr, dib, len(dib))
-        kernel32.GlobalUnlock(h)
-        return bool(user32.SetClipboardData(CF_DIB, h))
+        out = selection.get_selected_text(restore_clipboard=True, settle_s=0.3)
     finally:
-        user32.CloseClipboard()
+        selection._send_ctrl_c = orig  # type: ignore[assignment]
+    print("B: returned len=%s text=%r" % (len(out or ""), (out or "")[:40]))
+    ok = out.strip() == "hello world selected text"
+    print("B:", "PASS chip text captured" if ok else "FAIL no text for chip")
+    return ok
 
 
 def main() -> int:
     if sys.platform != "win32":
         print("SKIP: Windows only")
         return 0
-    try:
-        ok = _put_image_on_clipboard(_make_dib())
-    except Exception as e:  # noqa: BLE001
-        print("SKIP: cannot set image clipboard:", e)
+    a = scenario_a()
+    b = scenario_b()
+    if a and b:
+        print("ALL PASS: text->chip, image->preserved")
         return 0
-    if not ok:
-        print("SKIP: SetClipboardData failed")
-        return 0
-
-    print("before: has_image=%s formats=%s" % (clip_formats.has_image(), clip_formats.describe()))
-    if not clip_formats.has_image():
-        print("SKIP: setup did not register an image")
-        return 0
-
-    from app import selection
-
-    out = selection.get_selected_text(restore_clipboard=True, settle_s=0.3)
-    print("get_selected_text returned len=%s" % len(out or ""))
-
-    still = clip_formats.has_image()
-    print("after: has_image=%s formats=%s" % (still, clip_formats.describe()))
-
-    if still and not out:
-        print("PASS: image survived, bonjur stayed hands-off")
-        return 0
-    print("FAIL: image was clobbered (text restored over screenshot)")
     return 1
 
 
