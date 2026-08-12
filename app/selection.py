@@ -45,7 +45,7 @@ import threading
 import time
 import pyperclip
 
-from . import copy_guard, input_arbiter, logutil
+from . import clip_formats, copy_guard, input_arbiter, logutil
 
 MARKER_PREFIX = "__bonjur_"
 _MARKER_RE = re.compile(r"^\s*" + re.escape(MARKER_PREFIX) + r"[0-9a-fA-F]*__?\s*$")
@@ -463,6 +463,15 @@ def _restore_verdict(
     prev_marker: bool = False,
 ) -> tuple[bool, str]:
     """Put the old clipboard back only when nothing else has claimed it."""
+    # Non-text guard: ShareX/Greenshot/Explorer put an IMAGE (CF_DIB) or FILES
+    # (CF_HDROP) on the clipboard. pyperclip cannot see them, so `selected` is
+    # empty and seq_after is 0 -- the old code then wrote stale TEXT back over
+    # the image and the user pasted yesterday's text. Never restore over non-text.
+    try:
+        if clip_formats.non_text_present():
+            return False, "non-text on clipboard (image/files) -- keep it"
+    except Exception:  # noqa: BLE001
+        pass
     if copy_guard.copied_since(since):
         return False, "user copied during capture"
     cur = _clipboard_seq()
@@ -570,6 +579,19 @@ def _get_selected_text_locked(
             if clipboard_fallback:
                 return sanitize_selection(_clip_get())
             return ""
+
+        # Non-text already on the clipboard (ShareX/Greenshot image, Explorer
+        # files) BEFORE we inject: stay completely hands-off. Do not pre-clear,
+        # do not Ctrl+C, do not restore -- otherwise we wipe the user's image.
+        try:
+            if clip_formats.non_text_present():
+                log.info(
+                    "clipboard holds non-text (%s) -- hands off, no capture",
+                    clip_formats.describe(),
+                )
+                return ""
+        except Exception:  # noqa: BLE001
+            pass
 
         # Snapshot clipboard NOW -- modifiers are up, no user Ctrl+C/X race.
         try:
