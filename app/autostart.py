@@ -73,12 +73,12 @@ def write_launcher_script() -> Path:
         + '", 0, False'
     )
     run_launcher = (
-        'sh.Run "pyw -3.12 """ & main & """ '
+        'sh.Run "pyw -3 """ & main & """ '
         + STARTUP_FLAG
         + '", 0, False'
     )
     run_py = (
-        'sh.Run "py -3.12 """ & main & """ '
+        'sh.Run "py -3 """ & main & """ '
         + STARTUP_FLAG
         + '", 0, False'
     )

@@ -1,6 +1,6 @@
 # Build a lightweight launcher exe (mirrors OpenWind release flow).
 # Output: release\BonjurLauncher.exe - the ONLY file to distribute.
-# Recipients run it; launcher installs Python 3.12 via winget (if missing),
+# Recipients run it; launcher installs Python 3.10+ via winget (if missing),
 # extracts embedded app.zip, pip-installs deps, then runs main.py.
 #
 # Versioning (see notes/versioning.md):

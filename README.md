@@ -10,7 +10,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Если Python нет: `winget install Python.Python.3.12`
+Если Python нет: лаунчер ставит сам (3.10+). Вручную — любой Python 3.10+.
 
 ## Выделение и hotkey
 
@@ -39,7 +39,7 @@ python main.py
 
 ## Стек
 
-- **Python 3.12** — runtime (winget)
+- **Python 3.10+** — runtime (winget на первом запуске)
 - **customtkinter** — UI
 - **httpx** — HTTP к API (скорость P0)
 - **keyboard** — global double-tap ` / ё по scan code

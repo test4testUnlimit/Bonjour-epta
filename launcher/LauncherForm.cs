@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -173,18 +174,18 @@ namespace BonjurLauncher
                 {
                     SetStatus("Запускаю...", 100);
                     string python = await EnsurePython();
-                    if (python == null) { ShowError("Python не найден. Установите Python 3.12 вручную."); return; }
+                    if (python == null) { ShowError("Python не найден. Нужен Python 3.10 или новее."); return; }
                     await Task.Delay(200);
                     LaunchApp(python, Path.Combine(installDir, AppEntry));
                     return;
                 }
 
                 // First run / upgrade in this folder
-                SetStatus("Проверяю Python 3.12...", 5);
+                SetStatus("Проверяю Python...", 5);
                 string py = await EnsurePython(progress: p => SetStatus(
-                    "Устанавливаю Python 3.12 через winget... " + p + "%",
+                    "Устанавливаю Python через winget... " + p + "%",
                     5 + p * 25 / 100));
-                if (py == null) { ShowError("Не удалось установить Python. Установите вручную: winget install Python.Python.3.12"); return; }
+                if (py == null) { ShowError("Не удалось установить Python. Нужен Python 3.10 или новее."); return; }
                 SetStatus("Python — готов.", 32);
 
                 SetStatus("Устанавливаю bonjour epta v" + AppVersion + "...", 36);
@@ -220,64 +221,207 @@ namespace BonjurLauncher
             catch { return false; }
         }
 
+        private const int MinPythonMajor = 3;
+        private const int MinPythonMinor = 10;
+        // winget: already installed / no newer version — not a failure
+        private const int WingetAlreadyInstalled = unchecked((int)0x8A15002B);
+        private const int WingetNoApplicableUpgrade = unchecked((int)0x8A15002E);
+
         private static string FindPython()
         {
-            // 1. py launcher
+            string best = null;
+            int bestMaj = -1, bestMin = -1;
+            foreach (string cand in EnumeratePythonCandidates())
+            {
+                int maj, min;
+                if (!TryGetPythonVersion(cand, out maj, out min)) continue;
+                if (maj < MinPythonMajor || (maj == MinPythonMajor && min < MinPythonMinor)) continue;
+                if (maj > bestMaj || (maj == bestMaj && min > bestMin))
+                {
+                    best = cand;
+                    bestMaj = maj;
+                    bestMin = min;
+                }
+            }
+            return best;
+        }
+
+        private static IEnumerable<string> EnumeratePythonCandidates()
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            string fromPy = QueryPyLauncher();
+            if (fromPy != null && seen.Add(fromPy)) yield return fromPy;
+
+            foreach (string dir in PythonInstallDirs())
+            {
+                foreach (string name in new[] { "pythonw.exe", "python.exe" })
+                {
+                    string p = Path.Combine(dir, name);
+                    if (File.Exists(p) && !IsWindowsAppsStub(p) && seen.Add(p))
+                        yield return p;
+                }
+            }
+
+            foreach (string name in new[] { "pythonw.exe", "python.exe", "python3.exe" })
+            {
+                foreach (string p in WhereAll(name))
+                {
+                    if (!IsWindowsAppsStub(p) && seen.Add(p))
+                        yield return p;
+                }
+            }
+        }
+
+        private static string QueryPyLauncher()
+        {
             try
             {
-                var psi = new ProcessStartInfo("py", "-3.12 -c \"import sys;print(sys.executable)\"")
+                var psi = new ProcessStartInfo("py", "-3 -c \"import sys;print(sys.executable)\"")
                 {
                     RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true,
                 };
                 using (var p = Process.Start(psi))
                 {
+                    if (p == null) return null;
                     string outp = p.StandardOutput.ReadToEnd().Trim();
-                    p.WaitForExit();
-                    if (p.ExitCode == 0 && File.Exists(outp)) return outp;
-                }
-            }
-            catch { }
-            // 2. python on PATH
-            try
-            {
-                foreach (var name in new[] { "pythonw.exe", "python.exe" })
-                {
-                    string found = SearchPath(name);
-                    if (found != null) return found;
-                }
-            }
-            catch { }
-            // 3. well-known winget install location
-            var cand = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Python", "Python312", "pythonw.exe");
-            return File.Exists(cand) ? cand : null;
-        }
-
-        private static string SearchPath(string exe)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo("where", exe)
-                { RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true };
-                using (var p = Process.Start(psi))
-                {
-                    string outp = p.StandardOutput.ReadToEnd().Trim();
-                    p.WaitForExit();
-                    var first = outp.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-                    if (first.Length > 0 && File.Exists(first[0])) return first[0];
+                    p.WaitForExit(8000);
+                    if (p.ExitCode == 0 && File.Exists(outp) && !IsWindowsAppsStub(outp))
+                        return outp;
                 }
             }
             catch { }
             return null;
         }
 
+        private static List<string> PythonInstallDirs()
+        {
+            var dirs = new List<string>();
+            string local = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Programs", "Python");
+            AddPython3Dirs(dirs, local);
+            AddPython3Dirs(dirs, @"C:\");
+            string pf = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            if (!string.IsNullOrEmpty(pf)) AddPython3Dirs(dirs, pf);
+            return dirs;
+        }
+
+        private static void AddPython3Dirs(List<string> into, string root)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(root) || !Directory.Exists(root)) return;
+                foreach (string d in Directory.GetDirectories(root, "Python3*"))
+                    into.Add(d);
+            }
+            catch { }
+        }
+
+        private static bool IsWindowsAppsStub(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return true;
+            return path.IndexOf(@"\WindowsApps\", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static bool TryGetPythonVersion(string pythonPath, out int major, out int minor)
+        {
+            major = 0; minor = 0;
+            try
+            {
+                string exe = pythonPath;
+                if (Path.GetFileName(exe).Equals("pythonw.exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    string py = Path.Combine(Path.GetDirectoryName(exe) ?? "", "python.exe");
+                    if (File.Exists(py)) exe = py;
+                }
+                var psi = new ProcessStartInfo(exe, "-c \"import sys;print('%d.%d'%sys.version_info[:2])\"")
+                {
+                    RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true,
+                };
+                using (var p = Process.Start(psi))
+                {
+                    if (p == null) return false;
+                    string outp = p.StandardOutput.ReadToEnd().Trim();
+                    if (!p.WaitForExit(8000)) { try { p.Kill(); } catch { } return false; }
+                    if (p.ExitCode != 0) return false;
+                    int dot = outp.IndexOf('.');
+                    if (dot <= 0) return false;
+                    return int.TryParse(outp.Substring(0, dot), out major)
+                        && int.TryParse(outp.Substring(dot + 1), out minor);
+                }
+            }
+            catch { return false; }
+        }
+
+        private static string[] WhereAll(string exe)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo("where", exe)
+                {
+                    RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true,
+                };
+                using (var p = Process.Start(psi))
+                {
+                    if (p == null) return new string[0];
+                    string outp = p.StandardOutput.ReadToEnd().Trim();
+                    p.WaitForExit(5000);
+                    var lines = outp.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                    var ok = new List<string>();
+                    foreach (string line in lines)
+                        if (File.Exists(line)) ok.Add(line);
+                    return ok.ToArray();
+                }
+            }
+            catch { }
+            return new string[0];
+        }
+
         private static async Task<string> EnsurePython(Action<int> progress = null)
         {
             string py = FindPython();
             if (py != null) return py;
-            bool ok = await InstallWinget("Python.Python.3.12", progress);
-            if (!ok) return null;
-            await Task.Delay(500);
+            foreach (string id in new[] {
+                "Python.Python.3.14", "Python.Python.3.13", "Python.Python.3.12" })
+            {
+                bool ok = await InstallWinget(id, progress);
+                RefreshProcessPath();
+                await Task.Delay(800);
+                py = FindPython();
+                if (py != null) return py;
+                if (!ok) continue;
+            }
             return FindPython();
+        }
+
+        private static void RefreshProcessPath()
+        {
+            try
+            {
+                string machine = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine) ?? "";
+                string user = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User) ?? "";
+                Environment.SetEnvironmentVariable("PATH", machine + ";" + user, EnvironmentVariableTarget.Process);
+            }
+            catch { }
+        }
+
+        private static string FindWinget()
+        {
+            foreach (string p in WhereAll("winget.exe"))
+                if (File.Exists(p)) return p;
+            string alias = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Microsoft", "WindowsApps", "winget.exe");
+            if (File.Exists(alias)) return alias;
+            return "winget";
+        }
+
+        private static bool WingetSucceeded(int exitCode)
+        {
+            return exitCode == 0
+                || exitCode == WingetAlreadyInstalled
+                || exitCode == WingetNoApplicableUpgrade;
         }
 
         private static async Task<bool> InstallWinget(string id, Action<int> progress = null)
@@ -285,8 +429,8 @@ namespace BonjurLauncher
             return await Task.Run(() => {
                 try
                 {
-                    var psi = new ProcessStartInfo("winget",
-                        $"install --id {id} --silent --accept-source-agreements --accept-package-agreements")
+                    var psi = new ProcessStartInfo(FindWinget(),
+                        "install --id " + id + " --exact --silent --accept-source-agreements --accept-package-agreements --disable-interactivity")
                     {
                         UseShellExecute = false,
                         CreateNoWindow  = true,
@@ -295,7 +439,7 @@ namespace BonjurLauncher
                     };
                     using (var p = Process.Start(psi))
                     {
-                        // best-effort progress from stdout lines
+                        if (p == null) return false;
                         Task.Run(() => {
                             try { string line; int pct = 0;
                                 while ((line = p.StandardOutput.ReadLine()) != null)
@@ -310,7 +454,7 @@ namespace BonjurLauncher
                             } catch { }
                         });
                         p.WaitForExit();
-                        return p.ExitCode == 0;
+                        return WingetSucceeded(p.ExitCode);
                     }
                 }
                 catch { return false; }
