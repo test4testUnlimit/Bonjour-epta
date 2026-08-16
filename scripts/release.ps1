@@ -17,6 +17,24 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
 
+function Find-RealPython {
+    try {
+        $exe = (& py -3 -c "import sys; print(sys.executable)" 2>$null | Select-Object -First 1)
+        if ($exe) { $exe = [string]$exe.Trim() }
+        if ($exe -and (Test-Path -LiteralPath $exe) -and ($exe -notmatch '(?i)\\WindowsApps\\')) { return $exe }
+    } catch {}
+    foreach ($g in @(
+        "$env:LOCALAPPDATA\Programs\Python\Python3*\python.exe",
+        "$env:ProgramFiles\Python3*\python.exe"
+    )) {
+        $hit = Get-ChildItem $g -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
+        if ($hit -and ($hit.FullName -notmatch '(?i)\\WindowsApps\\')) { return $hit.FullName }
+    }
+    throw "Python 3 not found. Install from python.org (enable py launcher). Do not use the Microsoft Store stub."
+}
+$Python = Find-RealPython
+Write-Host "Python = $Python"
+
 # ── 0. VERSION is source of truth ─────────────────────────────────
 $vf = Join-Path $root "VERSION"
 if (-not (Test-Path $vf)) { throw "Missing VERSION file at repo root" }
@@ -47,7 +65,7 @@ $png = Join-Path $root "app.png"
 $ico = Join-Path $root "app.ico"
 if (Test-Path $png) {
     Write-Host "Generating multi-size app.ico from app.png..."
-    python -c @"
+    & $Python -c @"
 from pathlib import Path
 from PIL import Image
 img = Image.open(r'$png').convert('RGBA')
@@ -73,7 +91,7 @@ foreach ($f in $includeTop) {
 }
 # app.png: ship a 256x256 copy as fallback icon source (app.ico is preferred)
 if (Test-Path (Join-Path $root "app.png")) {
-    python -c @"
+    & $Python -c @"
 from PIL import Image
 img = Image.open(r'$(Join-Path $root 'app.png')').convert('RGBA')
 img.resize((256, 256), Image.Resampling.LANCZOS).save(r'$(Join-Path $staging 'app.png')')
