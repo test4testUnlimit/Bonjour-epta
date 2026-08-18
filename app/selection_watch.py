@@ -160,6 +160,8 @@ class SelectionWatcher:
                 return
 
             try:
+                # NEVER inject from the chip path. Fake Ctrl+C on every
+                # drag raced ShareX/Caramba/AHK and the user's own copy.
                 text = get_selected_text(
                     restore_clipboard=True,
                     settle_s=CAPTURE_SETTLE_S,
@@ -167,6 +169,7 @@ class SelectionWatcher:
                     # mouse-up stamp: a Ctrl+C after it is the user copying
                     # what they just selected, not a stale clipboard
                     since=since,
+                    allow_inject=False,
                 )
             except Exception:
                 logutil.exc("watcher get_selected_text")
@@ -174,7 +177,7 @@ class SelectionWatcher:
             text = sanitize_selection(text)
             if not text or len(text) < MIN_CHARS or len(text) > MAX_CHARS:
                 logutil.get().info(
-                    "watcher empty capture len=%s — no chip (peers may race clipboard)",
+                    "watcher empty capture len=%s — no chip (silent miss, no inject)",
                     len(text or ""),
                 )
                 try:

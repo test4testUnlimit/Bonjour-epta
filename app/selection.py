@@ -1,27 +1,24 @@
-"""Selection capture — Crow Translate Windows approach (selection.cpp).
+"""Selection capture — silent first, Crow Ctrl+C only as a last resort.
 
-Crow (GPL-3, Hennadii Chernyshchyk):
-  1) snapshot clipboard
-  2) wait until Win/Shift/Alt/Ctrl are ALL unpressed
-  3) SendInput Ctrl+C
-  4) wait for clipboard change (up to ~1s)
-  5) read text, restore clipboard
+Primary path (chip + hotkey):
+  app/silent_selection.py reads the selection via Edit/RichEdit/Scintilla
+  messages and UI Automation TextPattern.GetSelection(). No clipboard
+  write, no keystrokes, no race with ShareX / Caramba / AHK / the user's
+  own Ctrl+C.
 
-Change detection: GetClipboardSequenceNumber() — Windows bumps it on EVERY
-clipboard write, even re-copying identical text. That is the exact case the
-old __bonjur_* marker was invented for, so the marker is gone entirely.
+Fallback (hotkey only, allow_inject=True):
+  Crow Translate Windows approach (selection.cpp):
+    1) snapshot clipboard
+    2) wait until Win/Shift/Alt/Ctrl are ALL unpressed
+    3) SendInput / WM_COPY
+    4) wait for clipboard change (up to ~1s)
+    5) read text, restore clipboard
 
-Why no marker anymore (critical bug fix):
-  We must NEVER write to the global clipboard before Ctrl+C. The old code put
-  a probe string on the clipboard; on a large/slow copy the restore raced and
-  the probe survived — the user's next paste was `__bonjur_<uuid>__`. Using the
-  sequence number means bonjur reads/restores the clipboard but never writes a
-  probe, so a probe can never leak into the user's paste. Class of bug removed.
+The chip watcher MUST call get_selected_text(allow_inject=False). A missed
+chip is better than a stolen paste. Fake Ctrl+C on every mouse-drag is what
+made "скопировал — вставилось прошлое" and phantom keypresses.
 
-Global lock: concurrent watcher threads must not interleave Ctrl+C/restore.
-
-sanitize_selection / _is_marker stay as defence-in-depth: strip any stray
-__bonjur_* left on the clipboard by an older build still running elsewhere.
+Change detection on the inject path: GetClipboardSequenceNumber().
 
 Ctrl+C "works every other time" — three rules were missing:
 
@@ -488,22 +485,53 @@ def _restore_verdict(
     return True, ""
 
 
+def _try_silent() -> str:
+    """Read the selection without clipboard or keystrokes. Never raises."""
+    try:
+        from . import silent_selection
+
+        return sanitize_selection(silent_selection.read())
+    except Exception:  # noqa: BLE001
+        logutil.exc("silent selection")
+        return ""
+
+
 def get_selected_text(
     restore_clipboard: bool = True,
     settle_s: float = 1.0,
     *,
     clipboard_fallback: bool = False,
     since: float | None = None,
+    allow_inject: bool = True,
 ) -> str:
     """
-    Crow-style selection grab via clipboard sequence number. Never raises.
+    Grab the current selection. Never raises.
 
-    Before copy we briefly clear the clipboard so Firefox/Chromium still bump
-    the sequence number when the selection text already equals what was on
-    the clipboard (same-sentence re-select / often felt as «с конца»).
-    The previous clipboard is restored afterwards when safe.
+    Silent UIA/native first. The Crow clipboard inject runs only when
+    `allow_inject` is True (hotkey). The chip watcher must pass False.
     """
     log = logutil.get()
+    stamp = time.perf_counter() if since is None else since
+
+    # The user pressed Ctrl+C themselves after the gesture -- their
+    # selection is already on the clipboard. Reading it is faster than
+    # injecting, and touching nothing means their copy survives intact.
+    if copy_guard.copied_since(stamp) and copy_guard.recent(USER_COPY_S):
+        time.sleep(0.06)  # let the target app finish writing
+        own = sanitize_selection(_clip_get())
+        if own:
+            log.info("user Ctrl+C in flight -- reuse clipboard len=%s", len(own))
+            return own
+
+    silent = _try_silent()
+    if silent:
+        log.info("silent selection len=%s head=%r", len(silent), silent[:100])
+        return silent
+
+    if not allow_inject:
+        log.info("silent miss — not injecting (watcher / allow_inject=0)")
+        return ""
+
     if not _CLIP_LOCK.acquire(timeout=3.0):
         log.warning("get_selected_text: clip lock busy")
         return ""
@@ -513,7 +541,7 @@ def get_selected_text(
             restore_clipboard=restore_clipboard,
             settle_s=settle_s,
             clipboard_fallback=clipboard_fallback,
-            since=time.perf_counter() if since is None else since,
+            since=stamp,
             deferred_auto=deferred,
         )
     finally:
@@ -547,7 +575,7 @@ def _get_selected_text_locked(
     log = logutil.get()
     deferred_auto = deferred_auto if deferred_auto is not None else []
     log.debug(
-        "get_selected_text SEQ restore=%s settle=%.2f fallback=%s",
+        "get_selected_text INJECT restore=%s settle=%.2f fallback=%s",
         restore_clipboard, settle_s, clipboard_fallback,
     )
 
