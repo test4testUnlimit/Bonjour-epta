@@ -1,8 +1,0 @@
-{
-  "name": "mempalace_status",
-  "description": "Palace overview — total drawers, wing and room counts",
-  "inputSchema": {
-    "type": "object",
-    "properties": {}
-  }
-}

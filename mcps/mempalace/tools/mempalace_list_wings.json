@@ -1,8 +1,0 @@
-{
-  "name": "mempalace_list_wings",
-  "description": "List all wings with drawer counts",
-  "inputSchema": {
-    "type": "object",
-    "properties": {}
-  }
-}

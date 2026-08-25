@@ -1,8 +1,0 @@
-{
-  "name": "mempalace_reconnect",
-  "description": "Force reconnect to the palace database. Use after external scripts or CLI commands modified the palace directly, which can leave the in-memory HNSW index stale.",
-  "inputSchema": {
-    "type": "object",
-    "properties": {}
-  }
-}

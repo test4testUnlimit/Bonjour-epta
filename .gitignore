@@ -9,8 +9,17 @@ build/
 *.spec
 .idea/
 .vscode/
+# logs and bug dumps contain captured user text — never publish
 *.log
+*.log.*
+bugs/
 bonjur-autostart.vbs
+
+# vendored MCP tool schemas — not part of this product
+mcps/
+
+# scratch notes / raw dumps
+notes/public-apis-catalog/
 
 # real AI endpoint config — corporate hosts/GUIDs, lives in ~/.bonjur-epta/
 ai.json
