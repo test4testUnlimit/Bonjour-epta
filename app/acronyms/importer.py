@@ -43,8 +43,8 @@ __all__ = [
 # product codenames, internal systems and line ids go in
 # ~/.bonjur-epta/internal_markers.json:
 #
-#     [["site", "\\bnorth ?plant\\b|\\bNP\\d\\b"],
-#      ["codename", "\\braven\\b|\\bhighland\\b"]]
+#     [["site", "\\byour ?plant\\b|\\bYP\\d\\b"],
+#      ["codename", "\\bproject-?one\\b|\\bproject-?two\\b"]]
 #
 # That file is worth writing even though the default verdict is already
 # "internal": a marker beats GENERIC_HINTS, so without it a row like
@@ -149,7 +149,7 @@ def _is_term_line(line: str) -> bool:
     head = t.split(" ")[0]
     if not head.isupper() and not head.isdigit() and not head[:2].isupper():
         return False
-    # "2170 Battery Cells" is a definition, "TIA Portal" is a term
+    # "21700 Battery Cells" is a definition, "TIA Portal" is a term
     return sum(1 for c in t if c.islower()) <= 6
 
 

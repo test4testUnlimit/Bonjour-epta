@@ -1,6 +1,6 @@
 """Find acronym candidates in text. Pure regex + stop-lists, no dictionary needed.
 
-Shapes we accept: PPAP · 8D · GD&T · I/O · GC-MS · TL;DR · 1:1 · F.A.I. · CpK · 4680.
+Shapes we accept: PPAP · 8D · GD&T · I/O · GC-MS · TL;DR · 1:1 · F.A.I. · CpK · 21700.
 
 Two rejection levels, because the dictionary must always win over a guess:
   * hard drop  — never a candidate (common words, units right after a number)
@@ -25,7 +25,7 @@ _SHAPE_NUMLED = re.compile(r"^[0-9]{1,2}[A-Z]{1,3}$")  # 8D, 5S, 5W
 _SHAPE_COMPOUND = re.compile(r"^[A-Z0-9]{1,6}(?:[&/;:.\-][A-Z0-9]{1,6}){1,3}$")  # GD&T, I/O
 _SHAPE_DOTTED = re.compile(r"^(?:[A-Za-z]\.){2,4}[A-Za-z]?$")  # F.A.I. / F.A.I
 _SHAPE_CAMEL = re.compile(r"^[A-Z][a-z]{1,4}[A-Z][A-Za-z]{0,5}$")  # CpK, HiPot
-_SHAPE_DIGITS = re.compile(r"^[0-9]{4,5}$")  # 4680, 18650, 21700
+_SHAPE_DIGITS = re.compile(r"^[0-9]{4,5}$")  # 18650, 21700, 26650
 _ROMAN = re.compile(r"^M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})$")
 # two-letter romans are far more often acronyms (DC, MM, CM, MI, DI, XL), so only
 # the ones that really do read as numbers are muted at that length

@@ -348,8 +348,8 @@ class TestImportClassifier:
         assert imp.parse("PMI\n\nlol, that finally died\t\n") == []
 
     def test_a_definition_line_is_not_mistaken_for_a_term(self, imp):
-        rows = imp.parse("2170\n\n2170 Battery Cells\t\naka 21700 Battery Cells.\n")
-        assert [r.term for r in rows] == ["2170"]
+        rows = imp.parse("26650\n\n26650 Battery Cells\t\naka 26-650 Battery Cells.\n")
+        assert [r.term for r in rows] == ["26650"]
 
 
 class TestPackDiscovery:
