@@ -1,7 +1,7 @@
 """Numbered chivoblya chip styles — user picks.
 
 Style 1 (default, Lebedev dual-action pill):
-  [ 1/3 👁 ] | [ 2/3  чивобля? ]
+  [ 1/3 👁 ] | [ 2/3  chivoblya? ]
   eye  → start translate, then mini popup card
   text → open main window (no other changes)
 """

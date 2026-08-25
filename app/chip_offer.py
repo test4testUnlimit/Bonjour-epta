@@ -1,4 +1,4 @@
-"""When to offer the «чивобля?» chip for a selection (fast, offline)."""
+"""When to offer the chivoblya chip for a selection (fast, offline)."""
 
 from __future__ import annotations
 
@@ -174,7 +174,7 @@ def _skip(reason: str) -> bool:
 
 def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool:
     """
-    True → show «чивобля?» near selection.
+    True → show the chivoblya chip near the selection.
     Skip: empty, digits/symbols, code/paths/ids/junk, text already in target script.
     Hotkey path is unaffected — only the floating chip.
 
@@ -228,14 +228,15 @@ def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool
     tgt = (target_lang or "").lower().split("-")[0]
     expected = _TARGET_SCRIPT.get(tgt)
 
-    # mixed RU+EN tech ("Open файл settings.json") — still skip if path/code-like
+    # mixed-script tech prose ("Open <native word> settings.json") — still skip
+    # if it looks like a path or code
     # already handled above; for other mixed natural text, offer
     if mixed:
         return True
 
     if expected and dominant == expected:
         # Already the language you translate into — the chip only earns its
-        # place if the text hides acronyms («Отправь PPAP до EOW»), which a
+        # place if the text hides acronyms ("send the PPAP by EOW"), which a
         # translator would copy across untouched.
         if acronym_scan is None:
             return _skip("already_target_script")

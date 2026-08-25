@@ -1,4 +1,4 @@
-"""Google-style «чивобля?» pill + mini translation card near selection.
+"""Google-style chivoblya pill + mini translation card near the selection.
 
 Card dismisses on outside click (ready for next translate). Safe UI updates from threads.
 """
@@ -49,7 +49,7 @@ CARD_PAD_X = 10
 # way CustomTkinter scales a CTkFont (see _card_font). Raw tk point sizes are
 # multiplied by `tk scaling` (~1.67 here) on top and come out a fifth taller.
 CARD_BODY_FONT_SIZE = T.FONT_BODY_SIZE  # 13 — as in both text panes
-CARD_HEAD_FONT_SIZE = 11  # as the «исходник» / «акронимы» captions
+CARD_HEAD_FONT_SIZE = 11  # as the source / acronyms captions
 CARD_CLOSE_FONT_SIZE = 12
 CARD_SMALL_FONT_SIZE = 11  # status line + foot pills
 # head + foot + borders + body pads — foot must always fit inside geometry
@@ -214,7 +214,7 @@ class ChivoblyaPopup:
         body.grid_rowconfigure(1, weight=1)
 
         head = tk.Frame(body, bg=T.SURFACE)
-        # language only, e.g. (английский) — not the word «перевод»
+        # the detected language name only, not the word "translation"
         lang_lbl = tk.Label(
             head,
             text="",
@@ -335,7 +335,7 @@ class ChivoblyaPopup:
                 w.bind("<ButtonRelease-1>", lambda _e, f=fn: f())
 
         if st.dual_action:
-            # ── 1/3 eye | 2/3 «чивобля?» ──
+            # ── 1/3 eye | 2/3 chivoblya ──
             self._cur_w = 156
             # fixed width left third
             left = tk.Frame(host, bg=st.bg, cursor="hand2", width=48)
@@ -565,7 +565,7 @@ class ChivoblyaPopup:
                 self._click_guard = False
 
     def _on_chivoblya_main_click(self) -> None:
-        """2/3 «чивобля?»: open main window only — no mini card."""
+        """2/3 chivoblya: open main window only — no mini card."""
         if not self._alive or self._click_guard:
             return
         if not self._visible or self._mode != "chip":
@@ -673,7 +673,7 @@ class ChivoblyaPopup:
                 return
 
             self._translation = result.text or ""
-            # header: (английский) from detected source, not «перевод»
+            # header: the detected source language, not the word "translation"
             src_code = result.detected_source or cfg.get().source_lang or "auto"
             if getattr(self, "_lang_lbl", None):
                 self._lang_lbl.configure(text=f"({short_ru(src_code)})")

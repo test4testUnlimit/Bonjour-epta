@@ -2,7 +2,8 @@
 
 Why this design:
 - Old sync() skipped rewrite when the Run value already existed (want==have), so a
-  moved install / another Python left a stale command → login boot «через раз».
+  moved install / another Python left a stale command → boots on login every
+  other time.
 - Writing a .vbs next to main.py fails under real Program Files (no write ACL).
   Script lives in the user config dir; it always points at the current app root.
 - At login, cwd is often System32 and disks can lag; VBS sets CurrentDirectory,

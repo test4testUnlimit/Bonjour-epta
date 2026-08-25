@@ -41,7 +41,7 @@ def label_of(code: str) -> str:
     return LANG_LABELS.get(code, code)
 
 
-# short RU names for mini-popup header: (английский)
+# short localized names for the mini-popup header, shown in parentheses
 SHORT_RU: dict[str, str] = {
     "auto": "авто",
     "en": "английский",
@@ -76,7 +76,7 @@ def short_ru(code: str | None) -> str:
 # ── alphabet sniffing ────────────────────────────────────────────────
 # Not a language detector — just enough to notice that the combo says
 # English while the box holds Russian. Picking the wrong source silently
-# returns the text unchanged, which reads as "перевод не работает".
+# returns the text unchanged, which reads as a broken translator.
 
 SCRIPTS: dict[str, str] = {
     "en": "latin", "de": "latin", "fr": "latin", "es": "latin", "it": "latin",
@@ -144,8 +144,9 @@ def effective_target(target: str | None, source: str | None, text: str | None) -
     """Which language this text should actually go into.
 
     With an explicit A→B pair, the direction follows the text: configured ru→en
-    and an English selection is not «уже на целевом языке», it is the same pair
-    running the other way. With source=auto there is no pair to reverse, so the
+    and an English selection is not "already in the target language", it is the
+    same pair running the other way. With source=auto there is no pair to
+    reverse, so the
     caller's target stands.
     """
     tgt = str(target or "").lower().split("-")[0]

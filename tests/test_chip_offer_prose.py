@@ -3,7 +3,7 @@
 The old _RE_CODE was compiled (?is), so "Let me know", "the function of the
 liver" and "Select your organization from the list" all matched a code keyword
 and the chip was silently dropped. That was the single biggest cause of
-"выделил — чипа нет".
+"selected something, no chip".
 """
 
 from app import chip_offer

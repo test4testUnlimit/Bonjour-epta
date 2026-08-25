@@ -2,8 +2,8 @@
 
 Bonjour grabs a selection by injecting Ctrl+C and then putting the previous
 clipboard back. If the user's own Ctrl+C lands inside that window, the restore
-overwrites what they just copied — "скопировал, вставил, а там прошлое".
-That is the "работает через раз" report.
+overwrites what they just copied — "copied something, pasted, got the previous
+thing". That is the "works every other time" report.
 
 This hook marks real copy keystrokes so `selection.py` can step aside:
   * a fresh user copy → read the clipboard, do not inject, do not restore

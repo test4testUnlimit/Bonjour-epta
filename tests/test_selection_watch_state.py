@@ -1,6 +1,6 @@
 """The two silent holes in the mouse state machine.
 
-Both produce the same user-visible symptom — "выделил, а чипа нет" — and
+Both produce the same user-visible symptom — "selected something, no chip" — and
 neither left a single line in the log, which is why they survived so long.
 """
 

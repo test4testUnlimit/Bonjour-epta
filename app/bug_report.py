@@ -1,4 +1,4 @@
-"""User-triggered bug marks — tray «был баг».
+"""User-triggered bug marks — the tray's report-a-bug item.
 
 Writes a greppable BUGMARK into bonjur.log and a JSON sidecar under
 ~/.bonjur-epta/bugs/ so the next session can pull context around that time.

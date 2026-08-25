@@ -1,8 +1,9 @@
 """Strip under the panes for whatever the AI said that is not the answer itself.
 
-«причесать» puts the English in the target pane — the same place a translation
-lands — and the Russian back-translation plus the «why it reads better» note
-here. «объясни» has no English half, so the whole answer lives here.
+The polish action puts the English in the target pane — the same place a
+translation lands — and the back-translation plus the "why it reads better"
+note here. The explain action has no English half, so the whole answer lives
+here.
 
 Same shape as `acro_panel.AcronymPanel`: full width, sized to content, capped at
 a third of the window, gone entirely when there is nothing to show.
@@ -165,7 +166,7 @@ class AiPanel(ctk.CTkFrame):
         self._end()
 
     def show_text(self, title: str, text: str) -> None:
-        """One block of plain Russian — «объясни» and nothing else."""
+        """One block of prose — the explain action and nothing else."""
         if not (text or "").strip():
             self.hide()
             return

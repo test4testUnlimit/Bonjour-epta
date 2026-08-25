@@ -2,7 +2,7 @@
 
 ShareX can own the clipboard (history, OCR, auto-copy). Caramba Switcher
 hooks the keyboard for layout switching. Both race with our Ctrl+C inject
-and restore — field bugs #1 (stray «с») and #2 (no chip) often correlate.
+and restore — field bugs #1 (stray c) and #2 (no chip) often correlate.
 """
 
 from __future__ import annotations

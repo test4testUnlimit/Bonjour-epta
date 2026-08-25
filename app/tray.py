@@ -1,4 +1,4 @@
-"""System tray icon with menu: open / settings / был баг / exit.
+"""System tray icon with menu: open / settings / report-a-bug / exit.
 
 pystray runs the icon in its own thread; menu callbacks are marshalled back
 to the Tk main thread via app.after(0, ...).

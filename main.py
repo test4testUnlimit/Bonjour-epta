@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Bonjour ёпта — Crow-style: hotkey → grab selection → open window with text.
+"""Bonjur-epta — Crow-style: hotkey → grab selection → open window with text.
 
 Crow default: Ctrl+Alt+E translates selection (no floating chip required).
-We keep optional «чивобля?» chip; click uses cached text (no second Ctrl+C).
+We keep the optional chivoblya chip; a click uses cached text (no second Ctrl+C).
 """
 
 from __future__ import annotations
@@ -75,8 +75,9 @@ def main() -> int:
     # (sanitize already fixed Ctrl+Z). Offer Ctrl+Alt+E as product default for new installs.
     s0 = cfg.load()
     safe = s0.hotkey_spec()
-    # migrate only the broken/default double-ё if settings file never set combo
-    # keep user's `/ё ×2 if they want — but force-write Crow default for reliability first run
+    # migrate only the broken/default double-OEM3 if the settings file never set combo
+    # keep the user's OEM3 ×2 if they want it — but force-write the Crow default
+    # for a reliable first run
     # Only auto-migrate when hotkey was illegal (already sanitized) or empty dict edge
     if safe.to_dict() != (s0.hotkey or {}):
         log.warning("hotkey sanitized → %s", safe.label())
@@ -109,7 +110,7 @@ def main() -> int:
     last_selection: list[str] = [""]
 
     def on_open_main(text: str) -> None:
-        # mini card «в окно» → full dual-pane (Crow-style fill)
+        # mini card's open-in-window → full dual-pane (Crow-style fill)
         payload = (text or last_selection[0] or "").strip()
         log.info("mini → main len=%s", len(payload))
         if payload:
@@ -124,7 +125,7 @@ def main() -> int:
     def on_popup_vis(on: bool) -> None:
         popup_open["on"] = on
 
-    # Google-style pill; style chosen in «стиль чипа» window (numbered gallery)
+    # Google-style pill; style chosen in the chip-style window (numbered gallery)
     popup = ChivoblyaPopup(
         app,
         on_open_main=on_open_main,
@@ -143,7 +144,7 @@ def main() -> int:
         return False
 
     def has_acronyms(text: str) -> bool:
-        """Russian text with «PPAP до EOW» — the chip is the only way to the block."""
+        """Target-language text hiding acronyms — the chip is the only way to the block."""
         if not cfg.get().acronyms_enabled:
             return False
         try:

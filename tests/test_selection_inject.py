@@ -4,7 +4,7 @@ MSDN guarantees only that the events of a *single* call are not interleaved
 with another thread's input. The old code made three calls and separated
 them with a GetAsyncKeyState poll — which reads the global async key table
 and says nothing about what the target's message queue will see. A C that
-arrived without its Ctrl typed «с» over the user's selection.
+arrived without its Ctrl typed a bare letter over the user's selection.
 """
 
 import ctypes

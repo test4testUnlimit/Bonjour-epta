@@ -38,8 +38,8 @@ class TranslatorApp(ctk.CTk):
         self.title("")
         # the ⇄ is pinned to the pane split, so both toolbar flanks are mirrored
         # to the same width: the widest one (west, ~500px: brand ↻ Google 📚
-        # перевести) is paid for twice, + 52 for the ⇄ column + 20 padding.
-        # Below ~1075 the west flank starts clipping «перевести», hence 1090.
+        # translate) is paid for twice, + 52 for the ⇄ column + 20 padding.
+        # Below ~1075 the west flank starts clipping the translate pill, hence 1090.
         self.geometry("1120x600")
         self.minsize(1090, 460)
         self.configure(fg_color=T.BG)
@@ -144,7 +144,7 @@ class TranslatorApp(ctk.CTk):
     def _build(self, parent: ctk.CTkFrame) -> None:
         """
         Full-width toolbar (3-col grid) + 3-col pane grid, sharing one axis:
-          [ brand ↻ Google 📚 перевести ][ ⇄ ][ очистить AI ⚙ ]  ← content width
+          [ brand ↻ Google 📚 translate ][ ⇄ ][ clear AI ⚙ ]  ← content width
           [ source pane ]      |  MID_W  |      [ target pane ]  ← mirror panes
         The ⇄ column is the middle one, so it lands exactly over the pane split.
         Tools must not live only in the right pane column (overflow → paint-over).
@@ -158,7 +158,7 @@ class TranslatorApp(ctk.CTk):
         # the ⇄ sits dead centre of the content — the same centre as the MID_W
         # gap between the panes below it.
         # Not place(relx=0.5) — that floats over the row and painted over
-        # «объясни» on a narrow window. Grid columns reserve their space, so
+        # the explain button on a narrow window. Grid columns reserve space, so
         # nothing can ever be drawn on top of anything else.
         # Every cell is ROW_H tall and centred in HEAD_H (vpad), including the
         # brand: it used to be bottom-anchored (sticky="s") and sat ~8px below
@@ -196,9 +196,9 @@ class TranslatorApp(ctk.CTk):
         )
         self._btn_swap.grid(row=0, column=1, padx=T.TOOL_GAP)
 
-        # ── east flank — reads очистить · AI · ⚙ ──────────────────────────
-        # — «очистить» (7) hugs the west edge of its column, mirroring
-        #   «перевести» on the other side: both sit one TOOL_GAP off the ⇄
+        # ── east flank — reads clear · AI · ⚙ ─────────────────────────────
+        # — clear (7) hugs the west edge of its column, mirroring
+        #   translate on the other side: both sit one TOOL_GAP off the ⇄
         #   (the gap is the ⇄ cell's own padx), whatever the window width —
         self._ghost(east, "очистить", self.clear_all, w=80).pack(
             side="left", pady=vpad,
@@ -210,8 +210,8 @@ class TranslatorApp(ctk.CTk):
         # — AI group (8) —
         self._build_ai_group(east).pack(side="right", padx=(0, T.TOOL_GAP), pady=vpad)
 
-        # ── west flank — brand ↻ · Google ● · 📚 from the left, перевести at the ⇄
-        # — «перевести» (5) hugs the east edge of its column: packed first so a
+        # ── west flank — brand ↻ · Google ● · 📚 from the left, translate at the ⇄
+        # — translate (5) hugs the east edge of its column: packed first so a
         #   narrow window eats into the middle of the flank, not into the pill —
         self._btn_translate = ctk.CTkButton(
             west,
@@ -338,7 +338,7 @@ class TranslatorApp(ctk.CTk):
         self._ai_panel = AiPanel(content)
         self._acro = AcronymPanel(content, on_open_dict=self.open_acro_window)
 
-        # footer: tagline слева · hotkey справа (без центрального статуса)
+        # footer: tagline left · hotkey right (no status in the middle)
         foot = ctk.CTkFrame(parent, fg_color=T.BG, height=T.FOOT_H)
         foot.pack(fill="x", padx=T.PAD, pady=(T.GAP, T.PAD))
         foot.pack_propagate(False)
@@ -748,7 +748,7 @@ class TranslatorApp(ctk.CTk):
         self._settings_win = SettingsWindow(self)
 
     def open_acro_window(self, term: str = "") -> None:
-        """Dictionary window — from the strip's «словарь», settings, or an unknown word."""
+        """Dictionary window — from the strip's dictionary link, settings, or an unknown word."""
         from .acro_window import AcroWindow
 
         win = getattr(self, "_acro_win", None)
@@ -1335,8 +1335,8 @@ class TranslatorApp(ctk.CTk):
     def _adopt_detected(self, result: TranslateResult, retried: bool) -> bool:
         """Learn the real language from the answer and re-aim if it hit the target.
 
-        Asked to turn Russian into Russian, every provider echoes the text back —
-        which reads as «перевод не работает». True = a retry is on its way.
+        Asked to turn Russian into Russian, every provider echoes the text back,
+        which the user reads as a broken translator. True = a retry is on its way.
         """
         det = (result.detected_source or "").lower().split("-")[0]
         if not det or det not in langs.LANG_LABELS:

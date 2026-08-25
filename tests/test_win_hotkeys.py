@@ -113,7 +113,7 @@ class TestAltLetterWarning:
         assert alt_letter_warning(HotkeySpec(scan_code=46, ctrl=True, alt=True)) is None
 
     def test_alt_non_letter_is_fine(self):
-        spec = HotkeySpec(scan_code=41, ctrl=False, alt=True)  # `/ё
+        spec = HotkeySpec(scan_code=41, ctrl=False, alt=True)  # OEM3, the backtick key
         assert alt_letter_warning(spec) is None
 
     def test_warning_does_not_reset_the_binding(self):

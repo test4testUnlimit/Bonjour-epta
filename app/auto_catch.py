@@ -1,11 +1,11 @@
-"""Auto-catch field bugs without waiting for tray «был баг».
+"""Auto-catch field bugs without waiting for the tray's report-a-bug item.
 
 From 2026-08-09 BUGMARKs we know two signatures that are safe to stamp:
 
   * empty capture after a successful-looking Ctrl+C inject
-    (clipboard untouched) — «нет чипа»
-  * selection that is just «c»/«с», or a word clearly prefixed by a
-    stray c (cInturristo) — «дополнительная с»
+    (clipboard untouched) — the "no chip" bug
+  * selection that is just a lone c (latin or U+0441), or a word clearly prefixed
+    by a stray c (cInturristo) — the "stray c" bug
 
 Throttled so a sticky Firefox/ShareX race does not flood bugs/.
 """

@@ -269,7 +269,7 @@ class TestRace:
 
 
 class TestCtrlCNoStrayChar:
-    """A C keystroke without Ctrl types «с» over the selection — never fall back twice."""
+    """A C keystroke without Ctrl types a letter over the selection — never fall back twice."""
 
     @patch("keyboard.send")
     @patch("app.selection._send_ctrl_c_win", return_value=None)

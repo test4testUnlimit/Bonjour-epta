@@ -1,7 +1,7 @@
 """Brand system — serious translator, joke only in word + chip + tagline.
 
 Fonts: Segoe UI (Windows) — full Cyrillic, UTF-8 source files.
-Brand: latin «epta» = russian «ёпта» (meme safety for mixed keyboards).
+Brand: the latin "epta" spelling of the meme, safe on mixed keyboards.
 
 Layout rhythm (Lebedev: proximity + common air):
   one scale → equal gaps between equals, same inset in both panes.

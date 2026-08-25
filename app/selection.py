@@ -16,7 +16,7 @@ Fallback (hotkey only, allow_inject=True):
 
 The chip watcher MUST call get_selected_text(allow_inject=False). A missed
 chip is better than a stolen paste. Fake Ctrl+C on every mouse-drag is what
-made "скопировал — вставилось прошлое" and phantom keypresses.
+made "copied, and the previous thing pasted" plus phantom keypresses.
 
 Change detection on the inject path: GetClipboardSequenceNumber().
 
@@ -25,7 +25,7 @@ Ctrl+C "works every other time" — three rules were missing:
   1) Never inject Ctrl+C while the user physically holds Ctrl. Our injection
      ends with a Ctrl KEYUP; with the real key still down the foreground app
      now believes Ctrl is released, so the user's own Ctrl+C does nothing at
-     all until they let go and press again. That is the "перехватывает".
+     all until they let go and press again. That is the "it steals my Ctrl+C".
   2) Never put the old clipboard back over a write we did not make. If the
      user's Ctrl+C lands inside our capture window, restoring wipes exactly
      what they just copied.
@@ -304,7 +304,8 @@ def _send_ctrl_c_win() -> bool | None:
             # a GetAsyncKeyState poll between Ctrl-down and the C tap, which
             # reads the global async table and says nothing about what the
             # target's message queue will see — so the C could still arrive
-            # bare and type «с» over the selection. The guard could not work,
+            # bare and type the layout's own letter (U+0441 on a Cyrillic
+            # layout) over the selection. The guard could not work,
             # and the field log proves it: two real stray-c events, zero
             # still_down=0 lines.
             n = send(
@@ -341,7 +342,7 @@ def _send_ctrl_c() -> bool:
             return True
         if res is None:
             # Keys already went out. A second attempt through `keyboard` would
-            # double the injection — that is how a lone «с» gets typed.
+            # double the injection — that is how a lone c gets typed.
             return False
     if input_arbiter.busy():
         return False
@@ -389,7 +390,7 @@ def _is_marker(text: str | None) -> bool:
 
 
 def sanitize_selection(text: str | None) -> str:
-    """Strip + drop marker + peel stray leading c/с from field bug #1."""
+    """Strip + drop marker + peel a stray leading c (latin or U+0441), field bug #1."""
     if not text:
         return ""
     t = text.strip("\x00").strip()
@@ -398,7 +399,8 @@ def sanitize_selection(text: str | None) -> str:
     first = t.splitlines()[0].strip() if t else ""
     if _is_marker(first) and len(t) < 100:
         return ""
-    # Field: inject typed a lone c/с into the selection (cInturristo). Peel it
+    # Field: inject typed a lone c (latin or U+0441) into the selection
+    # (cInturristo). Peel it
     # so chip/translate see the real word; auto_catch still sees the raw form.
     try:
         from . import auto_catch

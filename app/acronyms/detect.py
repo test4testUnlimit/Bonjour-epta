@@ -5,7 +5,7 @@ Shapes we accept: PPAP · 8D · GD&T · I/O · GC-MS · TL;DR · 1:1 · F.A.I. �
 Two rejection levels, because the dictionary must always win over a guess:
   * hard drop  — never a candidate (common words, units right after a number)
   * noise flag — still a candidate so a dictionary hit can rescue it, but never
-                 reported as «не знаю» (roman numerals, CamelCase, bare digits,
+                 reported as unknown (roman numerals, CamelCase, bare digits,
                  ALL-CAPS SHOUTING).
 """
 
@@ -64,7 +64,7 @@ class Candidate:
     key: str  # normalized lookup key
     start: int
     end: int
-    noise: bool = False  # dictionary may rescue it; never shown as «не знаю»
+    noise: bool = False  # dictionary may rescue it; never shown as unknown
 
 
 def _shouty(text: str) -> bool:

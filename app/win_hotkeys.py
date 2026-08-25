@@ -214,15 +214,16 @@ def alt_letter_warning(spec: HotkeySpec) -> str | None:
     """Alt+<letter> leaks its letter into the focused document: the character
     is delivered on Alt-up while the key is still auto-repeating. Alt+C is the
     worst case here — it is the very keystroke whose synthetic twin we chase
-    as the stray «с».
+    as the stray c.
 
     A warning, not a check_reserved entry: sanitize_hotkey resets anything
     check_reserved rejects, which would rewrite a binding the user chose
-    without asking them.
+    without asking them. Log-only, hence English like the rest of the log —
+    check_reserved's strings are the ones the settings window shows.
     """
     key = _scan_label(spec.scan_code)
     if spec.alt and not spec.ctrl and len(key) == 1 and key.isalpha():
-        return f"Alt+{key} может протечь символом «{key}» в документ — добавь Ctrl"
+        return f"Alt+{key} may leak a literal {key!r} into the document — add Ctrl"
     return None
 
 
