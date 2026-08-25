@@ -139,7 +139,7 @@ class ChivoblyaPopup:
                 len(text),
                 x,
                 y,
-                text[:50],
+                logutil.head(text, 50),
             )
         except Exception:  # noqa: BLE001
             logutil.exc("popup.show")
@@ -691,7 +691,7 @@ class ChivoblyaPopup:
                 len(self._translation),
                 self._cur_w,
                 self._cur_h,
-                self._translation[:60],
+                logutil.head(self._translation, 60),
             )
         except Exception:  # noqa: BLE001
             logutil.exc("apply_tr UI")

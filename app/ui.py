@@ -969,7 +969,7 @@ class TranslatorApp(ctk.CTk):
             len(text),
             len(got or ""),
             (got or "") == text,
-            (got or "")[:80],
+            logutil.head(got, 80),
         )
         self._refresh_acronyms(got or "")
 
@@ -1470,7 +1470,7 @@ class TranslatorApp(ctk.CTk):
         log.info(
             "bring_with_selection called len=%s head=%r thread=%s",
             len(text),
-            text[:100],
+            logutil.head(text),
             threading.current_thread().name,
         )
 

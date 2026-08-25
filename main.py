@@ -150,7 +150,7 @@ def main() -> int:
             return False
 
     def on_selection_detected(text: str, x: int, y: int) -> None:
-        log.info("selection cache len=%s at=%s,%s head=%r", len(text), x, y, text[:80])
+        log.info("selection cache len=%s at=%s,%s head=%r", len(text), x, y, logutil.head(text, 80))
         last_selection[0] = text or ""
         if not cfg.get().chivoblya_enabled:
             return
@@ -170,7 +170,7 @@ def main() -> int:
             log.debug(
                 "skip chip — not useful for target=%s head=%r",
                 target_code,
-                (text or "")[:40],
+                logutil.head(text, 40),
             )
             try:
                 from app import auto_catch
@@ -217,7 +217,7 @@ def main() -> int:
                 "hotkey grab len=%s cache_len=%s head=%r",
                 len(selected or ""),
                 len(last_selection[0] or ""),
-                (selected or "")[:100],
+                logutil.head(selected),
             )
             if not selected and last_selection[0]:
                 selected = sanitize_selection(last_selection[0])
