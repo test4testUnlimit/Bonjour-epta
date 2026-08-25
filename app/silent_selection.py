@@ -398,15 +398,21 @@ class _StaWorker:
                 # Field logs show zero UIA timeouts and every genuine Chrome
                 # miss being the first probe of that HWND — so keep asking
                 # inside the 1.4 s submit() already waits for.
+                # 0.6 s, not the full 1.4. Measured: one _read_uia costs
+                # ~80 ms warm and ~240 ms cold, the check happens before the
+                # sleep, and a warm probe queued at mouse-down can still be
+                # running when this arrives. Budget any closer to
+                # _UIA_TIMEOUT_S and a plain miss logs a bogus timeout while
+                # the watcher sits _busy for the whole 1.4.
                 tries = 1
-                deadline = time.perf_counter() + 1.1
+                deadline = time.perf_counter() + 0.6
                 delay = 0.05
                 while not text and time.perf_counter() + delay < deadline:
                     time.sleep(delay)
                     _pump()
                     text = _read_uia(hwnd) or ""
                     tries += 1
-                    delay = min(delay * 2, 0.3)
+                    delay = min(delay * 2, 0.2)
                 logutil.get().debug("silent uia tries=%s len=%s", tries, len(text))
             except Exception:  # noqa: BLE001
                 logutil.exc("silent uia worker")
