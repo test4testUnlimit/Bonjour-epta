@@ -937,7 +937,7 @@ class TranslatorApp(ctk.CTk):
 
         text = sanitize_selection(text)
         log = logutil.get()
-        log.debug("set_source_text len=%s head=%r", len(text), text[:100])
+        log.debug("set_source_text len=%s head=%r", len(text), logutil.head(text))
         inner = self._inner(self._src_box)
         log.debug("inner type=%s", type(inner).__name__)
         try:
@@ -1507,7 +1507,7 @@ class TranslatorApp(ctk.CTk):
             except Exception:  # noqa: BLE001
                 pass
             ok = bool(got)
-            log.info("bring done ok=%s len=%s head=%r", ok, len(got), got[:80])
+            log.info("bring done ok=%s len=%s head=%r", ok, len(got), logutil.head(got, 80))
             if ok and cfg.get().instant_translate:
                 log.debug("instant translate after bring")
                 self.translate_now()

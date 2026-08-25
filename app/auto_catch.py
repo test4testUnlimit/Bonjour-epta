@@ -64,7 +64,7 @@ def note_empty_capture(
     peers_s = peers.summary()
     note = (
         f"clipboard untouched after inject polls={polls} "
-        f"prev_head={previous_head[:80]!r} peers={peers_s}"
+        f"prev_head={logutil.head(previous_head, 80)!r} peers={peers_s}"
     )
     _emit(KIND_AUTO_EMPTY, note, app=app)
 

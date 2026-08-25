@@ -525,7 +525,7 @@ def get_selected_text(
 
     silent = _try_silent()
     if silent:
-        log.info("silent selection len=%s head=%r", len(silent), silent[:100])
+        log.info("silent selection len=%s head=%r", len(silent), logutil.head(silent))
         return silent
 
     if not allow_inject:
@@ -616,7 +616,7 @@ def _get_selected_text_locked(
         prev_marker = _is_marker(previous)
         if prev_marker:
             previous = ""  # a probe from an ancient build — wipe, never re-serve
-        log.debug("clip previous len=%s head=%r", len(previous), previous[:80])
+        log.debug("clip previous len=%s head=%r", len(previous), logutil.head(previous, 80))
 
         # Firefox skips clipboard write when selection text already equals the
         # clipboard (same-sentence re-select). Pre-clear so a successful copy
@@ -775,7 +775,7 @@ def _get_selected_text_locked(
 
         selected = sanitize_selection(selected)
         if selected:
-            log.info("selected ok len=%s head=%r", len(selected), selected[:100])
+            log.info("selected ok len=%s head=%r", len(selected), logutil.head(selected))
             return selected
 
         # Successful inject path but nothing landed — classic no-chip race

@@ -9,6 +9,7 @@ Rotate when a file exceeds ~8 MiB (keeps *.log.prev).
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import traceback
 from pathlib import Path
@@ -16,6 +17,18 @@ from pathlib import Path
 _CONFIGURED = False
 LOG_NAME = "bonjur"
 _ROTATE_BYTES = 8 * 1024 * 1024
+
+# The app sees every scrap of text the user highlights anywhere on the machine.
+# Writing it to disk turns the log into a reading history, so content is opt-in:
+# set BONJUR_LOG_TEXT=1 when you need to debug a capture. Lengths always log.
+LOG_TEXT = os.environ.get("BONJUR_LOG_TEXT") == "1"
+
+
+def head(text: str | None, n: int = 100) -> str:
+    """First `n` chars for a log line — redacted unless BONJUR_LOG_TEXT=1."""
+    if not LOG_TEXT:
+        return "<hidden>"
+    return (text or "")[:n]
 
 
 def setup() -> logging.Logger:
