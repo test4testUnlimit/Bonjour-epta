@@ -1,7 +1,7 @@
 """One request to the AI gateway, streamed and collected into a string.
 
-A port of the RCBR CLI's `stream_chat` with the console printing removed: the
-UI wants the finished answer, not a live feed. `modes.search` stays False — we
+A streaming chat call with the console printing removed: the UI wants the
+finished answer, not a live feed. `modes.search` stays False — we
 rely on what the model already knows and never send anything off to a search
 engine. Every call is its own session; nothing is remembered between clicks.
 """

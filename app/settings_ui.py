@@ -719,7 +719,7 @@ class SettingsWindow(ctk.CTkToplevel):
         if not ai_config.configured():
             text = f"нет настроек шлюза — положи ai.json сюда:\n{ai_config.where()}"
         elif not ai_token.present():
-            text = "токен не вставлен — нажми 🔑 в главном окне (сначала букмарклет в Chrome)"
+            text = "токен не вставлен — нажми 🔑 в главном окне (сначала скопируй токен в буфер)"
         else:
             left = ai_token.seconds_left()
             who = ai_token.user() or "токен"

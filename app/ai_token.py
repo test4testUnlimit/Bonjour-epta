@@ -1,9 +1,9 @@
 """Bearer token for the AI gateway — memory only, never touches the disk.
 
-The user grabs it with the same Chrome bookmarklet the RCBR CLI uses, which
-leaves `RCBR|<bearer>|<ms_token>|<refresh>` in the clipboard. We parse that,
-keep it in module state, and quietly renew it through the OAuth refresh grant
-while the app runs. Close the app and the token is gone.
+Paste it from the clipboard: either a bare JWT, or the pipe-separated payload
+a browser token-grabber leaves behind — `<tag>|<bearer>|<ms_token>|<refresh>`.
+We keep it in module state and quietly renew it through the OAuth refresh
+grant while the app runs. Close the app and the token is gone.
 """
 
 from __future__ import annotations
@@ -170,7 +170,9 @@ def paste_from_clipboard() -> tuple[bool, str]:
     if not clip:
         return False, "буфер обмена пуст"
 
-    if clip.startswith("RCBR|"):
+    # Grabber payload: <tag>|<bearer>|<ms_token>|<refresh>. The tag is
+    # whatever the bookmarklet stamps — we only care about field 2 onwards.
+    if "|" in clip:
         parts = clip.split("|")
         if len(parts) < 2 or not parts[1]:
             return False, "в буфере обрезанные данные"

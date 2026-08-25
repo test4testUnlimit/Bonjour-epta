@@ -1,4 +1,4 @@
-"""ai_token: parse what the bookmarklet leaves in the clipboard, track expiry."""
+"""ai_token: parse what the token grabber leaves in the clipboard, track expiry."""
 
 import base64
 import json
@@ -131,21 +131,21 @@ class TestClipboard:
         mod = type("m", (), {"paste": staticmethod(lambda: text)})
         return patch.dict("sys.modules", {"pyperclip": mod})
 
-    def test_rcbr_payload(self):
+    def test_piped_payload(self):
         t = jwt(900, "Иван")
-        with self._clip(f"RCBR|{t}|ms-token|refresh-token"):
+        with self._clip(f"TOK|{t}|ms-token|refresh-token"):
             ok, msg = ai_token.paste_from_clipboard()
         assert ok and "Иван" in msg
         assert ai_token.bearer() == t
         assert ai_token.ms_token() == "ms-token"
         assert ai_token.can_renew() or True  # needs ai.json too — checked separately
 
-    def test_rcbr_payload_without_refresh(self):
-        with self._clip(f"RCBR|{jwt(900)}|ms"):
+    def test_piped_payload_without_refresh(self):
+        with self._clip(f"TOK|{jwt(900)}|ms"):
             assert ai_token.paste_from_clipboard()[0]
 
-    def test_truncated_rcbr_payload(self):
-        with self._clip("RCBR|"):
+    def test_truncated_piped_payload(self):
+        with self._clip("TOK|"):
             ok, msg = ai_token.paste_from_clipboard()
         assert not ok and "обрезанные" in msg
 
