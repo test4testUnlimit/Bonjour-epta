@@ -32,14 +32,19 @@ _TARGET_SCRIPT: dict[str, str] = {
 _RE_PATH = re.compile(
     r"(?i)(?:[a-z]:\\|/home/|/Users/|\\Projects\\|\\app\\|\.py\b|\.json\b|\.ts\b|\.js\b|\.tsx\b|\.cs\b)"
 )
+# No (?i) here. Case-insensitive keywords ate ordinary English: "Let me know",
+# "the function of the liver", "a class of problems", "Select your organization
+# from the list" all read as code and the chip never appeared. A keyword counts
+# only when followed by an identifier and then something a sentence never has
+# (= ( : {), and SQL only in the all-caps form nobody writes prose in.
 _RE_CODE = re.compile(
-    r"(?is)"
-    r"(^\s*[{\[<])|"  # JSON / HTML / array
-    r"(</?[a-z][\w:-]*[\s>])|"  # HTML tag
-    r"(\bSELECT\b.+\bFROM\b)|"
-    r"(\b(?:def|class|function|const|let|var)\s+\w)|"
-    r"(\bimport\s+[\w.]+)|"
-    r"(\bfrom\s+[\w.]+\s+import\b)|"
+    r"(?m)"
+    r"(\A\s*[{\[<])|"  # JSON / HTML / array
+    r"(</?[A-Za-z][\w:-]*[\s>])|"  # HTML tag
+    r"(\bSELECT\b[^\n]{1,200}\bFROM\b)|"
+    r"(\b(?:def|class|function|const|let|var)\s+[A-Za-z_$][\w$]*\s*[=(:{<])|"
+    r"(^\s*import\s+[\w.]+\s*(?:;|,|$| as\b))|"
+    r"(^\s*from\s+[\w.]+\s+import\b)|"
     r"(->\s*str\b)|"
     r"(\bgit\s+\w+)|"
     r"(\bnpm\s+\w+)|"
@@ -156,6 +161,17 @@ def _looks_code_or_junk(text: str) -> bool:
     return False
 
 
+# Which filter dropped the last selection. Read by main.py for the log line —
+# "no chip" used to be indistinguishable from "no capture" in the field.
+last_skip_reason = ""
+
+
+def _skip(reason: str) -> bool:
+    global last_skip_reason
+    last_skip_reason = reason
+    return False
+
+
 def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool:
     """
     True → show «чивобля?» near selection.
@@ -166,9 +182,11 @@ def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool
     language, and only after the cheap filters have passed — so the dictionary
     is touched for the handful of selections that would otherwise be dropped.
     """
+    global last_skip_reason
+    last_skip_reason = ""
     t = (text or "").strip()
     if not t:
-        return False
+        return _skip("empty")
 
     # Field H3: stray leading c made «cInturristo» look like camelCase junk.
     # Evaluate chip usefulness on the peeled form (sanitize also peels).
@@ -177,26 +195,26 @@ def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool
 
         reason = auto_catch.looks_stray_c(t)
         if reason == "lone_c":
-            return False
+            return _skip("lone_c")
         if reason and reason.startswith("prefix_c+") and len(t) >= 2:
             t = t[1:].lstrip()
             if not t:
-                return False
+                return _skip("lone_c")
     except Exception:  # noqa: BLE001
         pass
 
     letters = [c for c in t if c.isalpha()]
     if not letters:
-        return False  # 123, 3.14, $50, dates without letters
+        return _skip("no_letters")  # 123, 3.14, $50, dates without letters
 
     # mostly numeric noise with a stray letter (e.g. "№12")
     non_space = [c for c in t if not c.isspace()]
     digit_like = sum(1 for c in non_space if c.isdigit() or c in ".,/%$#€₽№+-±")
     if digit_like >= len(non_space) * 0.7 and len(letters) <= 1:
-        return False
+        return _skip("numeric_noise")
 
     if _looks_code_or_junk(t):
-        return False
+        return _skip("code_or_junk")
 
     buckets = Counter(
         s for c in letters if (s := _script_of(c)) and s != "other"
@@ -220,9 +238,9 @@ def should_offer_chip(text: str, *, target_lang: str, acronym_scan=None) -> bool
         # place if the text hides acronyms («Отправь PPAP до EOW»), which a
         # translator would copy across untouched.
         if acronym_scan is None:
-            return False
+            return _skip("already_target_script")
         try:
-            return bool(acronym_scan(t))
+            return bool(acronym_scan(t)) or _skip("already_target_script")
         except Exception:  # noqa: BLE001
-            return False
+            return _skip("already_target_script")
     return True

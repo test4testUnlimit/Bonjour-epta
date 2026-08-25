@@ -33,6 +33,7 @@ def _try_single_instance(startup: bool) -> bool:
 
 def main() -> int:
     from app import acronyms
+    from app import chip_offer
     from app import dpi
     from app import logutil
     from app import netcerts
@@ -167,9 +168,13 @@ def main() -> int:
 
         target_code = langs.effective_target(target_code, source_code, text) or target_code
         if not should_offer_chip(text, target_lang=target_code, acronym_scan=has_acronyms):
-            log.debug(
-                "skip chip — not useful for target=%s head=%r",
+            # info, not debug: a suppressed chip and a failed capture look
+            # identical to the user, and only this line tells them apart.
+            log.info(
+                "skip chip reason=%s target=%s len=%s head=%r",
+                chip_offer.last_skip_reason,
                 target_code,
+                len(text),
                 logutil.head(text, 40),
             )
             try:
