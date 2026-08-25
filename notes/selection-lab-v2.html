@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bonjur — lab v2 (чип зря / перевод)</title>
+  <style>
+    :root {
+      --bg: #f3efe6;
+      --ink: #1a1a18;
+      --muted: #6b675e;
+      --line: #d4cfc2;
+      --hi: #fff8e8;
+      --bad: #8b2e2e;
+      --warn: #8a5a12;
+      --accent: #c45c26;
+      --mono: "IBM Plex Mono", "Cascadia Mono", "Consolas", monospace;
+      --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, #ffe8c8 0%, transparent 55%),
+        linear-gradient(180deg, #f7f3ea 0%, var(--bg) 40%, #ebe4d6 100%);
+      color: var(--ink);
+      font: 16px/1.55 var(--sans);
+      min-height: 100vh;
+    }
+    header { padding: 1.5rem 1.4rem 0.8rem; max-width: 980px; margin: 0 auto; }
+    h1 { font: 700 1.45rem/1.2 var(--sans); margin: 0 0 0.4rem; letter-spacing: -0.02em; }
+    .hint { color: var(--muted); font-size: 0.95rem; max-width: 48rem; }
+    .hint strong { color: var(--accent); font-weight: 600; }
+    .legend {
+      margin-top: 0.85rem;
+      display: flex; flex-wrap: wrap; gap: 0.6rem 1rem;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .legend code {
+      font: 650 0.78rem var(--mono);
+      background: #fffdf8; border: 1px solid var(--line);
+      padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--ink);
+    }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: 0.55rem;
+      margin-top: 1rem; align-items: center;
+    }
+    button {
+      font: 600 0.85rem var(--sans);
+      border: 1px solid var(--line); background: #fffdf8; color: var(--ink);
+      padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;
+    }
+    button:hover { border-color: #b8b09c; }
+    button.ghost { background: transparent; }
+    #live {
+      font: 0.82rem/1.35 var(--mono); color: var(--muted);
+      padding: 0.35rem 0.55rem; background: rgba(255,255,255,0.55);
+      border-radius: 6px; border: 1px dashed var(--line);
+      min-height: 1.6rem; flex: 1 1 220px; word-break: break-word;
+    }
+    main { max-width: 980px; margin: 0 auto; padding: 0 1rem 3rem; }
+    section { margin-top: 1.5rem; }
+    section h2 {
+      font: 650 0.78rem/1.3 var(--sans); text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin: 0 0 0.35rem;
+    }
+    section .why {
+      font-size: 0.86rem; color: var(--warn); margin: 0 0 0.55rem;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.35rem 1.35rem 3rem 5.2rem 1fr;
+      gap: 0.4rem; align-items: start;
+      padding: 0.5rem 0.6rem; border-top: 1px solid var(--line);
+      background: rgba(255,253,248,0.72);
+    }
+    .row:last-child { border-bottom: 1px solid var(--line); }
+    .row:hover { background: var(--hi); }
+    .row.fail-chip { background: #fff0ee; outline: 1px solid color-mix(in srgb, var(--bad) 35%, transparent); }
+    .row.fail-tr { background: #fff6e8; outline: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); }
+    .row.fail-chip.fail-tr { background: #fde8e4; }
+    input[type=checkbox] {
+      appearance: none; width: 1.1rem; height: 1.1rem; margin: 0.22rem 0 0;
+      border: 1.5px solid #b8b09c; border-radius: 4px; background: #fffdf8;
+      cursor: pointer; user-select: none;
+    }
+    input.chip:checked { background: var(--bad); border-color: var(--bad); }
+    input.tr:checked { background: var(--warn); border-color: var(--warn); }
+    .num {
+      font: 650 0.78rem/1.5 var(--mono); color: var(--muted);
+      padding-top: 0.12rem; user-select: none;
+    }
+    .expect {
+      font: 650 0.68rem/1.35 var(--mono); padding-top: 0.2rem;
+      user-select: none; letter-spacing: 0.02em;
+    }
+    .expect.no { color: var(--bad); }
+    .expect.yes { color: #2f6b4f; }
+    .sample {
+      font-size: 1rem; line-height: 1.5; white-space: pre-wrap;
+      word-break: break-word; min-height: 1.35em;
+    }
+    .sample.code { font-family: var(--mono); font-size: 0.92rem; }
+    footer {
+      max-width: 980px; margin: 0 auto; padding: 0 1.4rem 2.5rem;
+      color: var(--muted); font-size: 0.85rem;
+    }
+    #report {
+      margin-top: 1rem; padding: 0.85rem 1rem; background: #1a1a18; color: #f3efe6;
+      font: 0.82rem/1.45 var(--mono); border-radius: 8px; white-space: pre-wrap;
+      display: none;
+    }
+    #report.show { display: block; }
+    .colhead {
+      display: grid;
+      grid-template-columns: 1.35rem 1.35rem 3rem 5.2rem 1fr;
+      gap: 0.4rem; padding: 0 0.6rem 0.35rem;
+      font: 650 0.65rem/1 var(--mono); color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lab v2 — чип зря / перевод не тот</h1>
+    <p class="hint">
+      По прошлому FAIL (<strong>35, 77, 78, 80, 81, 83</strong>): чип часто
+      появлялся там, где перевод не нужен, или нужен был — но не сработал.
+      Выделяй текст → смотри чип/карточку → отметь слева.
+    </p>
+    <div class="legend">
+      <span><code>чип</code> = чип появился зря (не надо было)</span>
+      <span><code>пер</code> = перевод нужен был, но не сработал / пусто / мусор</span>
+      <span><code>NOCHIP</code> = по задумке чипа быть не должно</span>
+      <span><code>CHIP</code> = чип+перевод уместны</span>
+    </div>
+    <div class="toolbar">
+      <button type="button" id="btnClear">сбросить</button>
+      <button type="button" id="btnCopy" class="ghost">копировать отчёт</button>
+      <div id="live">готово к тесту</div>
+    </div>
+  </header>
+
+  <main id="lab"></main>
+
+  <footer>
+    <div id="report"></div>
+    База: FAIL 35/77/78/80/81/83 + вариации вокруг них. Target lang в Bonjur = ru.
+  </footer>
+
+  <script>
+    /**
+     * expect: "no" = chip should NOT appear; "yes" = chip+translate OK
+     * from: original fail id if any
+     */
+    const GROUPS = [
+      {
+        title: "A · техсмесь RU+EN (из #35)",
+        why: "Сейчас чип почти всегда всплывает. Вопрос: нужен ли перевод таких строк?",
+        rows: [
+          { id: 101, from: 35, expect: "no", text: "Windows 11 · DPI 125% · монитор 2" },
+          { id: 102, expect: "no", text: "Windows 11 DPI 125%" },
+          { id: 103, expect: "no", text: "монитор 2" },
+          { id: 104, expect: "no", text: "Ctrl+Alt+E hotkey" },
+          { id: 105, expect: "no", text: "C:\\Projects\\Bonjur-epta\\app\\popup.py" },
+          { id: 106, expect: "yes", text: "Please restart the monitor after changing DPI." },
+          { id: 107, expect: "yes", text: "Перезапустите монитор после смены DPI." },
+        ],
+      },
+      {
+        title: "B · длинный токен / мусор (из #77)",
+        why: "Латиница без смысла → чип есть. Перевод бессмысленный — скорее NOCHIP.",
+        rows: [
+          { id: 201, from: 77, expect: "no", text: "AAAAAAAAAAAAA veryyyyyyyyy longgggggggg token without spaces" },
+          { id: 202, expect: "no", text: "asdfasdfasdfasdfasdf" },
+          { id: 203, expect: "no", text: "xxxxxxxxxxxxxxxxxxxxxxxx" },
+          { id: 204, expect: "no", text: "CamelCaseIdentifierWithoutSpacesReallyLong" },
+          { id: 205, expect: "yes", text: "a very long but real English sentence about shipping the product today" },
+        ],
+      },
+      {
+        title: "C · длинный EN абзац (из #78)",
+        why: "Lorem / реальный EN — чип уместен. Если чип был, а перевода нет — отмечай «пер».",
+        rows: [
+          {
+            id: 301,
+            from: 78,
+            expect: "yes",
+            text: "Paragraph: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
+          },
+          {
+            id: 302,
+            expect: "yes",
+            text: "Please translate this whole paragraph carefully: the chip must open a card with a full Russian translation, not hang on loading.",
+          },
+          {
+            id: 303,
+            expect: "yes",
+            text: "Short EN: Open the settings and enable instant translate.",
+          },
+        ],
+      },
+      {
+        title: "D · код / JSON / SQL (из #80 #81 #83)",
+        why: "Главный кандидат на «чип зря». Ожидание: NOCHIP.",
+        rows: [
+          { id: 401, from: 80, expect: "no", text: '{"ok": true, "msg": "hello"}', code: true },
+          { id: 402, expect: "no", text: '{"error":"timeout","retry":3}', code: true },
+          { id: 403, from: 81, expect: "no", text: "def translate(text: str) -> str:", code: true },
+          { id: 404, expect: "no", text: "function shouldOfferChip(text) { return true; }", code: true },
+          { id: 405, from: 83, expect: "no", text: "SELECT * FROM users WHERE id = 1;", code: true },
+          { id: 406, expect: "no", text: "git push -u origin HEAD", code: true },
+          { id: 407, expect: "no", text: "<div class=\"chip\">чивобля?</div>", code: true },
+          { id: 408, expect: "no", text: "npm install customtkinter", code: true },
+          { id: 409, expect: "yes", text: "hello from a normal sentence, not code" },
+        ],
+      },
+      {
+        title: "E · граница: идентификаторы и «почти код»",
+        why: "Уточняем порог — где ещё чип ок, а где уже нет.",
+        rows: [
+          { id: 501, expect: "no", text: "should_offer_chip" },
+          { id: 502, expect: "no", text: "on_selection_detected" },
+          { id: 503, expect: "no", text: "v1.6.3" },
+          { id: 504, expect: "no", text: "sk-test-ABC123" },
+          { id: 505, expect: "yes", text: "instant translate" },
+          { id: 506, expect: "yes", text: "floating chip near selection" },
+          { id: 507, expect: "no", text: "Open файл settings.json and restart." },
+          { id: 508, expect: "yes", text: "Open the file and restart the app." },
+        ],
+      },
+      {
+        title: "F · контроль (должно быть предсказуемо)",
+        why: "Если тут врёт — сначала чини базу, не фильтр кода.",
+        rows: [
+          { id: 601, expect: "yes", text: "hello" },
+          { id: 602, expect: "no", text: "привет" },
+          { id: 603, expect: "yes", text: "Good morning" },
+          { id: 604, expect: "no", text: "Доброе утро" },
+          { id: 605, expect: "no", text: "12345" },
+          { id: 606, expect: "no", text: "№12" },
+        ],
+      },
+    ];
+
+    const chipFails = new Set();
+    const trFails = new Set();
+    const lab = document.getElementById("lab");
+    const live = document.getElementById("live");
+    const reportEl = document.getElementById("report");
+
+    function render() {
+      lab.innerHTML = "";
+      for (const g of GROUPS) {
+        const sec = document.createElement("section");
+        const h = document.createElement("h2");
+        h.textContent = g.title;
+        const why = document.createElement("p");
+        why.className = "why";
+        why.textContent = g.why;
+        sec.append(h, why);
+
+        const head = document.createElement("div");
+        head.className = "colhead";
+        head.innerHTML = "<span>чип</span><span>пер</span><span>#</span><span>ожид.</span><span>текст</span>";
+        sec.appendChild(head);
+
+        for (const row of g.rows) {
+          const el = document.createElement("div");
+          el.className = "row";
+          if (chipFails.has(row.id)) el.classList.add("fail-chip");
+          if (trFails.has(row.id)) el.classList.add("fail-tr");
+
+          const cBox = document.createElement("input");
+          cBox.type = "checkbox";
+          cBox.className = "chip";
+          cBox.title = "чип зря";
+          cBox.checked = chipFails.has(row.id);
+          cBox.addEventListener("change", () => {
+            if (cBox.checked) chipFails.add(row.id);
+            else chipFails.delete(row.id);
+            el.classList.toggle("fail-chip", cBox.checked);
+            updateReport();
+          });
+
+          const tBox = document.createElement("input");
+          tBox.type = "checkbox";
+          tBox.className = "tr";
+          tBox.title = "перевод не сработал";
+          tBox.checked = trFails.has(row.id);
+          tBox.addEventListener("change", () => {
+            if (tBox.checked) trFails.add(row.id);
+            else trFails.delete(row.id);
+            el.classList.toggle("fail-tr", tBox.checked);
+            updateReport();
+          });
+
+          const num = document.createElement("div");
+          num.className = "num";
+          num.textContent = String(row.id);
+          if (row.from) num.title = "из старого FAIL #" + row.from;
+
+          const exp = document.createElement("div");
+          exp.className = "expect " + (row.expect === "no" ? "no" : "yes");
+          exp.textContent = row.expect === "no" ? "NOCHIP" : "CHIP";
+
+          const sample = document.createElement("div");
+          sample.className = "sample" + (row.code ? " code" : "");
+          sample.textContent = row.text;
+
+          el.append(cBox, tBox, num, exp, sample);
+          sec.appendChild(el);
+        }
+        lab.appendChild(sec);
+      }
+      updateReport();
+    }
+
+    function updateReport() {
+      const chip = [...chipFails].sort((a, b) => a - b);
+      const tr = [...trFails].sort((a, b) => a - b);
+      if (!chip.length && !tr.length) {
+        reportEl.classList.remove("show");
+        reportEl.textContent = "";
+        live.textContent = "готово к тесту";
+        return;
+      }
+      const lines = [
+        "SELECTION LAB V2",
+        "CHIP_FALSE_POS: " + (chip.join(", ") || "(none)"),
+        "TRANSLATE_FAIL:  " + (tr.join(", ") || "(none)"),
+      ];
+      reportEl.textContent = lines.join("\n");
+      reportEl.classList.add("show");
+      live.textContent =
+        (chip.length ? "чип-зря:" + chip.join(",") + " " : "") +
+        (tr.length ? "пер:" + tr.join(",") : "");
+    }
+
+    document.getElementById("btnClear").addEventListener("click", () => {
+      chipFails.clear();
+      trFails.clear();
+      render();
+    });
+
+    document.getElementById("btnCopy").addEventListener("click", async () => {
+      updateReport();
+      const t = reportEl.textContent || "no fails";
+      try {
+        await navigator.clipboard.writeText(t);
+        live.textContent = "отчёт скопирован";
+      } catch {
+        live.textContent = "скопируй отчёт внизу вручную";
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

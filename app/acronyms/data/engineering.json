@@ -1,0 +1,463 @@
+{
+  "id": "engineering",
+  "title": "Машиностроение и метрология",
+  "priority": 12,
+  "entries": [
+    {
+      "term": "GD&T",
+      "expansion": "Geometric Dimensioning and Tolerancing",
+      "ru": "Простановка геометрических допусков",
+      "where": "Язык чертежа: вместо «±0.1 на размер» задаёт форму, ориентацию и положение относительно баз. Стандарт ASME Y14.5, в ISO — GPS.",
+      "domain": ["engineering", "metrology"],
+      "aliases": ["GDT"],
+      "source": {"title": "ASME Y14.5-2018", "url": null}
+    },
+    {
+      "term": "GPS",
+      "expansion": "Geometrical Product Specification",
+      "ru": "Геометрические характеристики изделий (система ISO)",
+      "where": "Европейский ответ ASME Y14.5: ISO 1101 и семейство. Символы похожи, трактовка местами разная — важно, по какому стандарту чертёж.",
+      "domain": ["engineering", "metrology"],
+      "source": {"title": "ISO 1101", "url": null}
+    },
+    {
+      "term": "FCF",
+      "expansion": "Feature Control Frame",
+      "ru": "Рамка допуска",
+      "where": "Прямоугольник на чертеже: символ допуска | величина и модификаторы | базы. Читается слева направо.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "DRF",
+      "expansion": "Datum Reference Frame",
+      "ru": "Система баз",
+      "where": "Три взаимно перпендикулярные плоскости от баз A|B|C — фиксируют деталь по шести степеням свободы. Порядок баз меняет результат замера.",
+      "domain": ["engineering", "metrology"]
+    },
+    {
+      "term": "MMC",
+      "expansion": "Maximum Material Condition",
+      "ru": "Максимум материала",
+      "where": "Состояние детали с наибольшим количеством материала: вал по верхнему пределу, отверстие по нижнему. Даёт бонусный допуск.",
+      "domain": ["engineering", "metrology"]
+    },
+    {
+      "term": "LMC",
+      "expansion": "Least Material Condition",
+      "ru": "Минимум материала",
+      "where": "Обратное MMC: тонкая стенка, минимальный вал. Применяют, когда важна прочность или минимальная толщина.",
+      "domain": ["engineering", "metrology"]
+    },
+    {
+      "term": "RFS",
+      "expansion": "Regardless of Feature Size",
+      "ru": "Независимо от размера элемента",
+      "where": "Допуск действует одинаково при любом фактическом размере — бонусного допуска нет. По умолчанию в ASME Y14.5.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "TP",
+      "expansion": "True Position",
+      "ru": "Позиционный допуск",
+      "where": "Круговое (или цилиндрическое) поле допуска вокруг теоретически точного положения. Считается как 2×√(dx²+dy²).",
+      "domain": ["engineering", "metrology"]
+    },
+    {
+      "term": "TED",
+      "expansion": "Theoretically Exact Dimension",
+      "ru": "Теоретически точный размер",
+      "where": "Размер в рамке — без допуска: допуск на него живёт в рамке допуска (FCF), а не у самого размера. В ASME — basic dimension.",
+      "domain": ["engineering"],
+      "aliases": ["BASIC"]
+    },
+    {
+      "term": "CMM",
+      "expansion": "Coordinate Measuring Machine",
+      "ru": "Координатно-измерительная машина",
+      "where": "Меряет точки в пространстве щупом или сканером, из них строит элементы и считает отклонения по GD&T. Портальная, консольная или рука (FaroArm).",
+      "domain": ["metrology"],
+      "aliases": ["КИМ"]
+    },
+    {
+      "term": "DCC",
+      "expansion": "Direct Computer Control",
+      "ru": "Автоматический режим КИМ",
+      "where": "КИМ гоняет программу сама, без ручного ведения щупа. Условие повторяемости в серийном контроле.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "MU",
+      "expansion": "Measurement Uncertainty",
+      "ru": "Неопределённость измерения",
+      "where": "Интервал, в котором лежит истинное значение. Без неё результат обмера — просто число. Считается по GUM.",
+      "domain": ["metrology"],
+      "source": {"title": "JCGM 100 (GUM)", "url": "https://www.bipm.org/en/committees/jc/jcgm/publications"}
+    },
+    {
+      "term": "GUM",
+      "expansion": "Guide to the Expression of Uncertainty in Measurement",
+      "ru": "Руководство по выражению неопределённости измерения",
+      "where": "Канонический метод: расписать вклады, свести в суммарную, умножить на коэффициент охвата k (обычно 2 для 95%).",
+      "domain": ["metrology"],
+      "source": {"title": "JCGM 100:2008", "url": "https://www.bipm.org/en/committees/jc/jcgm/publications"}
+    },
+    {
+      "term": "VIM",
+      "expansion": "International Vocabulary of Metrology",
+      "ru": "Международный словарь по метрологии",
+      "where": "Определяет термины: точность, правильность, прецизионность, прослеживаемость. Когда спор о словах — смотрят сюда.",
+      "domain": ["metrology"],
+      "source": {"title": "JCGM 200:2012 (VIM3)", "url": "https://www.bipm.org/en/committees/jc/jcgm/publications"}
+    },
+    {
+      "term": "TUR",
+      "expansion": "Test Uncertainty Ratio",
+      "ru": "Отношение допуска к неопределённости",
+      "where": "Допуск изделия / неопределённость эталона. Классическое требование — не хуже 4:1.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "TAR",
+      "expansion": "Test Accuracy Ratio",
+      "ru": "Отношение точностей",
+      "where": "Упрощённый предшественник TUR: сравнивает только паспортные точности, не полную неопределённость.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "UUT",
+      "expansion": "Unit Under Test",
+      "ru": "Поверяемое (испытуемое) изделие",
+      "where": "То, что стоит на стенде. В протоколе калибровки — против эталона.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "CMC",
+      "expansion": "Calibration and Measurement Capability",
+      "ru": "Заявленная возможность калибровки лаборатории",
+      "where": "Лучшая неопределённость, которую лаборатория имеет право заявлять в аккредитованной области.",
+      "domain": ["metrology"],
+      "source": {"title": "ISO/IEC 17025", "url": null}
+    },
+    {
+      "term": "NMI",
+      "expansion": "National Metrology Institute",
+      "ru": "Национальный метрологический институт",
+      "where": "Вершина цепочки прослеживаемости: NIST в США, PTB в Германии, ВНИИМ в России.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "Ra",
+      "expansion": "Arithmetical mean roughness",
+      "ru": "Среднее арифметическое отклонение профиля (шероховатость)",
+      "where": "Самый ходовой параметр шероховатости. Не видит редких глубоких царапин — для них смотрят Rz или Rmax.",
+      "domain": ["engineering", "metrology"]
+    },
+    {
+      "term": "Rz",
+      "expansion": "Mean roughness depth",
+      "ru": "Высота неровностей профиля по десяти точкам",
+      "where": "Чувствительнее Ra к отдельным пикам и впадинам — просят там, где важно уплотнение или усталость.",
+      "domain": ["engineering", "metrology"]
+    },
+    {
+      "term": "CAD",
+      "expansion": "Computer-Aided Design",
+      "ru": "Система проектирования",
+      "where": "Модель детали и чертёж. В связке с MBD чертежа может не быть вовсе — допуски живут в 3D-модели.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "CAM",
+      "expansion": "Computer-Aided Manufacturing",
+      "ru": "Подготовка управляющих программ",
+      "where": "Из CAD-модели делает траектории и G-код для станка.",
+      "domain": ["engineering", "manufacturing"]
+    },
+    {
+      "term": "CAE",
+      "expansion": "Computer-Aided Engineering",
+      "ru": "Инженерные расчёты",
+      "where": "Зонтичный термин для FEA, CFD и прочих симуляций до изготовления железа.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "FEA",
+      "expansion": "Finite Element Analysis",
+      "ru": "Метод конечных элементов",
+      "where": "Расчёт напряжений и деформаций по сетке. Результат не лучше граничных условий, которые в него заложили.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "CFD",
+      "expansion": "Computational Fluid Dynamics",
+      "ru": "Расчёт течений и теплообмена",
+      "where": "Охлаждение, продувка, потоки в контурах — там, где стенд дорог или медленен.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "MBD",
+      "expansion": "Model-Based Definition",
+      "ru": "Определение изделия в 3D-модели",
+      "where": "Допуски и требования проставлены прямо в модели, 2D-чертёж не выпускается. Требует, чтобы КИМ читала PMI из модели.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "PMI",
+      "expansion": "Product and Manufacturing Information",
+      "ru": "Технологическая информация в модели",
+      "where": "Допуски, базы, шероховатость и примечания, зашитые в 3D-модель для MBD.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "DFM",
+      "expansion": "Design for Manufacturing",
+      "ru": "Проектирование под изготовление",
+      "where": "Убрать из конструкции то, что дорого или невозможно сделать выбранным процессом, — до запуска оснастки.",
+      "domain": ["engineering", "manufacturing"]
+    },
+    {
+      "term": "DFA",
+      "expansion": "Design for Assembly",
+      "ru": "Проектирование под сборку",
+      "where": "Меньше деталей, меньше крепежа, деталь ставится только одним способом.",
+      "domain": ["engineering", "manufacturing"]
+    },
+    {
+      "term": "DFMA",
+      "expansion": "Design for Manufacturing and Assembly",
+      "ru": "Проектирование под изготовление и сборку",
+      "where": "DFM и DFA вместе — обычно так и называют методику целиком.",
+      "domain": ["engineering", "manufacturing"]
+    },
+    {
+      "term": "BOM",
+      "expansion": "Bill of Materials",
+      "ru": "Спецификация — состав изделия",
+      "where": "Дерево всего, из чего собирается изделие: номер, ревизия, количество, единица, поставщик.",
+      "domain": ["engineering", "manufacturing"]
+    },
+    {
+      "term": "EBOM",
+      "expansion": "Engineering Bill of Materials",
+      "ru": "Конструкторская спецификация",
+      "where": "Как изделие устроено по мысли конструктора.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "MBOM",
+      "expansion": "Manufacturing Bill of Materials",
+      "ru": "Производственная спецификация",
+      "where": "Как изделие реально собирают: с расходниками, крепежом и порядком операций. Расхождение EBOM/MBOM — вечный источник проблем.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "PLM",
+      "expansion": "Product Lifecycle Management",
+      "ru": "Управление жизненным циклом изделия",
+      "where": "Единое место для моделей, ревизий, изменений и согласований: Teamcenter, Windchill, ENOVIA.",
+      "domain": ["engineering", "it"]
+    },
+    {
+      "term": "PDM",
+      "expansion": "Product Data Management",
+      "ru": "Управление конструкторскими данными",
+      "where": "Урезанный PLM: хранение файлов, версий и связей моделей.",
+      "domain": ["engineering", "it"]
+    },
+    {
+      "term": "CNC",
+      "expansion": "Computer Numerical Control",
+      "ru": "Числовое программное управление",
+      "where": "Станок идёт по программе (G-код), а не по маховикам.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "EDM",
+      "expansion": "Electrical Discharge Machining",
+      "ru": "Электроэрозионная обработка",
+      "where": "Съём материала искрой — берёт закалённую сталь и внутренние углы, недоступные фрезе.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "GTAW",
+      "expansion": "Gas Tungsten Arc Welding (TIG)",
+      "ru": "Аргонодуговая сварка неплавящимся электродом (TIG)",
+      "where": "Чистый и точный шов на тонком металле и нержавейке, медленно.",
+      "domain": ["manufacturing"],
+      "aliases": ["TIG"]
+    },
+    {
+      "term": "GMAW",
+      "expansion": "Gas Metal Arc Welding (MIG/MAG)",
+      "ru": "Сварка плавящимся электродом в среде газа (MIG/MAG)",
+      "where": "Быстрая производительная сварка, основной процесс на роботах.",
+      "domain": ["manufacturing"],
+      "aliases": ["MIG", "MAG"]
+    },
+    {
+      "term": "FSW",
+      "expansion": "Friction Stir Welding",
+      "ru": "Сварка трением с перемешиванием",
+      "where": "Алюминий соединяется без расплава — меньше поводок и пор, чем при дуговой.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "AM",
+      "expansion": "Additive Manufacturing",
+      "ru": "Аддитивное производство (3D-печать)",
+      "where": "Оснастка, кондукторы и прототипы за часы вместо недель. Для металла — LPBF/DMLS.",
+      "domain": ["manufacturing", "engineering"]
+    },
+    {
+      "term": "LPBF",
+      "expansion": "Laser Powder Bed Fusion",
+      "ru": "Лазерное сплавление порошка",
+      "where": "Основной металлический 3D-процесс. Другие названия того же — DMLS, SLM.",
+      "domain": ["manufacturing"],
+      "aliases": ["DMLS", "SLM"]
+    },
+    {
+      "term": "FDM",
+      "expansion": "Fused Deposition Modeling",
+      "ru": "Послойная печать расплавленной нитью",
+      "where": "Самая дешёвая печать: кондукторы, макеты, защитные накладки.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "SLA",
+      "expansion": "Stereolithography",
+      "ru": "Фотополимерная печать",
+      "where": "Гладкая поверхность и мелкие детали — там, где FDM слишком груб.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "MIM",
+      "expansion": "Metal Injection Molding",
+      "ru": "Литьё металлических порошков под давлением",
+      "where": "Мелкие сложные металлические детали большой серией — как пластик, но металл.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "SEM",
+      "expansion": "Scanning Electron Microscope",
+      "ru": "Растровый электронный микроскоп",
+      "where": "Смотрят излом и поверхность при тысячных увеличениях — базовый инструмент разбора отказа.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "TEM",
+      "expansion": "Transmission Electron Microscope",
+      "ru": "Просвечивающий электронный микроскоп",
+      "where": "Внутренняя структура тонкого среза — там, где SEM уже не хватает.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "EDS",
+      "expansion": "Energy-Dispersive X-ray Spectroscopy",
+      "ru": "Энергодисперсионный рентгеновский микроанализ",
+      "where": "Приставка к SEM: показывает, из каких элементов состоит частица или налёт в месте отказа.",
+      "domain": ["metrology", "lab"],
+      "aliases": ["EDX"]
+    },
+    {
+      "term": "FTIR",
+      "expansion": "Fourier-Transform Infrared Spectroscopy",
+      "ru": "ИК-спектроскопия с преобразованием Фурье",
+      "where": "Опознаёт органику: какой это клей, полимер или загрязнение.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "GC-MS",
+      "expansion": "Gas Chromatography Mass Spectrometry",
+      "ru": "Газовая хроматография с масс-спектрометрией",
+      "where": "Разделяет летучие вещества и определяет каждое — источник запаха, растворителя, выделений.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "ICP-MS",
+      "expansion": "Inductively Coupled Plasma Mass Spectrometry",
+      "ru": "Масс-спектрометрия с индуктивно связанной плазмой",
+      "where": "Следовые количества металлов — примеси и загрязнения на уровне ppb.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "DSC",
+      "expansion": "Differential Scanning Calorimetry",
+      "ru": "Дифференциальная сканирующая калориметрия",
+      "where": "Температуры плавления и стеклования, степень отверждения клея.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "XRF",
+      "expansion": "X-Ray Fluorescence",
+      "ru": "Рентгенофлуоресцентный анализ",
+      "where": "Быстрая проверка марки сплава и толщины покрытия прямо на детали, без пробоподготовки.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "CT",
+      "expansion": "Computed Tomography",
+      "ru": "Компьютерная томография (промышленная)",
+      "where": "Рентген в 3D: поры, включения и внутренние размеры без разрезания детали.",
+      "domain": ["metrology", "lab"]
+    },
+    {
+      "term": "NDT",
+      "expansion": "Non-Destructive Testing",
+      "ru": "Неразрушающий контроль",
+      "where": "УЗК, рентген, капиллярный, вихретоковый — проверить, не испортив деталь.",
+      "domain": ["metrology", "quality"]
+    },
+    {
+      "term": "ISO",
+      "expansion": "International Organization for Standardization",
+      "ru": "Международная организация по стандартизации",
+      "where": "ISO 9001 — СМК, ISO 1101 — геометрические допуски, ISO/IEC 17025 — лаборатории.",
+      "domain": ["engineering", "quality"]
+    },
+    {
+      "term": "ASME",
+      "expansion": "American Society of Mechanical Engineers",
+      "ru": "Американское общество инженеров-механиков",
+      "where": "Издаёт Y14.5 (GD&T) и B-серию по резьбам, фланцам, сосудам давления.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "ASTM",
+      "expansion": "ASTM International (American Society for Testing and Materials)",
+      "ru": "Американское общество по испытаниям и материалам",
+      "where": "Методики испытаний материалов: на растяжение, коррозию, старение.",
+      "domain": ["engineering", "lab"]
+    },
+    {
+      "term": "SAE",
+      "expansion": "Society of Automotive Engineers",
+      "ru": "Общество автомобильных инженеров",
+      "where": "Автомобильные и аэрокосмические стандарты: крепёж, жидкости, AS9100/AS9102.",
+      "domain": ["engineering"]
+    },
+    {
+      "term": "AIAG",
+      "expansion": "Automotive Industry Action Group",
+      "ru": "Отраслевая группа автопрома (США)",
+      "where": "Издаёт «синие книги»: APQP, PPAP, FMEA, MSA, SPC — это их методички.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "NIST",
+      "expansion": "National Institute of Standards and Technology",
+      "ru": "Национальный институт стандартов и технологий (США)",
+      "where": "Держит эталоны и цепочку прослеживаемости в США. «NIST-traceable» в сертификате означает именно её.",
+      "domain": ["metrology"],
+      "source": {"title": "NIST", "url": "https://www.nist.gov/"}
+    },
+    {
+      "term": "BIPM",
+      "expansion": "Bureau International des Poids et Mesures",
+      "ru": "Международное бюро мер и весов",
+      "where": "Хранит СИ и издаёт VIM и GUM.",
+      "domain": ["metrology"],
+      "source": {"title": "BIPM", "url": "https://www.bipm.org/"}
+    }
+  ]
+}

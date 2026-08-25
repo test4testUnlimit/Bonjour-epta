@@ -1,0 +1,498 @@
+{
+  "id": "quality",
+  "title": "Качество и процессы",
+  "priority": 12,
+  "entries": [
+    {
+      "term": "APQP",
+      "expansion": "Advanced Product Quality Planning",
+      "ru": "Перспективное планирование качества продукции",
+      "where": "Пять фаз от идеи до серии: план → конструкция → процесс → валидация → обратная связь. Итог четвёртой фазы — PPAP.",
+      "domain": ["quality"],
+      "source": {"title": "AIAG APQP 2nd ed.", "url": null}
+    },
+    {
+      "term": "PPAP",
+      "expansion": "Production Part Approval Process",
+      "ru": "Процесс одобрения производства детали",
+      "where": "Пакет перед серией: образцы, размерный отчёт, MSA, данные SPC, PSW. Пока заказчик не подписал PSW — серию не запускают.",
+      "domain": ["quality"],
+      "source": {"title": "AIAG PPAP 4th ed.", "url": null}
+    },
+    {
+      "term": "PSW",
+      "expansion": "Part Submission Warrant",
+      "ru": "Гарантийное обязательство по детали",
+      "where": "Титульный лист PPAP: подпись поставщика, что детали сделаны по утверждённому чертежу на серийной оснастке.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "FMEA",
+      "expansion": "Failure Mode and Effects Analysis",
+      "ru": "Анализ видов и последствий отказов",
+      "where": "Таблица «что может отказать → чем грозит → как часто → поймаем ли». Каждая строка получает RPN и план мер.",
+      "domain": ["quality"],
+      "source": {"title": "AIAG-VDA FMEA Handbook", "url": null}
+    },
+    {
+      "term": "DFMEA",
+      "expansion": "Design Failure Mode and Effects Analysis",
+      "ru": "FMEA конструкции",
+      "where": "Отказы, заложенные в саму деталь, — до выбора техпроцесса.",
+      "domain": ["quality", "engineering"]
+    },
+    {
+      "term": "PFMEA",
+      "expansion": "Process Failure Mode and Effects Analysis",
+      "ru": "FMEA процесса",
+      "where": "Отказы на конкретных операциях: пропущенный шаг, не тот момент затяжки, перепутанная деталь.",
+      "domain": ["quality", "manufacturing"]
+    },
+    {
+      "term": "RPN",
+      "expansion": "Risk Priority Number",
+      "ru": "Приоритетное число риска",
+      "where": "Значимость × Вероятность × Обнаружение в FMEA. Чем выше — тем раньше берут в работу.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "8D",
+      "expansion": "Eight Disciplines problem solving",
+      "ru": "Восемь дисциплин — методика разбора проблемы",
+      "where": "Стандартный ответ заказчику на рекламацию: D1 команда, D3 временная мера, D4 корневая причина, D5–D6 постоянная мера, D7 предотвращение повтора.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "SPC",
+      "expansion": "Statistical Process Control",
+      "ru": "Статистическое управление процессом",
+      "where": "Контрольные карты прямо на линии: процесс правят по тренду и выходу за контрольные границы, не дожидаясь брака.",
+      "domain": ["quality", "metrology"],
+      "source": {"title": "NIST/SEMATECH e-Handbook 6.3", "url": "https://www.itl.nist.gov/div898/handbook/pmc/section3/pmc3.htm"}
+    },
+    {
+      "term": "UCL",
+      "expansion": "Upper Control Limit",
+      "ru": "Верхняя контрольная граница",
+      "where": "Считается по разбросу самого процесса (обычно +3σ). Это НЕ верхний допуск с чертежа — их часто путают.",
+      "domain": ["quality", "metrology"]
+    },
+    {
+      "term": "LCL",
+      "expansion": "Lower Control Limit",
+      "ru": "Нижняя контрольная граница",
+      "where": "Зеркало UCL: −3σ от среднего процесса, к чертёжному допуску отношения не имеет.",
+      "domain": ["quality", "metrology"]
+    },
+    {
+      "term": "USL",
+      "expansion": "Upper Specification Limit",
+      "ru": "Верхний предел допуска",
+      "where": "Берётся с чертежа или спецификации — граница, за которой деталь несоответствующая.",
+      "domain": ["quality", "metrology"]
+    },
+    {
+      "term": "LSL",
+      "expansion": "Lower Specification Limit",
+      "ru": "Нижний предел допуска",
+      "where": "Нижняя граница по чертежу.",
+      "domain": ["quality", "metrology"]
+    },
+    {
+      "term": "Cp",
+      "expansion": "Process Capability",
+      "ru": "Потенциальная воспроизводимость процесса",
+      "where": "(USL−LSL)/6σ. Показывает, влезает ли разброс в допуск, но не видит смещение центра.",
+      "domain": ["quality", "metrology"]
+    },
+    {
+      "term": "Cpk",
+      "expansion": "Process Capability Index",
+      "ru": "Индекс воспроизводимости с учётом смещения",
+      "where": "Учитывает, что среднее уехало от центра допуска. Обычный минимум 1.33, для критичных размеров просят 1.67.",
+      "domain": ["quality", "metrology"],
+      "aliases": ["CPK", "CpK"]
+    },
+    {
+      "term": "Ppk",
+      "expansion": "Process Performance Index",
+      "ru": "Индекс фактической работы процесса",
+      "where": "То же, что Cpk, но по полному разбросу за период, а не по внутригрупповому. На PPAP обычно дают именно Ppk.",
+      "domain": ["quality", "metrology"],
+      "aliases": ["PPK", "Pp"]
+    },
+    {
+      "term": "MSA",
+      "expansion": "Measurement System Analysis",
+      "ru": "Анализ измерительной системы",
+      "where": "Проверка, что прибор + оператор + метод дают повторяемый результат, ДО того как по этим числам судят о процессе.",
+      "domain": ["metrology", "quality"],
+      "source": {"title": "AIAG MSA 4th ed.", "url": null}
+    },
+    {
+      "term": "GR&R",
+      "expansion": "Gauge Repeatability and Reproducibility",
+      "ru": "Сходимость и воспроизводимость измерительной системы",
+      "where": "Несколько операторов по несколько раз меряют одни детали. Считают, сколько разброса от прибора (EV), сколько от людей (AV). Меньше 10% — годится, больше 30% — систему использовать нельзя.",
+      "domain": ["metrology", "quality"],
+      "aliases": ["GRR", "Gage R&R", "Gauge R&R", "R&R"],
+      "source": {"title": "AIAG MSA 4th ed.", "url": null}
+    },
+    {
+      "term": "EV",
+      "expansion": "Equipment Variation",
+      "ru": "Разброс от прибора (повторяемость)",
+      "where": "Составляющая GR&R: один оператор мерит одну деталь несколько раз.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "AV",
+      "expansion": "Appraiser Variation",
+      "ru": "Разброс от операторов (воспроизводимость)",
+      "where": "Составляющая GR&R: разные люди меряют одно и то же и получают разное.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "PV",
+      "expansion": "Part Variation",
+      "ru": "Разброс собственно деталей",
+      "where": "Полезная часть разброса в GR&R — то, что система обязана различать.",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "NDC",
+      "expansion": "Number of Distinct Categories",
+      "ru": "Число различимых градаций",
+      "where": "Сколько ступеней реально различает измерительная система. Минимум 5, иначе она видит только «больше-меньше».",
+      "domain": ["metrology"]
+    },
+    {
+      "term": "CAPA",
+      "expansion": "Corrective and Preventive Action",
+      "ru": "Корректирующие и предупреждающие действия",
+      "where": "Корректирующее убирает причину того, что уже случилось; предупреждающее — причину того, что может случиться.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "RCA",
+      "expansion": "Root Cause Analysis",
+      "ru": "Анализ корневой причины",
+      "where": "Докопаться до причины, а не до симптома: «5 почему», дерево отказов, диаграмма Исикавы.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "RC",
+      "expansion": "Root Cause",
+      "ru": "Корневая причина",
+      "where": "Та причина, устранение которой закрывает проблему навсегда.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "NC",
+      "expansion": "Nonconformance",
+      "ru": "Несоответствие",
+      "where": "Зафиксированное отклонение детали или процесса от требования. Считается в FPY.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "NCM",
+      "expansion": "Non-Conforming Material",
+      "ru": "Несоответствующий материал",
+      "where": "И сам брак, и зона, где он лежит до разбора: изолировать → разобрать → переделать, отклонить или списать.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "MRB",
+      "expansion": "Material Review Board",
+      "ru": "Комиссия по разбору несоответствий",
+      "where": "Решает судьбу брака: использовать как есть, доработать, вернуть поставщику, списать.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "SCAR",
+      "expansion": "Supplier Corrective Action Request",
+      "ru": "Требование корректирующих действий поставщику",
+      "where": "Формальный запрос поставщику после его брака — обычно с ответом в формате 8D в срок.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "CoC",
+      "expansion": "Certificate of Conformance",
+      "ru": "Сертификат соответствия партии",
+      "where": "Бумага от поставщика: партия сделана по спецификации. Часто идёт вместе с CoA (анализом материала).",
+      "domain": ["quality"],
+      "aliases": ["COC"]
+    },
+    {
+      "term": "RMA",
+      "expansion": "Return Merchandise Authorization",
+      "ru": "Разрешение на возврат",
+      "where": "Номер, без которого возврат поставщику или из сервиса не принимают.",
+      "domain": ["quality", "corp"]
+    },
+    {
+      "term": "COPQ",
+      "expansion": "Cost of Poor Quality",
+      "ru": "Стоимость плохого качества",
+      "where": "Брак, переделка, гарантия, разбор — всё, чего не было бы при бездефектном процессе.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "DPU",
+      "expansion": "Defects Per Unit",
+      "ru": "Дефектов на изделие",
+      "where": "Сумма дефектов делённая на количество изделий — в отличие от FPY считает несколько дефектов на одной детали.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "DPMO",
+      "expansion": "Defects Per Million Opportunities",
+      "ru": "Дефектов на миллион возможностей",
+      "where": "Нормирует брак на сложность изделия — 100 паяных точек дают 100 возможностей ошибиться.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "FPY",
+      "expansion": "First Pass Yield",
+      "ru": "Выход годного с первого прохода",
+      "where": "Доля деталей, прошедших процесс без единого несоответствия. Переделка снижает FPY, даже если деталь в итоге годная.",
+      "domain": ["quality", "manufacturing"]
+    },
+    {
+      "term": "RTY",
+      "expansion": "Rolled Throughput Yield",
+      "ru": "Сквозной выход годного",
+      "where": "Произведение FPY всех операций подряд. Показывает, сколько теряет цепочка целиком, а не одна станция.",
+      "domain": ["quality", "manufacturing"]
+    },
+    {
+      "term": "OEE",
+      "expansion": "Overall Equipment Effectiveness",
+      "ru": "Общая эффективность оборудования",
+      "where": "Доступность × Производительность × Качество. 85% считается мировым уровнем.",
+      "domain": ["manufacturing", "quality"]
+    },
+    {
+      "term": "TEEP",
+      "expansion": "Total Effective Equipment Performance",
+      "ru": "Полная эффективность оборудования",
+      "where": "OEE, домноженная на загрузку календаря. Показывает потенциал, если пустить оборудование 24/7.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "MTBF",
+      "expansion": "Mean Time Between Failures",
+      "ru": "Средняя наработка между отказами",
+      "where": "Метрика надёжности оборудования — сколько станция работает до следующей поломки.",
+      "domain": ["manufacturing", "maintenance"]
+    },
+    {
+      "term": "MTTR",
+      "expansion": "Mean Time To Repair",
+      "ru": "Среднее время восстановления",
+      "where": "От остановки до возврата в работу. Иногда расшифровывают как Mean Time To Recover / Respond — уточняй в контексте.",
+      "domain": ["manufacturing", "maintenance"]
+    },
+    {
+      "term": "MTTA",
+      "expansion": "Mean Time To Assistance",
+      "ru": "Среднее время до прихода помощи",
+      "where": "От сигнала андона до момента, когда техник реально подошёл. Отделяет «медленно чиним» от «долго идём».",
+      "domain": ["manufacturing", "maintenance"]
+    },
+    {
+      "term": "DOE",
+      "expansion": "Design of Experiments",
+      "ru": "Планирование эксперимента",
+      "where": "Меняют несколько факторов по плану, а не по одному, — за меньшее число прогонов видно и влияние, и взаимодействия.",
+      "domain": ["quality", "engineering"],
+      "source": {"title": "NIST/SEMATECH e-Handbook 5", "url": "https://www.itl.nist.gov/div898/handbook/pri/pri.htm"}
+    },
+    {
+      "term": "PDCA",
+      "expansion": "Plan-Do-Check-Act",
+      "ru": "Планируй — делай — проверяй — действуй",
+      "where": "Цикл Деминга: улучшение маленькими проверяемыми шагами.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "DMAIC",
+      "expansion": "Define, Measure, Analyze, Improve, Control",
+      "ru": "Определи — измерь — проанализируй — улучши — закрепи",
+      "where": "Каркас проекта Six Sigma. Последняя буква важнее всех: без Control улучшение откатывается.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "CTQ",
+      "expansion": "Critical To Quality",
+      "ru": "Критичный для качества параметр",
+      "where": "Те несколько размеров и характеристик, за которыми следят по SPC и требуют Cpk.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "AQL",
+      "expansion": "Acceptable Quality Limit",
+      "ru": "Приемлемый уровень качества",
+      "where": "Задаёт план выборочного контроля партии по ISO 2859: сколько штук смотреть и при скольких дефектах партию не принимать.",
+      "domain": ["quality"],
+      "source": {"title": "ISO 2859-1", "url": null}
+    },
+    {
+      "term": "LPA",
+      "expansion": "Layered Process Audit",
+      "ru": "Многоуровневый аудит процесса",
+      "where": "Один и тот же короткий чек-лист на рабочем месте проходят и мастер, и начальник цеха, и директор — с разной частотой.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "OOS",
+      "expansion": "Out of Specification",
+      "ru": "Вне допуска",
+      "where": "Значение вышло за USL/LSL — деталь несоответствующая.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "OOC",
+      "expansion": "Out of Control",
+      "ru": "Процесс вышел из-под контроля",
+      "where": "Точка за контрольной границей или неслучайный тренд на карте. Деталь может быть ещё в допуске, но процесс уже поехал.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "OCAP",
+      "expansion": "Out-of-Control Action Plan",
+      "ru": "План действий при выходе процесса из-под контроля",
+      "where": "Заранее написанный алгоритм для оператора: что остановить, что проверить, кого звать.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "OOT",
+      "expansion": "Out of Tolerance",
+      "ru": "Вне допуска при поверке",
+      "where": "Прибор при калибровке показал отклонение больше допустимого — нужен разбор всех измерений с прошлой поверки.",
+      "domain": ["metrology", "quality"]
+    },
+    {
+      "term": "QMS",
+      "expansion": "Quality Management System",
+      "ru": "Система менеджмента качества",
+      "where": "Каркас процедур по ISO 9001 / IATF 16949: как документируют, аудируют и улучшают работу.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "ECO",
+      "expansion": "Engineering Change Order",
+      "ru": "Приказ на конструкторское изменение",
+      "where": "Утверждённое изменение чертежа/BOM с датой вступления в силу — от неё считают, какие детали по старой ревизии.",
+      "domain": ["engineering", "quality"]
+    },
+    {
+      "term": "ECN",
+      "expansion": "Engineering Change Notice",
+      "ru": "Извещение об изменении",
+      "where": "Уведомление участников о принятом изменении. В части компаний ECR → ECO → ECN — заявка, приказ, извещение.",
+      "domain": ["engineering", "quality"]
+    },
+    {
+      "term": "FAI",
+      "expansion": "First Article Inspection",
+      "ru": "Контроль первого изделия",
+      "where": "Полный обмер первой детали с новой оснастки: каждый размер чертежа проверен и записан. Форма по AS9102.",
+      "domain": ["metrology", "quality"],
+      "source": {"title": "AS9102", "url": null}
+    },
+    {
+      "term": "FAIR",
+      "expansion": "First Article Inspection Report",
+      "ru": "Отчёт о контроле первого изделия",
+      "where": "Собственно бланк FAI: три формы — деталь, материалы и процессы, характеристики.",
+      "domain": ["metrology", "quality"]
+    },
+    {
+      "term": "ISIR",
+      "expansion": "Initial Sample Inspection Report",
+      "ru": "Отчёт по контролю первых образцов",
+      "where": "Европейский (VDA) аналог FAI, входит в пакет PPAP.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "Poka-Yoke",
+      "expansion": "mistake-proofing (яп. «защита от ошибки»)",
+      "ru": "Защита от ошибки на уровне конструкции",
+      "where": "Приспособление, в которое деталь физически не встанет неправильно. Сильнее любой инструкции. Произносится «пока-ёкэ».",
+      "domain": ["manufacturing", "quality"],
+      "aliases": ["Poka Yoke", "PokaYoke"]
+    },
+    {
+      "term": "Kaizen",
+      "expansion": "continuous improvement (яп. «изменение к лучшему»)",
+      "ru": "Непрерывное улучшение малыми шагами",
+      "where": "Короткие мероприятия силами самой бригады, а не проект сверху.",
+      "domain": ["manufacturing", "quality"]
+    },
+    {
+      "term": "Gemba",
+      "expansion": "the actual place (яп. «место, где происходит работа»)",
+      "ru": "Место, где реально идёт работа",
+      "where": "«Иди на гембу» — смотри на линию своими глазами, а не на отчёт.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "Andon",
+      "expansion": "Andon signal / cord",
+      "ru": "Сигнал остановки линии",
+      "where": "Лампа или шнур, которым оператор зовёт помощь и при необходимости останавливает линию.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "Jidoka",
+      "expansion": "autonomation — automation with a human touch",
+      "ru": "Автономизация: станок сам останавливается при отклонении",
+      "where": "Оборудование не гонит брак дальше, а встаёт и зовёт человека.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "Takt time",
+      "expansion": "Takt time (нем. Taktzeit)",
+      "ru": "Такт — темп, заданный спросом",
+      "where": "Доступное время / потребность за это время. Если цикл станции больше такта — это узкое место.",
+      "domain": ["manufacturing"],
+      "aliases": ["Takt"]
+    },
+    {
+      "term": "SIPOC",
+      "expansion": "Supplier, Input, Process, Output, Customer",
+      "ru": "Поставщик — вход — процесс — выход — потребитель",
+      "where": "Одностраничная карта процесса в начале проекта, чтобы договориться о границах.",
+      "domain": ["quality"]
+    },
+    {
+      "term": "QFD",
+      "expansion": "Quality Function Deployment",
+      "ru": "Развёртывание функции качества",
+      "where": "«Дом качества»: связывает требования клиента с техническими характеристиками.",
+      "domain": ["quality", "engineering"]
+    },
+    {
+      "term": "VOC",
+      "expansion": "Voice of the Customer",
+      "ru": "Голос потребителя",
+      "where": "Требования клиента своими словами — вход для CTQ и QFD. Не путать с Volatile Organic Compound.",
+      "domain": ["quality", "corp"]
+    },
+    {
+      "term": "5S",
+      "expansion": "Sort, Set in order, Shine, Standardize, Sustain",
+      "ru": "Организация рабочего места по пяти шагам",
+      "where": "Убрать лишнее, разложить нужное по местам, чистить, записать как правило, поддерживать. Аудит 5S — обычный пункт LPA.",
+      "domain": ["manufacturing", "quality"]
+    },
+    {
+      "term": "6S",
+      "expansion": "5S plus Safety",
+      "ru": "5S с добавленной безопасностью",
+      "where": "Тот же цикл, но шестым шагом отдельно проверяют безопасность рабочего места.",
+      "domain": ["manufacturing", "safety"]
+    }
+  ]
+}

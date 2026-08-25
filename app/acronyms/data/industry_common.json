@@ -1,0 +1,767 @@
+{
+  "id": "industry_common",
+  "title": "Автоматизация, линия, электрика",
+  "priority": 11,
+  "entries": [
+    {
+      "term": "PLC",
+      "expansion": "Programmable Logic Controller",
+      "ru": "Программируемый логический контроллер",
+      "where": "Промышленный компьютер станции: читает датчики, крутит логику, командует приводами в реальном времени. Allen-Bradley, Siemens, Beckhoff.",
+      "domain": ["automation"]
+    },
+    {
+      "term": "HMI",
+      "expansion": "Human-Machine Interface",
+      "ru": "Панель оператора",
+      "where": "Экран у станции: состояние, аварии, ручной режим. Именно на нём оператор видит OK/NOK.",
+      "domain": ["automation"]
+    },
+    {
+      "term": "SCADA",
+      "expansion": "Supervisory Control and Data Acquisition",
+      "ru": "Диспетчерское управление и сбор данных",
+      "where": "Слой над PLC: собирает данные с линии, рисует мнемосхемы, копит историю и аварии.",
+      "domain": ["automation"]
+    },
+    {
+      "term": "MES",
+      "expansion": "Manufacturing Execution System",
+      "ru": "Система управления производством",
+      "where": "Ведёт заказ по маршруту: какая деталь на какой станции, кто её делал, какие данные записаны. Между ERP и PLC.",
+      "domain": ["manufacturing", "it"]
+    },
+    {
+      "term": "ERP",
+      "expansion": "Enterprise Resource Planning",
+      "ru": "Система управления ресурсами предприятия",
+      "where": "Заказы, закупки, склад, себестоимость. SAP, Oracle. Планирует, но на линию не смотрит.",
+      "domain": ["corp", "it"]
+    },
+    {
+      "term": "MRP",
+      "expansion": "Material Requirements Planning",
+      "ru": "Планирование потребности в материалах",
+      "where": "Из плана выпуска и BOM считает, что и когда закупить.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "WMS",
+      "expansion": "Warehouse Management System",
+      "ru": "Система управления складом",
+      "where": "Адресное хранение, отбор, партии и FIFO.",
+      "domain": ["logistics", "it"]
+    },
+    {
+      "term": "AGV",
+      "expansion": "Automated Guided Vehicle",
+      "ru": "Автоматическая транспортная тележка",
+      "where": "Возит тару по фиксированному маршруту — по ленте, магниту или лазерным отражателям.",
+      "domain": ["logistics", "automation"]
+    },
+    {
+      "term": "AMR",
+      "expansion": "Autonomous Mobile Robot",
+      "ru": "Автономный мобильный робот",
+      "where": "В отличие от AGV строит маршрут сам и объезжает препятствия.",
+      "domain": ["logistics", "automation"]
+    },
+    {
+      "term": "ASRS",
+      "expansion": "Automated Storage and Retrieval System",
+      "ru": "Автоматизированный склад",
+      "where": "Стеллажи с кранами-штабелёрами: система сама кладёт и выдаёт тару.",
+      "domain": ["logistics"]
+    },
+    {
+      "term": "OEM",
+      "expansion": "Original Equipment Manufacturer",
+      "ru": "Изготовитель конечного изделия",
+      "where": "Тот, чей шильдик на изделии. Поставщики называются Tier 1 / Tier 2 по удалённости от OEM.",
+      "domain": ["manufacturing", "corp"]
+    },
+    {
+      "term": "JIT",
+      "expansion": "Just In Time",
+      "ru": "Точно вовремя",
+      "where": "Комплектующие приходят к моменту сборки, а не на склад. Убирает запасы, но не прощает срывов поставки.",
+      "domain": ["manufacturing", "logistics"]
+    },
+    {
+      "term": "JIS",
+      "expansion": "Just In Sequence",
+      "ru": "Точно в последовательности",
+      "where": "Жёстче JIT: детали приходят ещё и в порядке машин на конвейере.",
+      "domain": ["manufacturing", "logistics"]
+    },
+    {
+      "term": "FIFO",
+      "expansion": "First In, First Out",
+      "ru": "Первым пришёл — первым ушёл",
+      "where": "Порядок расхода партий: старое уходит раньше. Критично там, где у материала есть срок годности (клеи, паяльная паста).",
+      "domain": ["logistics", "manufacturing"]
+    },
+    {
+      "term": "LIFO",
+      "expansion": "Last In, First Out",
+      "ru": "Последним пришёл — первым ушёл",
+      "where": "Обычно нежелательный порядок на складе, зато нормальный в стеке данных.",
+      "domain": ["logistics"]
+    },
+    {
+      "term": "Kanban",
+      "expansion": "Kanban (яп. «сигнальная карточка»)",
+      "ru": "Вытягивающая система пополнения по карточкам",
+      "where": "Пустая тара или карточка — сигнал сделать следующую партию. Ничего не производят «про запас».",
+      "domain": ["manufacturing", "logistics"]
+    },
+    {
+      "term": "SMED",
+      "expansion": "Single-Minute Exchange of Die",
+      "ru": "Быстрая переналадка",
+      "where": "Цель — уложить переналадку в однозначное число минут: всё, что можно, делают до остановки станка.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "TPM",
+      "expansion": "Total Productive Maintenance",
+      "ru": "Всеобщее обслуживание оборудования",
+      "where": "Часть обслуживания уходит операторам: чистка, смазка, осмотр каждую смену.",
+      "domain": ["manufacturing", "maintenance"]
+    },
+    {
+      "term": "PM",
+      "expansion": "Preventive Maintenance",
+      "ru": "Планово-предупредительное обслуживание",
+      "where": "Работы по графику или наработке, до отказа. Пропущенное PM обычно всплывает как DT.",
+      "domain": ["maintenance", "manufacturing"]
+    },
+    {
+      "term": "CBM",
+      "expansion": "Condition-Based Maintenance",
+      "ru": "Обслуживание по состоянию",
+      "where": "Меняют по показаниям (вибрация, температура, ток), а не по календарю.",
+      "domain": ["maintenance"]
+    },
+    {
+      "term": "DT",
+      "expansion": "Downtime",
+      "ru": "Простой",
+      "where": "Время, когда линия должна была работать, но не работала. Делится на плановый (PDT) и внеплановый (UDT).",
+      "domain": ["manufacturing", "maintenance"]
+    },
+    {
+      "term": "UPH",
+      "expansion": "Units Per Hour",
+      "ru": "Изделий в час",
+      "where": "Основная метрика темпа участка; сверяется с тактом.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "EOL",
+      "expansion": "End of Line",
+      "ru": "Конец линии — финальный контроль",
+      "where": "Последняя станция: итоговые тесты, маркировка, паспорт изделия. В другом контексте EOL — End of Life, снятие с производства.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "FA",
+      "expansion": "Final Assembly",
+      "ru": "Финальная сборка",
+      "where": "Участок, где из узлов собирают готовое изделие.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "FA",
+      "expansion": "Failure Analysis",
+      "ru": "Анализ отказа",
+      "where": "Лабораторный разбор отказавшей детали: разрез, SEM, FTIR — до понимания механизма отказа.",
+      "domain": ["lab", "quality", "metrology"]
+    },
+    {
+      "term": "NPI",
+      "expansion": "New Product Introduction",
+      "ru": "Вывод нового изделия в производство",
+      "where": "Стадия между прототипом и серией: оснастка, техпроцесс, PPAP, обучение.",
+      "domain": ["manufacturing", "engineering"]
+    },
+    {
+      "term": "SOP",
+      "expansion": "Start of Production",
+      "ru": "Начало серийного производства",
+      "where": "Дата, к которой должны быть готовы оснастка, PPAP и персонал.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "SOP",
+      "expansion": "Standard Operating Procedure",
+      "ru": "Стандартная операционная процедура",
+      "where": "Письменный порядок выполнения работы. Какое из двух значений — видно по фразе: «SOP в июне» против «по SOP шаг 4».",
+      "domain": ["quality", "manufacturing"]
+    },
+    {
+      "term": "WI",
+      "expansion": "Work Instruction",
+      "ru": "Рабочая инструкция",
+      "where": "Пошаговая карта операции на рабочем месте, обычно с фото.",
+      "domain": ["manufacturing", "quality"]
+    },
+    {
+      "term": "FAT",
+      "expansion": "Factory Acceptance Test",
+      "ru": "Приёмка оборудования у изготовителя",
+      "where": "Проверка на площадке поставщика до отгрузки. Замечания дешевле закрыть здесь, чем после монтажа.",
+      "domain": ["manufacturing", "automation"]
+    },
+    {
+      "term": "SAT",
+      "expansion": "Site Acceptance Test",
+      "ru": "Приёмка оборудования на месте",
+      "where": "Повтор проверок после монтажа на заводе, уже в реальных условиях.",
+      "domain": ["manufacturing", "automation"]
+    },
+    {
+      "term": "PN",
+      "expansion": "Part Number",
+      "ru": "Номер детали",
+      "where": "Идентификатор в BOM и на бирке. С ревизией: одна и та же PN разных ревизий может быть невзаимозаменяема.",
+      "domain": ["manufacturing", "engineering"]
+    },
+    {
+      "term": "SN",
+      "expansion": "Serial Number",
+      "ru": "Серийный номер",
+      "where": "Уникален для экземпляра — по нему поднимают историю прохождения по линии.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "VIN",
+      "expansion": "Vehicle Identification Number",
+      "ru": "Идентификационный номер транспортного средства",
+      "where": "17 знаков по ISO 3779.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "EHS",
+      "expansion": "Environment, Health and Safety",
+      "ru": "Охрана труда, промбезопасность и экология",
+      "domain": ["safety"]
+    },
+    {
+      "term": "PPE",
+      "expansion": "Personal Protective Equipment",
+      "ru": "Средства индивидуальной защиты (СИЗ)",
+      "where": "Очки, перчатки, обувь, беруши — требования обычно висят на входе в зону.",
+      "domain": ["safety"]
+    },
+    {
+      "term": "LOTO",
+      "expansion": "Lockout/Tagout",
+      "ru": "Блокировка и маркировка энергоисточников",
+      "where": "Перед работой внутри станции энергию снимают и вешают личный замок. Ключ — у того, кто внутри.",
+      "domain": ["safety", "maintenance"],
+      "source": {"title": "OSHA 29 CFR 1910.147", "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910.147"}
+    },
+    {
+      "term": "ESD",
+      "expansion": "Electrostatic Discharge",
+      "ru": "Электростатический разряд",
+      "where": "Убивает электронику незаметно: браслеты, маты, ионизаторы и зоны EPA — против него.",
+      "domain": ["electrical", "safety"]
+    },
+    {
+      "term": "SIL",
+      "expansion": "Safety Integrity Level",
+      "ru": "Уровень полноты безопасности",
+      "where": "Класс надёжности защитной функции по IEC 61508/62061. В машиностроении рядом идёт PL по ISO 13849.",
+      "domain": ["safety", "automation"]
+    },
+    {
+      "term": "NEMA",
+      "expansion": "National Electrical Manufacturers Association",
+      "ru": "Ассоциация производителей электрооборудования (США)",
+      "where": "Классы защиты шкафов по NEMA — американский аналог IP.",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "IGBT",
+      "expansion": "Insulated-Gate Bipolar Transistor",
+      "ru": "Биполярный транзистор с изолированным затвором",
+      "where": "Силовой ключ в инверторах и приводах на высоких напряжениях.",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "MOSFET",
+      "expansion": "Metal-Oxide-Semiconductor Field-Effect Transistor",
+      "ru": "Полевой транзистор со структурой металл-оксид-полупроводник",
+      "where": "Быстрый силовой ключ на средних напряжениях; в электротранспорте всё чаще карбид-кремниевый (SiC).",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "VFD",
+      "expansion": "Variable Frequency Drive",
+      "ru": "Частотный преобразователь",
+      "where": "Задаёт скорость асинхронного двигателя частотой. В шкафу — главный источник помех, отсюда требования к экранированию.",
+      "domain": ["electrical", "automation"]
+    },
+    {
+      "term": "UPS",
+      "expansion": "Uninterruptible Power Supply",
+      "ru": "Источник бесперебойного питания",
+      "where": "Держит контроллеры и серверы, чтобы линия встала корректно, а не «в середине детали».",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "PSU",
+      "expansion": "Power Supply Unit",
+      "ru": "Блок питания",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "HV",
+      "expansion": "High Voltage",
+      "ru": "Высокое напряжение",
+      "where": "В электротранспорте — контур тягового аккумулятора; работы только с допуском и по LOTO.",
+      "domain": ["electrical", "safety"]
+    },
+    {
+      "term": "LV",
+      "expansion": "Low Voltage",
+      "ru": "Низкое напряжение",
+      "where": "Бортовая сеть 12/24 В и питание автоматики.",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "HiPot",
+      "expansion": "High Potential test (dielectric withstand)",
+      "ru": "Испытание изоляции высоким напряжением",
+      "where": "На изоляцию подают напряжение много выше рабочего и смотрят ток утечки — проверка, что пробоя не будет.",
+      "domain": ["electrical", "quality"],
+      "aliases": ["HIPOT", "Hi-Pot"]
+    },
+    {
+      "term": "BMS",
+      "expansion": "Battery Management System",
+      "ru": "Система управления батареей",
+      "where": "Следит за напряжением ячеек, током и температурой, балансирует и отключает при выходе за границы.",
+      "domain": ["battery", "electrical"]
+    },
+    {
+      "term": "SOC",
+      "expansion": "State of Charge",
+      "ru": "Уровень заряда",
+      "where": "Сколько энергии сейчас в батарее, в процентах от текущей ёмкости.",
+      "domain": ["battery"]
+    },
+    {
+      "term": "SOH",
+      "expansion": "State of Health",
+      "ru": "Состояние здоровья батареи",
+      "where": "Насколько ёмкость просела относительно новой — деградация, а не заряд.",
+      "domain": ["battery"]
+    },
+    {
+      "term": "PCB",
+      "expansion": "Printed Circuit Board",
+      "ru": "Печатная плата",
+      "where": "Голая плата без компонентов. С компонентами — PCBA.",
+      "domain": ["electronics"]
+    },
+    {
+      "term": "PCBA",
+      "expansion": "Printed Circuit Board Assembly",
+      "ru": "Собранная печатная плата",
+      "domain": ["electronics"]
+    },
+    {
+      "term": "SMT",
+      "expansion": "Surface-Mount Technology",
+      "ru": "Технология поверхностного монтажа",
+      "where": "Компоненты ставит автомат на пасту, затем печь оплавления. Основной процесс современных плат.",
+      "domain": ["electronics"]
+    },
+    {
+      "term": "AOI",
+      "expansion": "Automated Optical Inspection",
+      "ru": "Автоматический оптический контроль",
+      "where": "Камера проверяет платы после монтажа: наличие, полярность, качество пайки.",
+      "domain": ["electronics", "vision", "quality"]
+    },
+    {
+      "term": "ICT",
+      "expansion": "In-Circuit Test",
+      "ru": "Внутрисхемный контроль",
+      "where": "Игольчатое ложе прозванивает цепи и номиналы на собранной плате.",
+      "domain": ["electronics", "quality"]
+    },
+    {
+      "term": "FCT",
+      "expansion": "Functional Circuit Test",
+      "ru": "Функциональный контроль",
+      "where": "Плату включают и проверяют, что она делает то, для чего сделана.",
+      "domain": ["electronics", "quality"]
+    },
+    {
+      "term": "RTD",
+      "expansion": "Resistance Temperature Detector",
+      "ru": "Термосопротивление (например Pt100)",
+      "where": "Точнее термопары и стабильнее, но медленнее и дороже.",
+      "domain": ["electrical", "metrology"]
+    },
+    {
+      "term": "CAN",
+      "expansion": "Controller Area Network",
+      "ru": "Шина CAN",
+      "where": "Автомобильная шина между блоками: витая пара, приоритет по идентификатору сообщения.",
+      "domain": ["electrical", "automation"]
+    },
+    {
+      "term": "OPC UA",
+      "expansion": "OPC Unified Architecture",
+      "ru": "Промышленный протокол обмена данными",
+      "where": "Стандартный способ забрать данные с PLC в MES/SCADA независимо от вендора.",
+      "domain": ["automation", "it"]
+    },
+    {
+      "term": "MQTT",
+      "expansion": "Message Queuing Telemetry Transport",
+      "ru": "Лёгкий протокол публикации-подписки",
+      "where": "Гоняет телеметрию с оборудования в брокер; популярен в IIoT-обвязке.",
+      "domain": ["automation", "it"]
+    },
+    {
+      "term": "I/O",
+      "expansion": "Input/Output",
+      "ru": "Входы/выходы",
+      "where": "Дискретные и аналоговые каналы контроллера: датчики на вход, приводы на выход.",
+      "domain": ["automation"],
+      "aliases": ["IO"]
+    },
+    {
+      "term": "SQL",
+      "expansion": "Structured Query Language",
+      "ru": "Язык запросов к базе данных",
+      "domain": ["it"]
+    },
+    {
+      "term": "ETL",
+      "expansion": "Extract, Transform, Load",
+      "ru": "Извлечь — преобразовать — загрузить",
+      "where": "Регламентный перенос данных из источника (лог станции, CSV) в хранилище, по дороге приводя к общему формату.",
+      "domain": ["it"]
+    },
+    {
+      "term": "API",
+      "expansion": "Application Programming Interface",
+      "ru": "Программный интерфейс",
+      "where": "Способ одной программе дёрнуть другую по описанному контракту.",
+      "domain": ["it"]
+    },
+    {
+      "term": "LDAP",
+      "expansion": "Lightweight Directory Access Protocol",
+      "ru": "Протокол доступа к службе каталогов",
+      "where": "По нему приложения спрашивают у корпоративного каталога, кто это и в каких он группах.",
+      "domain": ["it"]
+    },
+    {
+      "term": "AD",
+      "expansion": "Active Directory",
+      "ru": "Служба каталогов Microsoft",
+      "where": "Учётки, группы и права в корпоративной сети.",
+      "domain": ["it"]
+    },
+    {
+      "term": "SSO",
+      "expansion": "Single Sign-On",
+      "ru": "Единый вход",
+      "where": "Один логин на все внутренние системы.",
+      "domain": ["it"]
+    },
+    {
+      "term": "VPN",
+      "expansion": "Virtual Private Network",
+      "ru": "Виртуальная частная сеть",
+      "domain": ["it"]
+    },
+    {
+      "term": "DB",
+      "expansion": "Database",
+      "ru": "База данных",
+      "where": "В контексте панелей и отчётов DB часто значит Dashboard — смотри по соседним словам.",
+      "domain": ["it"]
+    },
+    {
+      "term": "NOK",
+      "expansion": "Not OK",
+      "ru": "Не годен",
+      "where": "Надпись на HMI и в логах инспекции: деталь не прошла. Пара к OK.",
+      "domain": ["manufacturing", "quality"]
+    },
+    {
+      "term": "TIM",
+      "expansion": "Thermal Interface Material",
+      "ru": "Теплопроводящий материал",
+      "where": "Паста, гэпфиллер или прокладка между источником тепла и радиатором — убирает воздушный зазор.",
+      "domain": ["engineering", "electronics"]
+    },
+    {
+      "term": "VOC",
+      "expansion": "Volatile Organic Compound",
+      "ru": "Летучее органическое соединение",
+      "where": "Выделения растворителей и клеёв — предмет вентиляции и экологических норм. Не путать с Voice of the Customer.",
+      "domain": ["lab", "safety"]
+    },
+    {
+      "term": "UHMWPE",
+      "expansion": "Ultra-High Molecular Weight Polyethylene",
+      "ru": "Сверхвысокомолекулярный полиэтилен",
+      "where": "Износостойкий скользящий пластик: направляющие, накладки на оснастку.",
+      "domain": ["materials"]
+    },
+    {
+      "term": "PP",
+      "expansion": "Polypropylene",
+      "ru": "Полипропилен",
+      "where": "Маркировка материала на детали или в спецификации.",
+      "domain": ["materials"]
+    },
+    {
+      "term": "AWG",
+      "expansion": "American Wire Gauge",
+      "ru": "Американский калибр провода",
+      "where": "Чем больше число, тем тоньше провод: 10 AWG толще 20 AWG.",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "ALT",
+      "expansion": "Accelerated Life Testing",
+      "ru": "Ускоренные испытания на ресурс",
+      "where": "Повышенные температура, вибрация или циклы, чтобы за недели увидеть годы эксплуатации.",
+      "domain": ["quality", "lab"]
+    },
+    {
+      "term": "AHJ",
+      "expansion": "Authority Having Jurisdiction",
+      "ru": "Надзорный орган, чьё слово решающее",
+      "where": "В США — местный инспектор по электрике или пожарной безопасности: принимает он, а не стандарт.",
+      "domain": ["safety", "legal"]
+    },
+    {
+      "term": "QE",
+      "expansion": "Quality Engineer",
+      "ru": "Инженер по качеству",
+      "where": "Держит несоответствия, 8D, PPAP и связь с поставщиком по своей зоне. «Check with QE» — согласуй с ним.",
+      "domain": ["quality", "roles"]
+    },
+    {
+      "term": "SQE",
+      "expansion": "Supplier Quality Engineer",
+      "ru": "Инженер по качеству поставщиков",
+      "where": "Ездит к поставщику, ведёт аудиты, PPAP и SCAR на его стороне.",
+      "domain": ["quality", "roles", "purchasing"]
+    },
+    {
+      "term": "MFG",
+      "expansion": "Manufacturing",
+      "ru": "Производство",
+      "where": "Сокращение в названиях отделов и полях форм: MFG Engineering, MFG date.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "MFE",
+      "expansion": "Manufacturing Engineer",
+      "ru": "Технолог производства",
+      "where": "Отвечает за процесс на линии: оснастка, режимы, WI, время цикла.",
+      "domain": ["manufacturing", "roles"]
+    },
+    {
+      "term": "IE",
+      "expansion": "Industrial Engineer",
+      "ru": "Инженер по организации производства",
+      "where": "Балансировка линии, такт, планировка, нормирование труда.",
+      "domain": ["manufacturing", "roles"]
+    },
+    {
+      "term": "PE",
+      "expansion": "Process Engineer",
+      "ru": "Инженер-технолог процесса",
+      "where": "В США PE также Professional Engineer — лицензия на подпись проектной документации.",
+      "domain": ["manufacturing", "roles"]
+    },
+    {
+      "term": "TE",
+      "expansion": "Test Engineer",
+      "ru": "Инженер по испытаниям",
+      "where": "Держит стенды EOL/ICT/FCT и тестовые лимиты.",
+      "domain": ["manufacturing", "roles", "test"]
+    },
+    {
+      "term": "CE",
+      "expansion": "Controls Engineer",
+      "ru": "Инженер по АСУ ТП",
+      "where": "PLC, роботы, HMI, сети. Осторожно: CE на изделии — европейская маркировка соответствия.",
+      "domain": ["automation", "roles"]
+    },
+    {
+      "term": "EE",
+      "expansion": "Electrical Engineer",
+      "ru": "Инженер-электрик / электронщик",
+      "domain": ["engineering", "roles"]
+    },
+    {
+      "term": "PT",
+      "expansion": "Process Technician",
+      "ru": "Техник-технолог на линии",
+      "where": "Руки на станции: наладка, замена расходников, первая реакция на аварию.",
+      "domain": ["manufacturing", "roles"]
+    },
+    {
+      "term": "QT",
+      "expansion": "Quality Technician",
+      "ru": "Техник по качеству",
+      "where": "Проводит замеры и контроль на участке, оформляет несоответствия.",
+      "domain": ["quality", "roles"]
+    },
+    {
+      "term": "PIC",
+      "expansion": "Person In Charge",
+      "ru": "Ответственный за смену / участок",
+      "where": "Тот, к кому идут при аварии, и чья подпись закрывает вопрос.",
+      "domain": ["manufacturing", "roles"]
+    },
+    {
+      "term": "CFT",
+      "expansion": "Cross-Functional Team",
+      "ru": "Межфункциональная команда",
+      "where": "Разбор 8D и RCA собирают именно так: качество + технолог + производство + поставщик.",
+      "domain": ["quality", "corp"]
+    },
+    {
+      "term": "AC",
+      "expansion": "Alternating Current",
+      "ru": "Переменный ток",
+      "where": "Сеть, приводы, сварка. В климате AC — ещё и кондиционирование (Air Conditioning).",
+      "domain": ["electrical"]
+    },
+    {
+      "term": "DC",
+      "expansion": "Direct Current",
+      "ru": "Постоянный ток",
+      "where": "Батареи, шины постоянного тока, зарядка. Опасен по-другому, чем AC: дугу не гасит переход через ноль.",
+      "domain": ["electrical", "battery"]
+    },
+    {
+      "term": "CC",
+      "expansion": "Current Collector",
+      "ru": "Токосъёмник / токосборник",
+      "where": "Штампованная деталь, соединяющая все ячейки в цепь после приварки перемычек к ним.",
+      "domain": ["battery"]
+    },
+    {
+      "term": "CID",
+      "expansion": "Current Interrupt Device",
+      "ru": "Устройство разрыва тока в ячейке",
+      "where": "Механический предохранитель внутри цилиндрической ячейки: при росте давления рвёт цепь до того, как ячейка уйдёт в тепловой разгон.",
+      "domain": ["battery", "safety"]
+    },
+    {
+      "term": "PPR",
+      "expansion": "Passive Propagation Resistance",
+      "ru": "Пассивная стойкость к распространению теплового разгона",
+      "where": "Свойство пакета: одна ушедшая в разгон ячейка не поджигает соседние без активного вмешательства. Проверяется по UL 9540A и аналогам.",
+      "domain": ["battery", "safety"]
+    },
+    {
+      "term": "PDT",
+      "expansion": "Planned Downtime",
+      "ru": "Плановый простой",
+      "where": "Обслуживание, переналадка, обучение — из знаменателя OEE обычно вычитается.",
+      "domain": ["manufacturing", "maintenance"]
+    },
+    {
+      "term": "UDT",
+      "expansion": "Unplanned Downtime",
+      "ru": "Внеплановый простой",
+      "where": "Авария, поломка, нет материала. Именно его гоняют по MTTA/MTTR.",
+      "domain": ["manufacturing", "maintenance"],
+      "aliases": ["UPDT"]
+    },
+    {
+      "term": "POR",
+      "expansion": "Process of Record",
+      "ru": "Утверждённый техпроцесс",
+      "where": "Текущая официальная версия процесса. Отклонение от POR требует ECO или письменного разрешения.",
+      "domain": ["manufacturing", "quality"]
+    },
+    {
+      "term": "MI",
+      "expansion": "Manufacturing Instruction",
+      "ru": "Производственная инструкция",
+      "where": "Пошаговая карта операции на станции — то же семейство, что WI и SOP.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "MHS",
+      "expansion": "Material Handling System",
+      "ru": "Система транспортировки материалов",
+      "where": "Конвейеры, лифты, AGV, роботы-паллетайзеры — всё, что двигает тару между участками.",
+      "domain": ["logistics", "automation"]
+    },
+    {
+      "term": "VRC",
+      "expansion": "Vertical Reciprocating Conveyor",
+      "ru": "Вертикальный подъёмник для груза",
+      "where": "Грузовой лифт для тары между этажами. Формально не лифт — людей возить нельзя.",
+      "domain": ["logistics", "safety"]
+    },
+    {
+      "term": "PIT",
+      "expansion": "Powered Industrial Truck",
+      "ru": "Погрузочная техника (погрузчик, штабелёр)",
+      "where": "Термин OSHA: на управление нужна аттестация, зона движения размечена.",
+      "domain": ["logistics", "safety"]
+    },
+    {
+      "term": "VGV",
+      "expansion": "Vision Guided Vehicle",
+      "ru": "Тележка с навигацией по камерам",
+      "where": "Ориентируется по картинке цеха, а не по разметке на полу, как AGV.",
+      "domain": ["logistics", "automation"]
+    },
+    {
+      "term": "RTS",
+      "expansion": "Request To Ship",
+      "ru": "Запрос на отгрузку",
+      "domain": ["logistics"]
+    },
+    {
+      "term": "RTV",
+      "expansion": "Return to Vendor",
+      "ru": "Возврат поставщику",
+      "where": "Судьба брака по MRB, если ремонт невыгоден. Осторожно: RTV — ещё и Room Temperature Vulcanizing, силиконовый герметик.",
+      "domain": ["logistics", "quality"]
+    },
+    {
+      "term": "PWT",
+      "expansion": "Powertrain",
+      "ru": "Силовая установка",
+      "where": "Всё, что делает и передаёт тягу: мотор, инвертор, редуктор, приводы.",
+      "domain": ["automotive"]
+    },
+    {
+      "term": "ASY",
+      "expansion": "Assembly",
+      "ru": "Сборочная единица (узел)",
+      "where": "Сокращение в BOM и номенклатуре: строка ASY — не деталь, а собранный узел из нескольких.",
+      "domain": ["manufacturing"]
+    },
+    {
+      "term": "JMP",
+      "expansion": "JMP (SAS statistical software)",
+      "ru": "JMP — пакет статистики от SAS",
+      "where": "Чем на заводах считают SPC, DOE и GR&R. Название — от Джона Солла, писавшего первую версию под Macintosh.",
+      "domain": ["quality", "it"]
+    }
+  ]
+}
