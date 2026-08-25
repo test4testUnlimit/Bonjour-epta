@@ -2,7 +2,9 @@
 """Tests for app/win_hotkeys.py."""
 from __future__ import annotations
 import pytest
-from app.win_hotkeys import HotkeySpec, check_reserved, sanitize_hotkey, _scan_label
+from app.win_hotkeys import (
+    HotkeySpec, alt_letter_warning, check_reserved, sanitize_hotkey, _scan_label
+)
 
 
 class TestHotkeySpec:
@@ -96,3 +98,24 @@ class TestSanitize:
     def test_bare_double_kept(self):
         s = HotkeySpec(scan_code=41, ctrl=False, alt=False, mode="double")
         assert sanitize_hotkey(s) == s
+
+class TestAltLetterWarning:
+    """Alt+<letter> delivers its character on Alt-up while the key still
+    auto-repeats. Warn, never rewrite — sanitize_hotkey would reset the
+    binding the user chose."""
+
+    def test_alt_c_is_flagged(self):
+        # scan 46 = C, alt only — the user's live config
+        spec = HotkeySpec(scan_code=46, ctrl=False, alt=True, mode="combo")
+        assert "C" in (alt_letter_warning(spec) or "")
+
+    def test_ctrl_alt_is_fine(self):
+        assert alt_letter_warning(HotkeySpec(scan_code=46, ctrl=True, alt=True)) is None
+
+    def test_alt_non_letter_is_fine(self):
+        spec = HotkeySpec(scan_code=41, ctrl=False, alt=True)  # `/ё
+        assert alt_letter_warning(spec) is None
+
+    def test_warning_does_not_reset_the_binding(self):
+        spec = HotkeySpec(scan_code=46, ctrl=False, alt=True, mode="combo")
+        assert sanitize_hotkey(spec) == spec

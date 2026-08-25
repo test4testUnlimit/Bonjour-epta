@@ -210,6 +210,22 @@ def check_reserved(spec: HotkeySpec) -> str | None:
     return None
 
 
+def alt_letter_warning(spec: HotkeySpec) -> str | None:
+    """Alt+<letter> leaks its letter into the focused document: the character
+    is delivered on Alt-up while the key is still auto-repeating. Alt+C is the
+    worst case here — it is the very keystroke whose synthetic twin we chase
+    as the stray «с».
+
+    A warning, not a check_reserved entry: sanitize_hotkey resets anything
+    check_reserved rejects, which would rewrite a binding the user chose
+    without asking them.
+    """
+    key = _scan_label(spec.scan_code)
+    if spec.alt and not spec.ctrl and len(key) == 1 and key.isalpha():
+        return f"Alt+{key} может протечь символом «{key}» в документ — добавь Ctrl"
+    return None
+
+
 def sanitize_hotkey(spec: HotkeySpec) -> HotkeySpec:
     """If illegal or nonsensical, fall back to Crow Ctrl+Alt+E."""
     # double-tap with modifiers is almost always a mis-capture — normalize to combo

@@ -45,6 +45,7 @@ def main() -> int:
     from app.selection import get_selected_text
     from app.selection_watch import SelectionWatcher
     from app.tray import TrayIcon
+    from app import win_hotkeys
     from app.ui import run_app
     from app.win_hotkeys import HotkeySpec
 
@@ -282,6 +283,9 @@ def main() -> int:
             hotkey_holder.append(hk)
             status_bits.append(cfg.get().hotkey_spec().label())
             log.info("hotkey started: %s", cfg.get().hotkey_spec().label())
+            leak = win_hotkeys.alt_letter_warning(cfg.get().hotkey_spec())
+            if leak:
+                log.warning("hotkey %s", leak)
         except Exception as exc:  # noqa: BLE001
             logutil.exc("hotkey start failed")
             print(f"Hotkey off: {exc}", file=sys.stderr)
