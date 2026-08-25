@@ -132,7 +132,6 @@ def _send_ctrl_c_win() -> bool | None:
 
     INPUT_KEYBOARD = 1
     KEYEVENTF_KEYUP = 0x0002
-    KEYEVENTF_SCANCODE = 0x0008
     MAPVK_VK_TO_VSC = 0
     VK_CONTROL = 0x11
     VK_C = 0x43
@@ -183,30 +182,16 @@ def _send_ctrl_c_win() -> bool | None:
             ("rcCaret", wintypes.RECT),
         )
 
-    def key(vk: int, flags: int = 0, *, scancode_flag: bool = False) -> INPUT:
+    def key(vk: int, flags: int = 0) -> INPUT:
         scan = int(user32.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC) & 0xFF)
         inp = INPUT()
         inp.type = INPUT_KEYBOARD
-        fl = flags | (KEYEVENTF_SCANCODE if scancode_flag else 0)
-        inp.union.ki = KEYBDINPUT(vk, scan, fl, 0, None)
+        inp.union.ki = KEYBDINPUT(vk, scan, flags, 0, None)
         return inp
 
     def send(*events: INPUT) -> int:
         arr = (INPUT * len(events))(*events)
         return int(user32.SendInput(len(events), ctypes.byref(arr), ctypes.sizeof(INPUT)))
-
-    def ctrl_is_down() -> bool:
-        return bool(user32.GetAsyncKeyState(VK_CONTROL) & 0x8000)
-
-    def force_ctrl_up() -> None:
-        try:
-            send(key(VK_CONTROL, KEYEVENTF_KEYUP, scancode_flag=False))
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            send(key(VK_CONTROL, KEYEVENTF_KEYUP, scancode_flag=True))
-        except Exception:  # noqa: BLE001
-            pass
 
     def focus_hwnd(fg: int, tid: int) -> int:
         try:
@@ -311,48 +296,37 @@ def _send_ctrl_c_win() -> bool | None:
 
     log.info("wm_copy miss — falling back to SendInput Ctrl+C")
 
-    ctrl_down = False
     try:
         with copy_guard.injecting(tail_s=0.25):
-            if send(key(VK_CONTROL, 0)) != 1:
-                log.warning("SendInput refused Ctrl down")
-                return False
-            ctrl_down = True
-
-            for _ in range(12):
-                if ctrl_is_down():
-                    break
-                time.sleep(0.003)
-            else:
-                log.warning(
-                    "Ctrl never registered as down — not tapping C "
-                    "(would type stray «с» on RU layout)"
-                )
-                return None
-
-            if not ctrl_is_down():
-                log.warning("Ctrl dropped before C tap — aborting (stray-c guard)")
-                return None
-
-            if send(key(VK_C, 0), key(VK_C, KEYEVENTF_KEYUP)) != 2:
-                log.warning("SendInput refused C")
-                return None
-            still = ctrl_is_down()
-            log.debug(
-                "inject Ctrl+C fallback ok still_down=%s",
-                int(still),
+            # One call, four events. MSDN guarantees the events of a single
+            # SendInput call are not interleaved with another thread's input;
+            # nothing guarantees that across three calls. The old version put
+            # a GetAsyncKeyState poll between Ctrl-down and the C tap, which
+            # reads the global async table and says nothing about what the
+            # target's message queue will see — so the C could still arrive
+            # bare and type «с» over the selection. The guard could not work,
+            # and the field log proves it: two real stray-c events, zero
+            # still_down=0 lines.
+            n = send(
+                key(VK_CONTROL, 0),
+                key(VK_C, 0),
+                key(VK_C, KEYEVENTF_KEYUP),
+                key(VK_CONTROL, KEYEVENTF_KEYUP),
             )
-        return True
+        if n == 4:
+            return True
+        if n == 0:
+            log.warning("SendInput refused Ctrl+C")
+            return False
+        # Blocked partway: Ctrl may be latched down in the target.
+        log.warning("SendInput injected %s/4 — releasing Ctrl", n)
+        with copy_guard.injecting(tail_s=0.25):
+            send(key(VK_CONTROL, KEYEVENTF_KEYUP))
+        return None
     except Exception:  # noqa: BLE001
         logutil.exc("SendInput Ctrl+C")
-        return None if ctrl_down else False
+        return None
     finally:
-        if ctrl_down:
-            try:
-                with copy_guard.injecting(tail_s=0.25):
-                    force_ctrl_up()
-            except Exception:  # noqa: BLE001
-                logutil.exc("SendInput Ctrl up")
         if attached:
             try:
                 user32.AttachThreadInput(my_tid, fg_tid, False)
