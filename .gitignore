@@ -18,6 +18,15 @@ bonjur-autostart.vbs
 # vendored MCP tool schemas — not part of this product
 mcps/
 
+# agent scratch dirs — transcripts quote source, paths and sometimes tokens
+.claude/
+.grok/
+.opencode/
+.cursor/
+
+# Windows shortcuts embed the machine name, volume label and absolute paths
+*.lnk
+
 # scratch notes / raw dumps
 notes/public-apis-catalog/
 
