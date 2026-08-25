@@ -53,13 +53,18 @@ _UIA_TIMEOUT_S = 1.4
 
 _user32_mod = ctypes.WinDLL("user32", use_last_error=True)
 _oleaut32_mod = ctypes.WinDLL("oleaut32", use_last_error=True)
-_SendMessageW = ctypes.WINFUNCTYPE(
+_SendMessageTimeoutW = ctypes.WINFUNCTYPE(
     ctypes.c_ssize_t,
     wintypes.HWND,
     wintypes.UINT,
     ctypes.c_size_t,
     ctypes.c_ssize_t,
-)(("SendMessageW", _user32_mod))
+    ctypes.c_uint,
+    ctypes.c_uint,
+    ctypes.POINTER(ctypes.c_size_t),
+)(("SendMessageTimeoutW", _user32_mod))
+SMTO_ABORTIFHUNG = 0x0002
+SEND_TIMEOUT_MS = 200
 _SysFreeString = ctypes.WINFUNCTYPE(ctypes.c_void_p, ctypes.c_void_p)(
     ("SysFreeString", _oleaut32_mod)
 )
@@ -129,6 +134,18 @@ def read_hwnd(hwnd: int) -> str:
     return _read_both(int(hwnd))
 
 
+def warm() -> None:
+    """Nudge the accessibility tree awake. Called at mouse-DOWN so Chromium
+    has the whole drag to build it, instead of us paying for the cold probe
+    at mouse-UP when the user is already waiting for a chip."""
+    if sys.platform != "win32":
+        return
+    try:
+        _worker.warm()
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _read_both(hwnd: int | None) -> str:
     try:
         text = _read_native(hwnd)
@@ -146,7 +163,14 @@ def _read_both(hwnd: int | None) -> str:
     try:
         text = _worker.submit(hwnd)
         if text:
-            logutil.get().debug("silent uia len=%s", len(text))
+            # hwnd+class on the hit line too: without it a log shows which
+            # gestures missed but not which window class they hit, and the
+            # cold-tree pattern (first probe of an HWND misses, the rest hit)
+            # is invisible.
+            hit = int(hwnd or _focus_hwnd() or 0)
+            logutil.get().debug(
+                "silent uia len=%s hwnd=%s class=%r", len(text), hit, _class_name(hit)
+            )
             return _clip(text)
     except Exception:  # noqa: BLE001
         logutil.exc("silent uia")
@@ -170,7 +194,20 @@ def _ok(hr: int) -> bool:
 
 
 def _send(hwnd: int, msg: int, wparam: int = 0, lparam: int = 0) -> int:
-    return int(_SendMessageW(int(hwnd), int(msg), int(wparam), int(lparam)))
+    """SendMessage with a deadline. A bare SendMessageW to a hung foreign UI
+    thread blocks forever, so _capture_and_fire's finally never runs and
+    _busy stays True — the chip is then dead for the rest of the process."""
+    res = ctypes.c_size_t(0)
+    ok = _SendMessageTimeoutW(
+        int(hwnd),
+        int(msg),
+        int(wparam),
+        int(lparam),
+        SMTO_ABORTIFHUNG,
+        SEND_TIMEOUT_MS,
+        ctypes.byref(res),
+    )
+    return int(res.value) if ok else 0
 
 
 def _ptr(obj: ctypes.Structure | ctypes.Array) -> int:
@@ -225,7 +262,7 @@ def _read_native(hwnd: int | None = None) -> str:
         got = _read_scintilla(target)
         if got:
             return got
-    return _read_edit(target)
+    return _read_edit(target, cls)
 
 
 def _edit_bounds(hwnd: int) -> tuple[int, int]:
@@ -240,7 +277,7 @@ def _edit_bounds(hwnd: int) -> tuple[int, int]:
     return int(cr.cpMin), int(cr.cpMax)
 
 
-def _read_edit(hwnd: int) -> str:
+def _read_edit(hwnd: int, cls: str = "") -> str:
     a, b = _edit_bounds(hwnd)
     if b <= a or (b - a) > 1_000_000:
         return ""
@@ -251,6 +288,13 @@ def _read_edit(hwnd: int) -> str:
     buf = ctypes.create_unicode_buffer(n)
     _send(hwnd, WM_GETTEXT, n, _ptr(buf))
     text = buf.value or ""
+    # Two offset domains. RichEdit stores a line break as one CR, so
+    # EM_GETSEL counts 1 per break, but WM_GETTEXT hands back CRLF.
+    # Slicing one with the other shifts left by the number of preceding
+    # breaks: "WORLD" on line 3 came out as '\r\nWOR'. Plain EDIT has no
+    # such split, hence the class check.
+    if "rich" in (cls or "").lower():
+        text = text.replace("\r\n", "\r")
     if not text:
         return _read_richedit_range(hwnd, a, b)
     if a >= len(text):
@@ -302,7 +346,7 @@ def _pump() -> None:
 
 class _StaWorker:
     def __init__(self) -> None:
-        self._q: queue.Queue[tuple[int | None, queue.Queue[str]]] = queue.Queue()
+        self._q: queue.Queue[tuple[int | None, queue.Queue[str] | None]] = queue.Queue()
         self._ready = threading.Event()
         self._thread = threading.Thread(
             target=self._loop, name="bonjur-silent", daemon=True
@@ -328,6 +372,12 @@ class _StaWorker:
             logutil.get().warning("silent uia timeout hwnd=%s", hwnd)
             return ""
 
+    def warm(self) -> None:
+        """Fire-and-forget probe. reply=None marks it single-shot: nobody is
+        waiting, so it must not occupy the worker on the retry loop."""
+        self.start()
+        self._q.put((None, None))
+
     def _loop(self) -> None:
         _ensure_com()
         self._ready.set()
@@ -340,12 +390,29 @@ class _StaWorker:
             text = ""
             try:
                 text = _read_uia(hwnd) or ""
-                if not text:
-                    time.sleep(0.05)
+                if reply is None:  # warm probe — one shot, no waiter
+                    _pump()
+                    continue
+                # A cold Chromium a11y tree answers empty *and fast*: the
+                # first probe only flips AXMode on and IPCs the renderer.
+                # Field logs show zero UIA timeouts and every genuine Chrome
+                # miss being the first probe of that HWND — so keep asking
+                # inside the 1.4 s submit() already waits for.
+                tries = 1
+                deadline = time.perf_counter() + 1.1
+                delay = 0.05
+                while not text and time.perf_counter() + delay < deadline:
+                    time.sleep(delay)
                     _pump()
                     text = _read_uia(hwnd) or ""
+                    tries += 1
+                    delay = min(delay * 2, 0.3)
+                logutil.get().debug("silent uia tries=%s len=%s", tries, len(text))
             except Exception:  # noqa: BLE001
                 logutil.exc("silent uia worker")
+            if reply is None:
+                _pump()
+                continue
             try:
                 reply.put_nowait(text)
             except Exception:  # noqa: BLE001
@@ -426,13 +493,17 @@ def _read_uia(hwnd: int | None = None) -> str:
     if not uia:
         return ""
     seen: set[int] = set()
-    for el in _candidate_elements(uia, hwnd):
+    cands = _candidate_elements(uia, hwnd)
+    for el in cands:
         if not el or el in seen:
             continue
         seen.add(el)
         try:
             text = _safe_selection(el)
             if text:
+                # cand count separates "no element to ask" from "asked and
+                # got nothing" — they look identical from _read_both.
+                logutil.get().debug("silent uia hit cand=%s", len(cands))
                 return text
             parent = _parent(uia, el)
             hops = 0

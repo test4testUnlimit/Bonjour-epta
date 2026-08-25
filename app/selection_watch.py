@@ -61,6 +61,20 @@ class SelectionWatcher:
                 self._down_pos = None
             self._down_ts = time.perf_counter()
 
+            # Chromium keeps its a11y tree off until a UIA client asks; the
+            # first ask returns empty immediately and only *then* wakes the
+            # renderer. Asking at mouse-DOWN spends the whole drag warming
+            # it, so the read at mouse-UP finds a tree that already exists.
+            # ponytail: one probe per left-click. If a huge page makes
+            # a11y-enable hitch the drag, gate it on "last probe missed".
+            if not input_arbiter.busy():
+                try:
+                    from . import silent_selection
+
+                    silent_selection.warm()
+                except Exception:  # noqa: BLE001
+                    pass
+
         def on_up() -> None:
             if not self._enabled:
                 return

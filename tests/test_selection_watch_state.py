@@ -38,9 +38,11 @@ def wired():
     """A started watcher plus the fake mouse and a list of fired captures."""
     fm = FakeMouse()
     fired: list[tuple[int, int]] = []
+    # warm() is stubbed for every test here: a real probe spins up COM on the
+    # module worker and its reply lands in whatever test is running by then.
     with patch("app.selection_watch.mouse", fm), patch(
         "app.selection_watch.input_arbiter.busy", return_value=False
-    ):
+    ), patch("app.silent_selection.warm"):
         w = SelectionWatcher(lambda *_: None)
         # A real capture thread would touch UIA and make this racy; record the
         # (x, y) the watcher wanted to capture at and start nothing.
@@ -109,3 +111,22 @@ class TestBusyDoesNotDesyncDoubleClick:
             fm.down()
             fm.up()
         assert any("capture busy" in r.message for r in caplog.records)
+
+
+class TestWarmOnDown:
+    """Chromium's a11y tree is cold until someone asks. Ask at mouse-down so
+    the read at mouse-up hits a tree that already exists."""
+
+    def test_down_warms_provider(self, wired):
+        _w, fm, _ = wired
+        with patch("app.silent_selection.warm") as warm:
+            fm.down()
+        warm.assert_called_once_with()
+
+    def test_down_does_not_warm_when_input_busy(self, wired):
+        _w, fm, _ = wired
+        with patch("app.selection_watch.input_arbiter.busy", return_value=True), patch(
+            "app.silent_selection.warm"
+        ) as warm:
+            fm.down()
+        warm.assert_not_called()
