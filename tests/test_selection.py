@@ -1,4 +1,4 @@
-import threading, time
+import itertools, threading, time
 from unittest.mock import patch, call
 import pytest
 from app.selection import (
@@ -173,9 +173,13 @@ class TestUserCopyWins:
     """The reported bug: Ctrl+C during a capture must survive."""
 
     def test_capture_does_not_wipe_user_copy(self):
+        # The user presses Ctrl+C *during* the capture: both pre-inject fast
+        # paths (selection.py:519 and :595) must still see "no user copy yet",
+        # and everything after must see one. A fixed-length side_effect list
+        # breaks every time a call site is added — count instead.
+        seen = itertools.count()
         with patch("app.selection.copy_guard.copied_since") as cs_since:
-            # False for the fast-path check, True by the time we would restore
-            cs_since.side_effect = [False, True]
+            cs_since.side_effect = lambda _since: next(seen) >= 2
             r, cs = _run([10, 11, 11, 11], ["old", "mine", "mine", "mine"])
         assert r == "mine"
         # pre-clear writes ""; must NOT restore "old" over the user's "mine"

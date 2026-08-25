@@ -21,7 +21,6 @@ MIN_CHARS = 1
 MAX_CHARS = 8000
 DEDUP_MS = 900
 SETTLE_S = 0.08  # was 0.18 — RTL / end-of-line selections clear faster in Firefox
-CAPTURE_SETTLE_S = 1.2
 
 
 class SelectionWatcher:
@@ -51,8 +50,11 @@ class SelectionWatcher:
             return
 
         def on_down() -> None:
-            if not self._enabled:
-                return
+            # Deliberately NOT gated on _enabled. A hotkey pauses the watcher
+            # for 0.4-5.4 s; a drag that starts inside that window used to
+            # lose its down position and then look like a bare click on
+            # mouse-up, so the whole selection vanished with no log line.
+            # Recording a coordinate is free — on_up still decides.
             try:
                 self._down_pos = mouse.get_position()
             except Exception:
@@ -60,7 +62,7 @@ class SelectionWatcher:
             self._down_ts = time.perf_counter()
 
         def on_up() -> None:
-            if not self._enabled or self._busy:
+            if not self._enabled:
                 return
             try:
                 pos = mouse.get_position()
@@ -87,6 +89,14 @@ class SelectionWatcher:
 
             self._last_up_ts = now
             self._last_up_pos = pos
+
+            # Busy is checked here, AFTER the up history is written. Bailing
+            # earlier froze _last_up_pos at the previous word, so the click
+            # that completed a double-click was measured against the wrong
+            # position and the gesture after a capture was silently lost.
+            if self._busy:
+                logutil.get().info("watcher drop -- capture busy")
+                return
 
             if not dragged and not is_double:
                 return
@@ -162,9 +172,11 @@ class SelectionWatcher:
             try:
                 # NEVER inject from the chip path. Fake Ctrl+C on every
                 # drag raced ShareX/Caramba/AHK and the user's own copy.
+                # No settle_s: allow_inject=False returns before it is read
+                # (selection.py:533), so passing one only implied a budget
+                # this path never had.
                 text = get_selected_text(
                     restore_clipboard=True,
-                    settle_s=CAPTURE_SETTLE_S,
                     clipboard_fallback=False,
                     # mouse-up stamp: a Ctrl+C after it is the user copying
                     # what they just selected, not a stale clipboard

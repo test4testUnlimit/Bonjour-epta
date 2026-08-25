@@ -255,10 +255,13 @@ def main() -> int:
                     except Exception:  # noqa: BLE001
                         pass
 
-            try:
-                app.after(400, resume)
-            except Exception:  # noqa: BLE001
-                resume()
+            # threading.Timer, not app.after: resume only flips a bool, and
+            # an after() callback that never runs (mainloop blocked or torn
+            # down) leaves the watcher paused for the rest of the process
+            # with nothing in the log to say so.
+            t = threading.Timer(0.4, resume)
+            t.daemon = True
+            t.start()
 
     def start_hooks() -> None:
         status_bits: list[str] = []
