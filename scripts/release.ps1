@@ -8,9 +8,14 @@
 #   -Bump minor  -> Y += 1, Z = 0     (significant change / new feature)
 #   -Bump major  -> X += 1, Y = 0, Z = 0   (ONLY when the user explicitly says so)
 #   (no -Bump)   -> build current VERSION as-is
+#
+# -Publish       -> also upload the exe as a GitHub release (needs the gh CLI)
+# -ReleaseRepo   -> owner/name to publish to; defaults to origin
 param(
     [ValidateSet("patch", "minor", "major")]
-    [string]$Bump
+    [string]$Bump,
+    [switch]$Publish,
+    [string]$ReleaseRepo
 )
 
 $ErrorActionPreference = "Stop"
@@ -98,12 +103,6 @@ img.resize((256, 256), Image.Resampling.LANCZOS).save(r'$(Join-Path $staging 'ap
 "@
 }
 
-# field repro HTML (also under app/assets via the app/ copy below)
-$repro = Join-Path $root "notes\repro-field-bugs.html"
-if (Test-Path $repro) {
-    Copy-Item $repro (Join-Path $staging "repro-field-bugs.html") -Force
-}
-
 $appSrc = Join-Path $root "app"
 $appDst = Join-Path $staging "app"
 New-Item -ItemType Directory -Path $appDst -Force | Out-Null
@@ -145,5 +144,22 @@ Copy-Item $builtExe $outPath -Force
 Get-ChildItem $releaseDir -Filter "bonjour-epta-setup.exe" -ErrorAction SilentlyContinue |
     Remove-Item -Force -ErrorAction SilentlyContinue
 Write-Host ""
-Write-Host "Email this file (~$((Get-Item $outPath).Length) bytes):"
+Write-Host "Built (~$((Get-Item $outPath).Length) bytes):"
 Write-Host "  $outPath"
+
+# ── 5. optional: publish to GitHub releases ───────────────────────
+if ($Publish) {
+    if (-not $ReleaseRepo) {
+        $url = (& git remote get-url origin 2>$null)
+        if (-not $url) { throw "-Publish needs -ReleaseRepo or an 'origin' remote" }
+        $ReleaseRepo = ($url -replace '^.*github\.com[:/]', '') -replace '\.git$', ''
+    }
+    & gh repo view $ReleaseRepo --json name 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Repo $ReleaseRepo unreachable. Create it first: gh repo create $ReleaseRepo --public"
+    }
+    $tag = "v$ver"
+    & gh release create $tag $outPath --repo $ReleaseRepo --title $tag --generate-notes
+    if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
+    Write-Host "      published $tag to $ReleaseRepo"
+}
