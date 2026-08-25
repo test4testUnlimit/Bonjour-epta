@@ -2,12 +2,13 @@
 
 Everything here runs without Tk and without the local packs — tests that touch
 the index point LOCAL_DIR at an empty temp dir so results are the same on a
-machine that has ~/.bonjur-epta/packs/gftx.json and one that does not.
+machine that has ~/.bonjur-epta/packs/local.json and one that does not.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -71,9 +72,9 @@ class TestDetect:
         assert "FAI" in keys("Waiting on the F.A.I. report")
 
     def test_cell_format_is_noise_until_the_dictionary_claims_it(self):
-        cand = {c.key: c for c in detect.candidates("Model Y uses 4680 cells")}
-        assert "4680" in cand and cand["4680"].noise
-        assert "Y" not in cand  # single letter is not an acronym
+        cand = {c.key: c for c in detect.candidates("Line B uses 18650 cells")}
+        assert "18650" in cand and cand["18650"].noise
+        assert "B" not in cand  # single letter is not an acronym
 
     def test_stop_words(self):
         for w in ("THE", "USA", "PDF", "OK", "URL"):
@@ -200,7 +201,7 @@ class TestResolve:
     def test_pack_priority_breaks_the_tie(self):
         idx = make_index([
             {"term": "FY", "expansion": "Fiscal Year", "_pack": "corp", "_prio": 11},
-            {"term": "FY", "expansion": "Final Yield", "_pack": "gftx", "_prio": 30},
+            {"term": "FY", "expansion": "Final Yield", "_pack": "local", "_prio": 30},
         ])
         assert resolve.explain("FY is 96%", idx=idx).hits[0].best.expansion == "Final Yield"
 
@@ -210,7 +211,7 @@ class TestResolve:
         assert not rep.hits
 
     def test_noise_candidates_never_reach_unknown(self, poly):
-        assert resolve.explain("Model Y uses 4680 cells", idx=poly).unknown == []
+        assert resolve.explain("Line B uses 18650 cells", idx=poly).unknown == []
 
     def test_empty_text(self, poly):
         rep = resolve.explain("   ", idx=poly)
@@ -286,15 +287,37 @@ class TestImportClassifier:
 
     def test_internal_url_stays_local(self, imp):
         assert self.verdict(imp, "MOS", "Manufacturing Operating System",
-                            "https://mos-gf1.teslamotors.com/") == "internal"
+                            "https://wiki.example.com/confluence/x") == "internal"
 
     def test_site_and_product_stay_local(self, imp):
-        assert self.verdict(imp, "GFTX", "Gigafactory Texas in Austin, TX") == "internal"
-        assert self.verdict(imp, "MY", "Model Y") == "internal"
+        assert self.verdict(imp, "NP1", "North Plant line one") == "internal"
+        assert self.verdict(imp, "XZ", "XZ-40 crossover") == "internal"
 
     def test_personal_commentary_stays_local(self, imp):
-        assert self.verdict(imp, "KUKA", "Equipment integrator",
-                            "really screwed up Auto MAMC 1.0") == "internal"
+        assert self.verdict(imp, "ACME", "Equipment integrator",
+                            "really screwed up the cell line 1.0") == "internal"
+
+    def test_local_markers_file_is_read_and_bad_rows_skipped(self, imp, tmp_path):
+        f = tmp_path / "internal_markers.json"
+        f.write_text(json.dumps([
+            ["site", r"\bnorth ?plant\b"],
+            ["broken", "(unclosed"],
+            "not a pair",
+        ]), encoding="utf-8")
+        with patch.object(imp, "LOCAL_MARKERS_FILE", f):
+            assert imp.local_markers() == [("site", r"\bnorth ?plant\b")]
+
+    def test_missing_local_markers_file_is_not_an_error(self, imp, tmp_path):
+        with patch.object(imp, "LOCAL_MARKERS_FILE", tmp_path / "nope.json"):
+            assert imp.local_markers() == []
+
+    def test_a_local_marker_beats_a_generic_hint(self, imp):
+        """Without the marker, "process control" would talk this row into public."""
+        row = "process control rack at North Plant"
+        assert self.verdict(imp, "PCR", "Process Control Rack", row) == "public"
+        marked = [*imp._INTERNAL_RE, ("site", re.compile(r"\bnorth ?plant\b", re.I))]
+        with patch.object(imp, "_INTERNAL_RE", marked):
+            assert self.verdict(imp, "PCR", "Process Control Rack", row) == "internal"
 
     def test_unknown_defaults_to_local(self, imp):
         assert self.verdict(imp, "ZZZ", "Some Internal Thing") == "internal"

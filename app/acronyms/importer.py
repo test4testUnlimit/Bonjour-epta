@@ -21,9 +21,11 @@ from .store import BUILTIN_DIR, LOCAL_DIR, norm_key
 __all__ = [
     "DOMAIN_HINTS",
     "INTERNAL_MARKERS",
+    "LOCAL_MARKERS_FILE",
     "Row",
     "classify",
     "guess_domains",
+    "local_markers",
     "load_keep",
     "parse",
     "repo_pairs",
@@ -36,24 +38,49 @@ __all__ = [
 # ── internal markers ────────────────────────────────────────
 # (label, pattern) — matched case-insensitively against term + expansion + notes.
 # Anything that hits one of these stays on the local disk.
+#
+# The shipped list is employer-agnostic on purpose. Your own site names,
+# product codenames, internal systems and line ids go in
+# ~/.bonjur-epta/internal_markers.json:
+#
+#     [["site", "\\bnorth ?plant\\b|\\bNP\\d\\b"],
+#      ["codename", "\\braven\\b|\\bhighland\\b"]]
+#
+# That file is worth writing even though the default verdict is already
+# "internal": a marker beats GENERIC_HINTS, so without it a row like
+# "process control at <your site>" can be talked into "public".
 
 INTERNAL_MARKERS: list[tuple[str, str]] = [
-    ("tesla", r"\btesla\b|teslamotors|\btsla\b"),
-    ("site", r"\bgigafactor|\bgiga ?(texas|berlin|shanghai|nevada)\b|\bGF(?:TX|NV|B|SH|\d)\b"
-             r"|\bfremont\b|\baustin\b|\blathrop\b|\bsparks\b|\bbuffalo\b|\bgrohmann\b"),
-    ("product", r"\bmodel ?[3sxy]\b|\bmegapack\b|\bpowerwall\b|\bpowerpack\b|\bcybertruck\b"
-                r"|\bsemi truck\b|\broadster\b|\boptimus\b|\bmegacharger\b|\bsupercharger\b"),
-    ("codename", r"\braven\b|\beagle\b|\broad ?runner\b|\bwarp\b|\bpalladium\b|\bhighland\b"
-                 r"|\bjuniper\b|\bplaid\b|\bredwood\b"),
-    ("internal system", r"\bMOS\b|\bFX\b|\bCROUT\b|\bWAHA\b|\bCTOps\b|\bQIS\b|\bQAN\b|\bQDN\b"
-                        r"|\bPNS\b|\bPPPT\b|\bMCI\b|\bWARP\b|\bTeslaCam\b"),
-    ("line/zone id", r"\bBMA ?\d|\bBP ?\d|\bBE ?\d|\bGA ?\d|\bzone ?\d|\bMAMC\b|\bline ?\d\b"),
-    ("internal url", r"https?://[^\s]*(?:teslamotors|tesla\.com|confluence|jira|sharepoint)"),
+    ("internal url", r"https?://[^\s]*(?:confluence|jira|sharepoint|intranet|\.corp\b|\.internal\b)"),
+    ("internal system", r"\b(?:confluence|jira|sharepoint|servicenow)\b"),
     ("person/opinion", r"\bper [A-Z][a-z]+ [A-Z][a-z]+|\bscrewed up\b|\blol\b|\bstupid\b"
                        r"|\bgarbage\b|\bhated\b|\bfinally died\b|\bnobody uses\b"),
 ]
 
-_INTERNAL_RE = [(label, re.compile(pat, re.I)) for label, pat in INTERNAL_MARKERS]
+LOCAL_MARKERS_FILE = LOCAL_DIR.parent / "internal_markers.json"
+
+
+def local_markers() -> list[tuple[str, str]]:
+    """Site-specific markers from LOCAL_MARKERS_FILE. Missing file → none."""
+    try:
+        raw = json.loads(LOCAL_MARKERS_FILE.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — absent or malformed: ship-only defaults
+        return []
+    out: list[tuple[str, str]] = []
+    for item in raw if isinstance(raw, list) else []:
+        try:
+            label, pat = item
+            re.compile(str(pat))
+        except Exception:  # noqa: BLE001 — one bad row must not kill the import
+            continue
+        out.append((str(label), str(pat)))
+    return out
+
+
+_INTERNAL_RE = [
+    (label, re.compile(pat, re.I))
+    for label, pat in (*INTERNAL_MARKERS, *local_markers())
+]
 
 # A row may only be *considered* public if it looks like textbook industry
 # vocabulary. Either the term is already in a repo pack (proof it is generic),
@@ -240,7 +267,7 @@ def guess_domains(row: Row) -> list[str]:
 # ── output ──────────────────────────────────────────────────
 
 
-def to_entry(row: Row, keep: dict[tuple[str, str], dict], *, default_domain=("gftx",)) -> dict:
+def to_entry(row: Row, keep: dict[tuple[str, str], dict], *, default_domain=("local",)) -> dict:
     """`default_domain` only kicks in when nothing could be guessed from the text."""
     prev = keep.get((norm_key(row.term), norm_key(row.expansion)), {})
     entry = {

@@ -22,7 +22,7 @@ BUILTIN_DIR = Path(__file__).resolve().parent / "data"
 LOCAL_DIR = Path.home() / ".bonjur-epta" / "packs"
 
 # pack id → default priority when the file does not declare one
-_DEFAULT_PRIORITY = {"user": 40, "gftx": 30}
+_DEFAULT_PRIORITY = {"user": 40, "local": 30}
 _PRIORITY_FALLBACK = 10
 
 _WS = re.compile(r"\s+")

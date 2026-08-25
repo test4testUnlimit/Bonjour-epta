@@ -10,8 +10,8 @@ Internal rows go to the local pack (outside the repo, never committed); public
 candidates go to a separate review file that a human reads before anything is
 copied into app/acronyms/data/.
 
-    python scripts/import_confluence.py c:/tmp/gftx-raw.txt --pack gftx
-    python scripts/import_confluence.py table.tsv --pack gftx --dry-run --explain
+    python scripts/import_confluence.py c:/tmp/raw-table.txt --pack local
+    python scripts/import_confluence.py table.tsv --pack local --dry-run --explain
 
 Re-running is safe: hand-written "ru" / "where" text in an existing output pack
 is preserved unless --overwrite is given.
@@ -41,7 +41,7 @@ from app.acronyms.store import LOCAL_DIR  # noqa: E402
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("input", type=Path, help="TSV / text dump of the Confluence table")
-    ap.add_argument("--pack", default="gftx", help="pack id for internal rows (default: gftx)")
+    ap.add_argument("--pack", default="local", help="pack id for internal rows (default: local)")
     ap.add_argument("--title", default="", help="human title of the pack")
     ap.add_argument("--priority", type=int, default=30)
     ap.add_argument("--out", type=Path, default=None, help="default: ~/.bonjur-epta/packs/<pack>.json")

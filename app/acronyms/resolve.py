@@ -41,7 +41,7 @@ class Report:
 
 
 def _score(e: Entry, dominant: set[str], ctx_packs: set[str]) -> int:
-    s = min(max(e.priority, 0), 40) // 10  # user 4 · gftx 3 · repo 1
+    s = min(max(e.priority, 0), 40) // 10  # user 4 · local 3 · repo 1
     if dominant and any(d in dominant for d in e.domain):
         s += 3
     if e.pack in ctx_packs:

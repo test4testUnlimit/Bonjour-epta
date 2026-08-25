@@ -1,8 +1,8 @@
 """Where the AI gateway lives — read from ~/.bonjur-epta/ai.json, never from git.
 
-The host, tenant and client id are corporate identifiers, so they stay on the
-machine like the gftx acronym pack does. `ai.example.json` in the repo shows the
-shape. No file → `configured()` is False and every AI button stays grey.
+The host, tenant and client id are site-specific, so they stay on the machine
+like a local acronym pack does. `ai.example.json` in the repo shows the shape.
+No file → `configured()` is False and every AI button stays grey.
 """
 
 from __future__ import annotations
