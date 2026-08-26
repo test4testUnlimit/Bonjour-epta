@@ -32,6 +32,7 @@ class AppSettings:
     ai_enabled: bool = True  # AI group in the title bar; needs ~/.bonjur-epta/ai.json
     ai_model: str = ""  # empty = whatever ai.json says
     update_skip_version: str = ""  # version the user ticked "skip" on
+    update_last_check: float = 0.0  # epoch seconds; gates the daily auto-check
 
     def hotkey_spec(self) -> HotkeySpec:
         raw = HotkeySpec.from_dict(self.hotkey if isinstance(self.hotkey, dict) else None)

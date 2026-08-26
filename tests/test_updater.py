@@ -94,6 +94,25 @@ def test_manifest_tolerates_a_missing_hash():
     assert info["sha256"] == ""
 
 
+DAY = 24 * 3600
+
+
+@pytest.mark.parametrize(
+    ("last", "now", "expected"),
+    [
+        (0.0, 1_000_000.0, True),          # never checked
+        (None, 1_000_000.0, True),         # missing / null in settings.json
+        ("junk", 1_000_000.0, True),       # hand-edited settings
+        (1_000_000.0, 1_000_000.0 + 60, False),
+        (1_000_000.0, 1_000_000.0 + DAY - 1, False),
+        (1_000_000.0, 1_000_000.0 + DAY, True),
+        (1_000_000.0, 999_000.0, True),    # stamp in the future — clock moved
+    ],
+)
+def test_due(last, now, expected):
+    assert up.due(last, now) is expected
+
+
 def test_format_notes_bullets_every_line():
     out = up.format_notes("- fixed a\nadded b\n\n* c")
     assert out.splitlines() == ["• fixed a", "• added b", "• c"]

@@ -9,8 +9,9 @@
     <InformationalVersion>$(Version)</InformationalVersion>
 
     <!-- Without this the shipped launcher carries the build machine's absolute
-         source path (C:\Users\<name>\...) in its PDB debug directory. Map the
-         repo root to a stable token: reproducible, and leaks nothing. -->
+         source path — home directory and username included — in its PDB debug
+         directory. Map the repo root to a stable token: reproducible, and
+         leaks nothing. -->
     <Deterministic>true</Deterministic>
     <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
   </PropertyGroup>
