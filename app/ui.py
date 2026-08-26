@@ -28,6 +28,10 @@ apply_appearance()
 
 APP_VERSION = T.APP_VERSION
 
+# Auto-update check: once a day, and never during the logon rush.
+AUTO_CHECK_DELAY_MS = 60_000
+AUTO_CHECK_EVERY_MS = 6 * 3_600_000  # re-arm; the real 24h gate is updater.due()
+
 
 class TranslatorApp(ctk.CTk):
     def __init__(self) -> None:
@@ -88,6 +92,8 @@ class TranslatorApp(ctk.CTk):
         self.bind("<Control-KeyPress>", self._on_window_ctrl_key)
 
         self.after(80, lambda: apply_app_icon(self))
+        # Quiet daily check, well after the logon rush.
+        self.after(AUTO_CHECK_DELAY_MS, self._auto_check_updates)
 
         label = next(
             (lb for pid, lb, _ in tr.list_providers() if pid == self._provider.get()),
@@ -1529,36 +1535,62 @@ class TranslatorApp(ctk.CTk):
             logutil.exc("after(0) failed, run ui direct")
             ui()
 
-    def _check_updates(self) -> None:
+    def _auto_check_updates(self) -> None:
+        """Daily background check. Silent unless there is something to install."""
+        import time
+
+        from . import updater
+
+        try:
+            if updater.due(cfg.get().update_last_check, time.time()):
+                self._check_updates(manual=False)
+        except Exception:  # noqa: BLE001
+            logutil.exc("auto update check")
+        finally:
+            # Re-arm regardless: a machine left running for a week must keep looking.
+            self.after(AUTO_CHECK_EVERY_MS, self._auto_check_updates)
+
+    def _check_updates(self, manual: bool = True) -> None:
         """Title-bar ↻ — ask the public feed, then offer the update."""
         from . import updater
 
         if getattr(self, "_update_busy", False):
             return
         self._update_busy = True
-        self._set_status_safe("проверяю обновления…")
+        if manual:
+            self._set_status_safe("проверяю обновления…")
 
         def work() -> None:
             info = updater.fetch_manifest()
-            self.after(0, lambda: self._on_update_checked(info))
+            self.after(0, lambda: self._on_update_checked(info, manual))
 
         threading.Thread(target=work, daemon=True, name="update-check").start()
 
-    def _on_update_checked(self, info: dict | None) -> None:
+    def _on_update_checked(self, info: dict | None, manual: bool = True) -> None:
+        import time
+
         from . import updater
         from .update_ui import ask
 
         self._update_busy = False
         verdict = updater.decide(APP_VERSION, info, cfg.get().update_skip_version)
+        if verdict != updater.BAD_MANIFEST:
+            # Only a check that actually reached the feed resets the daily clock;
+            # a flaky network must not buy silence for another 24 hours.
+            cfg.update(update_last_check=time.time())
         if verdict == updater.BAD_MANIFEST:
-            self._set_status_safe("не удалось проверить обновления")
+            if manual:
+                self._set_status_safe("не удалось проверить обновления")
             return
         if verdict == updater.UP_TO_DATE:
-            self._set_status_safe(f"у вас последняя версия ({APP_VERSION})")
+            if manual:
+                self._set_status_safe(f"у вас последняя версия ({APP_VERSION})")
             return
         if verdict == updater.DISMISSED:
-            # The user ticked "skip" for exactly this version — but they pressed
-            # the button themselves, so show it again rather than say nothing.
+            # Skipped version: stay quiet in the background, but a button press
+            # is the user asking — show it again.
+            if not manual:
+                return
             cfg.update(update_skip_version="")
 
         choice, skip = ask(self, info, APP_VERSION)

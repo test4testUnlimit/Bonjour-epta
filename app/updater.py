@@ -99,6 +99,24 @@ def decide(local: str, info: dict | None, skipped: str = "") -> str:
     return UPDATE_AVAILABLE
 
 
+CHECK_INTERVAL_S = 24 * 3600
+
+
+def due(last_check: float, now: float, interval: float = CHECK_INTERVAL_S) -> bool:
+    """Is the daily background check owed?
+
+    A stamp in the future means the clock moved (or the file was hand-edited);
+    check now rather than go quiet until the calendar catches up.
+    """
+    try:
+        last = float(last_check or 0.0)
+    except (TypeError, ValueError):
+        return True
+    if last <= 0 or last > now:
+        return True
+    return (now - last) >= interval
+
+
 def format_notes(notes: str) -> str:
     """Release notes as a plain bullet list — the feed writes one per line."""
     out = []
