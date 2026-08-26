@@ -9,13 +9,19 @@
 #   -Bump major  -> X += 1, Y = 0, Z = 0   (ONLY when the user explicitly says so)
 #   (no -Bump)   -> build current VERSION as-is
 #
-# -Publish       -> also upload the exe as a GitHub release (needs the gh CLI)
-# -ReleaseRepo   -> owner/name to publish to; defaults to origin
+# -Publish       -> upload the exe + latest.json as a GitHub release (needs the gh CLI)
+# -Notes         -> release notes, one string per bullet; the in-app updater shows them
+# -ReleaseRepo   -> owner/name to publish to; defaults to the PUBLIC repo
+#
+#   .\scripts\release.ps1 -Bump patch -Publish -Notes "Fixed x","Added y"
 param(
     [ValidateSet("patch", "minor", "major")]
     [string]$Bump,
     [switch]$Publish,
-    [string]$ReleaseRepo
+    [string[]]$Notes = @(),
+    # NOT origin: origin points at Bonjur-epta-private, which holds the old
+    # history and must never receive a public release.
+    [string]$ReleaseRepo = "test4testUnlimit/Bonjur-epta"
 )
 
 $ErrorActionPreference = "Stop"
@@ -147,19 +153,50 @@ Write-Host ""
 Write-Host "Built (~$((Get-Item $outPath).Length) bytes):"
 Write-Host "  $outPath"
 
-# ── 5. optional: publish to GitHub releases ───────────────────────
+# ── 5. update manifest (app/updater.py reads this) ────────────────
+function ConvertTo-JsonString([string]$s) {
+    # Hand-rolled: ConvertTo-Json escapes & < > ' as \uXXXX, and the client
+    # would then show those escapes verbatim in the release notes.
+    $s = $s -replace '\\', '\\'
+    $s = $s -replace '"', '\"'
+    $s = $s -replace "`r", ''
+    $s = $s -replace "`n", '\n'
+    $s = $s -replace "`t", '\t'
+    return $s
+}
+
+$sha = (Get-FileHash $outPath -Algorithm SHA256).Hash.ToLower()
+$notesText = ($Notes | ForEach-Object { "- $_" }) -join "`n"
+$assetUrl = "https://github.com/$ReleaseRepo/releases/download/v$ver/$outName"
+$manifestPath = Join-Path $releaseDir "latest.json"
+$manifest = @"
+{
+  "version": "$ver",
+  "url": "$assetUrl",
+  "sha256": "$sha",
+  "notes": "$(ConvertTo-JsonString $notesText)",
+  "date": "$(Get-Date -Format 'yyyy-MM-dd')"
+}
+"@
+[System.IO.File]::WriteAllText($manifestPath, $manifest, (New-Object System.Text.UTF8Encoding($false)))
+Write-Host "  manifest: $manifestPath (sha256 $($sha.Substring(0,12))...)"
+
+# ── 6. optional: publish to GitHub releases ───────────────────────
 if ($Publish) {
-    if (-not $ReleaseRepo) {
-        $url = (& git remote get-url origin 2>$null)
-        if (-not $url) { throw "-Publish needs -ReleaseRepo or an 'origin' remote" }
-        $ReleaseRepo = ($url -replace '^.*github\.com[:/]', '') -replace '\.git$', ''
-    }
     & gh repo view $ReleaseRepo --json name 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) {
         throw "Repo $ReleaseRepo unreachable. Create it first: gh repo create $ReleaseRepo --public"
     }
     $tag = "v$ver"
-    & gh release create $tag $outPath --repo $ReleaseRepo --title $tag --generate-notes
+    # latest.json must ride along as an asset: the client reads it from
+    # /releases/latest/download/, which only serves attached files.
+    if ($notesText) {
+        & gh release create $tag $outPath $manifestPath --repo $ReleaseRepo --title $tag --notes $notesText
+    } else {
+        & gh release create $tag $outPath $manifestPath --repo $ReleaseRepo --title $tag --generate-notes
+    }
     if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
     Write-Host "      published $tag to $ReleaseRepo"
+} else {
+    Write-Host "  UPDATES: re-run with -Publish to push it to $ReleaseRepo"
 }

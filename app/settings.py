@@ -31,6 +31,7 @@ class AppSettings:
     acronym_packs: dict = field(default_factory=dict)  # pack id → on/off, missing = on
     ai_enabled: bool = True  # AI group in the title bar; needs ~/.bonjur-epta/ai.json
     ai_model: str = ""  # empty = whatever ai.json says
+    update_skip_version: str = ""  # version the user ticked "skip" on
 
     def hotkey_spec(self) -> HotkeySpec:
         raw = HotkeySpec.from_dict(self.hotkey if isinstance(self.hotkey, dict) else None)
