@@ -33,6 +33,7 @@ UP_TO_DATE = "current"
 DISMISSED = "dismissed"
 BAD_MANIFEST = "bad"
 
+_LAUNCHER_NAME = "BonjurLauncher.exe"
 _LAUNCHER_GLOB = "BonjurLauncher*.exe"
 
 
@@ -149,9 +150,18 @@ def install_dir() -> Path:
 
 
 def launcher_path() -> Path | None:
-    """The installed launcher exe, if this is a real install and not a git checkout."""
+    """The installed launcher exe, if this is a real install and not a git checkout.
+
+    Releases up to 3.1.4 carried the version in the asset name, so an upgraded
+    install can still hold BonjurLauncher_3.1.4.exe next to the current
+    BonjurLauncher.exe. The unversioned one wins.
+    """
+    root = install_dir()
+    plain = root / _LAUNCHER_NAME
+    if plain.is_file():
+        return plain
     try:
-        hits = sorted(install_dir().glob(_LAUNCHER_GLOB))
+        hits = sorted(root.glob(_LAUNCHER_GLOB))
     except OSError:
         return None
     return hits[-1] if hits else None
@@ -235,12 +245,16 @@ def apply(info: dict) -> bool:
         part.unlink(missing_ok=True)
         return False
 
-    # Releases are named per version, so the previous exe is a different file.
-    if old and old.resolve() != new_path.resolve():
+    # Sweep every other launcher, not just the one we happened to find. Releases
+    # up to 3.1.4 were named per version, and a leftover one is a loaded gun:
+    # clicking it reinstalls its own embedded payload, i.e. a silent downgrade.
+    for stale in target_dir.glob(_LAUNCHER_GLOB):
+        if stale.name == new_path.name:
+            continue
         try:
-            old.unlink()
+            stale.unlink()
         except OSError:
-            log.info("could not remove old launcher %s", old)
+            log.info("could not remove old launcher %s", stale)
 
     from .restart import schedule_run
 
