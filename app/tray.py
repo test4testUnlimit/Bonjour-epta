@@ -65,6 +65,9 @@ class TrayIcon:
         def on_bug_describe(_icon, _item):
             self._marshal(lambda: bug_report.open_describe(self._app))
 
+        def on_restart(_icon, _item):
+            self._marshal(lambda: self._app._restart_client())
+
         def on_exit(_icon, _item):
             self._marshal(self._quit)
 
@@ -80,6 +83,8 @@ class TrayIcon:
             pystray.MenuItem("страница повтора багов", on_repro),
             pystray.MenuItem("был баг", bug_menu),
             pystray.Menu.SEPARATOR,
+            # The title-bar ↻ now checks for updates, so restart moved here.
+            pystray.MenuItem("перезапустить", on_restart),
             pystray.MenuItem("выход", on_exit),
         )
 

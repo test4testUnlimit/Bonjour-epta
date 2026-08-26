@@ -227,7 +227,7 @@ class TranslatorApp(ctk.CTk):
         )
         self._btn_translate.pack(side="right", pady=vpad)
 
-        # — brand mark (1) + restart (2) —
+        # — brand mark (1) + check for updates (2) —
         mark = ctk.CTkFrame(west, fg_color="transparent", height=T.HEAD_H)
         mark.pack(side="left", fill="y")
         # one full-height row + sticky="" → every child rides the same centre
@@ -252,7 +252,7 @@ class TranslatorApp(ctk.CTk):
             font=ui_font(T.FONT_VERSION_SIZE),
             text_color=T.INK_SOFT,
         ).grid(row=0, column=2, sticky="", pady=(0, 10))
-        # circular arrow — hard kill + relaunch (dev reload without TC)
+        # circular arrow — check the public release feed (was: hard relaunch)
         ctk.CTkButton(
             mark,
             text=T.GLYPH_RESTART,
@@ -264,7 +264,7 @@ class TranslatorApp(ctk.CTk):
             hover_color=T.CHIP_HOVER,
             text_color=T.INK_SOFT,
             border_width=0,
-            command=self._restart_client,
+            command=self._check_updates,
         ).grid(row=0, column=3, sticky="", padx=(T.TOOL_GAP, 0))
 
         # — provider combo + dot (3) —
@@ -1529,10 +1529,79 @@ class TranslatorApp(ctk.CTk):
             logutil.exc("after(0) failed, run ui direct")
             ui()
 
-    def _restart_client(self) -> None:
-        """Full process kill + fresh start (after name/version ↻)."""
+    def _check_updates(self) -> None:
+        """Title-bar ↻ — ask the public feed, then offer the update."""
+        from . import updater
+
+        if getattr(self, "_update_busy", False):
+            return
+        self._update_busy = True
+        self._set_status_safe("проверяю обновления…")
+
+        def work() -> None:
+            info = updater.fetch_manifest()
+            self.after(0, lambda: self._on_update_checked(info))
+
+        threading.Thread(target=work, daemon=True, name="update-check").start()
+
+    def _on_update_checked(self, info: dict | None) -> None:
+        from . import updater
+        from .update_ui import ask
+
+        self._update_busy = False
+        verdict = updater.decide(APP_VERSION, info, cfg.get().update_skip_version)
+        if verdict == updater.BAD_MANIFEST:
+            self._set_status_safe("не удалось проверить обновления")
+            return
+        if verdict == updater.UP_TO_DATE:
+            self._set_status_safe(f"у вас последняя версия ({APP_VERSION})")
+            return
+        if verdict == updater.DISMISSED:
+            # The user ticked "skip" for exactly this version — but they pressed
+            # the button themselves, so show it again rather than say nothing.
+            cfg.update(update_skip_version="")
+
+        choice, skip = ask(self, info, APP_VERSION)
+        if choice != "update":
+            if skip:
+                cfg.update(update_skip_version=info["version"])
+            self._set_status_safe("")
+            return
+
+        self._set_status_safe("скачиваю обновление…")
+        self.update_idletasks()
+        if not updater.apply(info):
+            self._set_status_safe("не удалось обновиться — попробуйте позже")
+            return
+        self._hard_exit()
+
+    def _set_status_safe(self, text: str) -> None:
+        try:
+            self._status.set(text)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _hard_exit(self) -> None:
+        """Stop tray / destroy best-effort, then hard-exit so the mutex drops.
+
+        after() is useless here — destroy ends mainloop; os._exit is immediate.
+        """
         import os
 
+        tray = getattr(self, "_tray", None)
+        if tray is not None:
+            try:
+                tray.stop()
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            self.destroy()
+        except Exception:  # noqa: BLE001
+            pass
+        os._exit(0)
+
+    def _restart_client(self) -> None:
+        """Full process kill + fresh start (tray menu / dev reload)."""
         log = logutil.get()
         log.info("restart client requested")
         try:
@@ -1550,19 +1619,7 @@ class TranslatorApp(ctk.CTk):
             except Exception:  # noqa: BLE001
                 pass
             return
-        # Stop tray / destroy best-effort, then hard-exit so mutex drops.
-        # after() is useless here — destroy ends mainloop; os._exit is immediate.
-        tray = getattr(self, "_tray", None)
-        if tray is not None:
-            try:
-                tray.stop()
-            except Exception:  # noqa: BLE001
-                pass
-        try:
-            self.destroy()
-        except Exception:  # noqa: BLE001
-            pass
-        os._exit(0)
+        self._hard_exit()
 
     def _on_close(self, force: bool = False) -> None:
         """Window X / Alt+F4: hide to tray when enabled. force=True = real quit."""

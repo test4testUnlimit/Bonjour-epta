@@ -50,17 +50,24 @@ def relaunch_cwd() -> str:
     return str(Path(__file__).resolve().parent.parent)
 
 
-def schedule_relaunch() -> bool:
-    """Arm a detached process that starts us again after this PID exits."""
+def schedule_run(argv: list[str], cwd: str) -> bool:
+    """Arm a detached process that runs argv once this PID is gone.
+
+    The updater uses this for the freshly downloaded launcher: it must not start
+    extracting over the files we are still running from.
+    """
     log = logutil.get()
-    argv = relaunch_argv()
-    cwd = relaunch_cwd()
     pid = os.getpid()
-    log.info("schedule relaunch pid=%s argv=%s cwd=%s", pid, argv, cwd)
+    log.info("schedule run pid=%s argv=%s cwd=%s", pid, argv, cwd)
 
     if sys.platform == "win32":
         return _schedule_win(pid, argv, cwd)
     return _schedule_posix(pid, argv, cwd)
+
+
+def schedule_relaunch() -> bool:
+    """Arm a detached process that starts us again after this PID exits."""
+    return schedule_run(relaunch_argv(), relaunch_cwd())
 
 
 def _cmd_quote(s: str) -> str:
