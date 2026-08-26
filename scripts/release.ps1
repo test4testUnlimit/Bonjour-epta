@@ -142,16 +142,20 @@ $builtExe = Join-Path $publishDir "BonjurLauncher.exe"
 if (-not (Test-Path $builtExe)) { throw "Build failed: $builtExe not found" }
 
 $ver = (Get-Content (Join-Path $root "VERSION") -First 1).Trim()
-$outName = "BonjurLauncher_$ver.exe"
+# The published asset has NO version in its name — same as OpenWind and MyDash.
+# That is what makes /releases/latest/download/BonjurLauncher.exe a permanent
+# link. The versioned copy stays local, as an archive of what was shipped.
+$outName = "BonjurLauncher.exe"
 $outPath = Join-Path $releaseDir $outName
+$verCopy = Join-Path $releaseDir "BonjurLauncher_$ver.exe"
 Copy-Item $builtExe $outPath -Force
-# One artifact, version in the name — a second unversioned copy only made it
-# ambiguous which build was actually sent.
+Copy-Item $builtExe $verCopy -Force
 Get-ChildItem $releaseDir -Filter "bonjour-epta-setup.exe" -ErrorAction SilentlyContinue |
     Remove-Item -Force -ErrorAction SilentlyContinue
 Write-Host ""
 Write-Host "Built (~$((Get-Item $outPath).Length) bytes):"
-Write-Host "  $outPath"
+Write-Host "  DISTRIBUTE: $outPath"
+Write-Host "  VERSIONED:  $verCopy"
 
 # ── 5. update manifest (app/updater.py reads this) ────────────────
 function ConvertTo-JsonString([string]$s) {

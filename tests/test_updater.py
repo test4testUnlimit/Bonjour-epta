@@ -149,6 +149,57 @@ def test_asset_name_rejects_anything_path_like(url):
     assert up.asset_name(url) == ""
 
 
+def test_launcher_path_prefers_the_unversioned_exe(tmp_path, monkeypatch):
+    (tmp_path / "BonjurLauncher_3.1.4.exe").write_bytes(b"old")
+    (tmp_path / "BonjurLauncher.exe").write_bytes(b"new")
+    monkeypatch.setattr(up, "install_dir", lambda: tmp_path)
+    assert up.launcher_path().name == "BonjurLauncher.exe"
+
+
+def test_launcher_path_falls_back_to_a_versioned_exe(tmp_path, monkeypatch):
+    (tmp_path / "BonjurLauncher_3.1.4.exe").write_bytes(b"old")
+    monkeypatch.setattr(up, "install_dir", lambda: tmp_path)
+    assert up.launcher_path().name == "BonjurLauncher_3.1.4.exe"
+
+
+def test_launcher_path_is_none_in_a_checkout(tmp_path, monkeypatch):
+    monkeypatch.setattr(up, "install_dir", lambda: tmp_path)
+    assert up.launcher_path() is None
+
+
+def test_apply_sweeps_leftover_versioned_launchers(tmp_path, monkeypatch):
+    """A stale per-version exe would reinstall its own payload — a silent downgrade."""
+    from app import restart
+
+    (tmp_path / "BonjurLauncher_3.1.4.exe").write_bytes(b"old")
+    armed = []
+
+    def fake_download(url, dest, sha256="", timeout=120.0):
+        dest.write_bytes(b"x" * 60_000)
+        return True
+
+    monkeypatch.setattr(up, "install_dir", lambda: tmp_path)
+    monkeypatch.setattr(up, "download", fake_download)
+    monkeypatch.setattr(restart, "schedule_run", lambda argv, cwd: armed.append(argv) or True)
+
+    info = up.parse_manifest(_manifest(url="https://x/y/BonjurLauncher.exe"))
+    assert up.apply(info) is True
+    assert sorted(p.name for p in tmp_path.glob("*.exe")) == ["BonjurLauncher.exe"]
+    assert armed and armed[0][0].endswith("BonjurLauncher.exe")
+
+
+def test_apply_leaves_nothing_behind_when_the_download_fails(tmp_path, monkeypatch):
+    (tmp_path / "BonjurLauncher_3.1.4.exe").write_bytes(b"old")
+    monkeypatch.setattr(up, "install_dir", lambda: tmp_path)
+    monkeypatch.setattr(up, "download", lambda *a, **k: False)
+
+    info = up.parse_manifest(_manifest(url="https://x/y/BonjurLauncher.exe"))
+    assert up.apply(info) is False
+    # the old launcher must survive a failed update
+    assert (tmp_path / "BonjurLauncher_3.1.4.exe").is_file()
+    assert not list(tmp_path.glob("*.part"))
+
+
 def test_feed_is_anonymous_and_public():
     src = Path(up.__file__).read_text(encoding="utf-8")
     assert "Authorization" not in src
