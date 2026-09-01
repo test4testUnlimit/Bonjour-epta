@@ -251,6 +251,36 @@ def current_resolved() -> str:
     return _resolved
 
 
+# ── contrast (WCAG relative luminance) ────────────────────────
+def _lin(c: float) -> float:
+    return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def luminance(hexs: str) -> float:
+    """WCAG relative luminance 0..1 for a #rrggbb colour."""
+    h = str(hexs).lstrip("#")
+    if len(h) != 6:
+        return 0.0
+    r, g, b = (int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b)
+
+
+def contrast_ratio(a: str, b: str) -> float:
+    """WCAG contrast ratio 1..21 between two #rrggbb colours."""
+    la, lb = luminance(a), luminance(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def readable_text(bg: str, dark: str = "#141414", light: str = "#ffffff") -> str:
+    """Pick the text colour (dark or light) that reads best on `bg`.
+
+    Used anywhere a label sits on an accent/surface fill so the foreground is
+    never the same as the background (the black-on-black tab bug).
+    """
+    return dark if contrast_ratio(bg, dark) >= contrast_ratio(bg, light) else light
+
+
 def ui_font(size: int = FONT_UI_SIZE, weight: str = "normal") -> ctk.CTkFont:
     return ctk.CTkFont(family=FONT_UI, size=size, weight=weight)
 

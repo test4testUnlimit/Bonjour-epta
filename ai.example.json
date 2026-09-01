@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to ~/.bonjur-epta/ai.json and fill in. The real file stays on your machine — corporate hosts and GUIDs never go into git. Without it the AI buttons stay grey and the translator works as usual. `models` is optional: it replaces the built-in list in the settings picker.",
+  "_comment": "Copy to ~/.bonjur-epta/ai.json and fill in. The real file stays on your machine — corporate hosts and GUIDs never go into git. Without it the corporate-gateway AI buttons stay grey and the translator works as usual. `models` is optional: it replaces the built-in list in the settings picker. The Gemini block below is optional too — the public endpoint is already built in; use it only to override the host/path or pin a default model. The Gemini API key is NOT stored here — paste it in Settings → ИИ-помощник, it is kept encrypted on this PC.",
 
   "host": "backend.example.com",
   "path": "/v2/agents/<agent-slug>/chats",
@@ -14,5 +14,12 @@
     "tenant": "<tenant-guid>",
     "client_id": "<client-id-guid>",
     "scope": "api://<client-id-guid>/Chats.Response offline_access openid profile email"
+  },
+
+  "gemini": {
+    "_comment": "Optional overrides for the direct Google AI Studio backend (home use). All fields optional.",
+    "host": "generativelanguage.googleapis.com",
+    "path": "/v1beta/models/{model}:generateContent",
+    "model": "gemini-2.5-flash"
   }
 }

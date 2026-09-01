@@ -217,6 +217,31 @@ def download(url: str, dest: Path, sha256: str = "", timeout: float = 120.0) -> 
     return True
 
 
+def unblock_file(path: Path) -> None:
+    """Strip the Mark-of-the-Web so SmartScreen does not block the new launcher.
+
+    A file downloaded by the app itself is no more dangerous than the running
+    app, yet Windows still flags it as "from the internet". Removing the
+    Zone.Identifier stream is the documented unblock; failure is harmless.
+    """
+    if os.name != "nt":
+        return
+    try:
+        import subprocess
+
+        subprocess.run(
+            [
+                "powershell", "-NoProfile", "-NonInteractive", "-Command",
+                f"Unblock-File -LiteralPath {str(path)!r}",
+            ],
+            capture_output=True,
+            timeout=15,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception:  # noqa: BLE001
+        logutil.exc("unblock_file")
+
+
 def apply(info: dict) -> bool:
     """Swap the launcher exe and arm it to start once we are gone.
 
@@ -244,6 +269,8 @@ def apply(info: dict) -> bool:
         logutil.exc("update swap")
         part.unlink(missing_ok=True)
         return False
+
+    unblock_file(new_path)  # keep SmartScreen quiet for the freshly downloaded exe
 
     # Sweep every other launcher, not just the one we happened to find. Releases
     # up to 3.1.4 were named per version, and a leftover one is a loaded gun:

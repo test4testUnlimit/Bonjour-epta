@@ -625,9 +625,20 @@ class TranslatorApp(ctk.CTk):
         )
 
     def _ai_configured(self) -> bool:
-        """The feature exists at all: switched on in settings and endpoint known."""
+        """The feature exists at all: switched on and the active backend is set up.
+
+        Gateway needs ai.json; Gemini needs its encrypted key. This decides whether
+        the AI group is interactive at all — the dot/minutes still come from the
+        gateway token, which simply reads as absent on the Gemini backend.
+        """
         try:
-            return bool(cfg.get().ai_enabled) and ai_config.configured()
+            if not cfg.get().ai_enabled:
+                return False
+            if getattr(cfg.get(), "ai_provider", "gateway") == "gemini":
+                from . import ai_secrets
+
+                return ai_secrets.available() and ai_secrets.has_key("gemini")
+            return ai_config.configured()
         except Exception:  # noqa: BLE001
             return False
 
@@ -1558,13 +1569,50 @@ class TranslatorApp(ctk.CTk):
             return
         self._update_busy = True
         if manual:
-            self._set_status_safe("проверяю обновления…")
+            self._flash_foot("проверяю обновления…", True)
+
+        # Tk's after() is NOT safe to call from a worker thread — on Windows it
+        # can silently fail to queue, and the result never lands. Park the answer
+        # in a slot and let a poller that lives on the UI thread pick it up.
+        self._update_result = None
+        self._update_done = False
 
         def work() -> None:
-            info = updater.fetch_manifest()
-            self.after(0, lambda: self._on_update_checked(info, manual))
+            try:
+                info = updater.fetch_manifest()
+            except Exception:  # noqa: BLE001
+                info = None
+            self._update_result = info
+            self._update_done = True
 
         threading.Thread(target=work, daemon=True, name="update-check").start()
+        self._poll_update_result(manual, 0)
+
+    def _poll_update_result(self, manual: bool, tries: int) -> None:
+        """Runs on the UI thread: waits for the worker, then reports the verdict."""
+        if getattr(self, "_update_done", False):
+            info = getattr(self, "_update_result", None)
+            self._update_result = None
+            self._update_done = False
+            self._on_update_checked(info, manual)
+            return
+        if tries > 300:  # ~30s — give up and free the button
+            self._update_busy = False
+            if manual:
+                self._flash_foot("проверка обновлений не ответила", False)
+            return
+        try:
+            self.after(100, lambda: self._poll_update_result(manual, tries + 1))
+        except Exception:  # noqa: BLE001
+            self._update_busy = False
+
+    def _update_busy_watchdog(self) -> None:
+        """Reset a stuck _update_busy if a check clearly did not finish."""
+        try:
+            if getattr(self, "_update_busy", False):
+                self._update_busy = False
+        except Exception:  # noqa: BLE001
+            pass
 
     def _on_update_checked(self, info: dict | None, manual: bool = True) -> None:
         import time
@@ -1580,11 +1628,26 @@ class TranslatorApp(ctk.CTk):
             cfg.update(update_last_check=time.time())
         if verdict == updater.BAD_MANIFEST:
             if manual:
-                self._set_status_safe("не удалось проверить обновления")
+                # A button press deserves a window, not a flash the user may miss.
+                from .update_ui import show_message
+
+                show_message(
+                    self,
+                    "Не удалось проверить обновления",
+                    "Не получилось связаться с сервером обновлений.\n"
+                    "Проверьте подключение к сети и попробуйте позже.",
+                )
             return
         if verdict == updater.UP_TO_DATE:
             if manual:
-                self._set_status_safe(f"у вас последняя версия ({APP_VERSION})")
+                from .update_ui import show_message
+
+                show_message(
+                    self,
+                    "Обновлений нет",
+                    f"У вас установлена последняя версия — {APP_VERSION}.\n"
+                    "Всё в порядке, ничего делать не нужно.",
+                )
             return
         if verdict == updater.DISMISSED:
             # Skipped version: stay quiet in the background, but a button press
@@ -1600,10 +1663,10 @@ class TranslatorApp(ctk.CTk):
             self._set_status_safe("")
             return
 
-        self._set_status_safe("скачиваю обновление…")
+        self._flash_foot("скачиваю обновление…", True)
         self.update_idletasks()
         if not updater.apply(info):
-            self._set_status_safe("не удалось обновиться — попробуйте позже")
+            self._flash_foot("не удалось обновиться — попробуйте позже", False)
             return
         self._hard_exit()
 

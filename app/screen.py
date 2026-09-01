@@ -96,6 +96,42 @@ def work_area_at(x: int, y: int) -> tuple[int, int, int, int]:
     return work_area()
 
 
+def center_on_screen(win) -> None:
+    """Put a Toplevel dead centre of the monitor work area (taskbar-safe).
+
+    Windows of this app are expected in the middle of the display, not wherever
+    the window manager felt like putting them or offset over the parent.
+    """
+    try:
+        win.update_idletasks()
+        # winfo_* and work_area() are both in PHYSICAL pixels, and so is the
+        # +x+y that geometry() takes on Windows — but a CTk window scaled by the
+        # DPI factor reports a physical size while its geometry string is
+        # logical. Use the real on-screen rectangle to stay exact either way.
+        w = int(win.winfo_width())
+        h = int(win.winfo_height())
+        if w <= 1 or h <= 1:
+            w = int(win.winfo_reqwidth())
+            h = int(win.winfo_reqheight())
+        wx, wy, aw, ah = work_area()
+        x = wx + (aw - w) // 2
+        y = wy + (ah - h) // 2
+        x = max(wx, min(x, wx + aw - w))
+        y = max(wy, min(y, wy + ah - h))
+        win.geometry(f"+{x}+{y}")
+        # One correction pass: after the move we can measure where the window
+        # actually landed and fix any DPI-induced drift.
+        win.update_idletasks()
+        got_x = int(win.winfo_rootx())
+        got_y = int(win.winfo_rooty())
+        dx = x - got_x
+        dy = y - got_y
+        if dx or dy:
+            win.geometry(f"+{x + dx}+{y + dy}")
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def clamp_popup(
     x: int,
     y: int,

@@ -13,6 +13,14 @@ from .win_hotkeys import HotkeySpec, sanitize_hotkey
 CONFIG_DIR = Path.home() / ".bonjur-epta"
 CONFIG_PATH = CONFIG_DIR / "settings.json"
 
+# AI backends. "gateway" = the Bottlerocket corporate gateway (JWT, in-memory).
+# "gemini" = direct Google AI Studio API (encrypted key on disk). Work vs home.
+AI_PROVIDERS = ("gateway", "gemini")
+AI_PROVIDER_LABELS = {
+    "gateway": "шлюз (Bottlerocket)",
+    "gemini": "Gemini (свой ключ)",
+}
+
 
 @dataclass
 class AppSettings:
@@ -29,8 +37,10 @@ class AppSettings:
     chip_style_id: int = 1  # see app/chip_styles.py — user picks in style window
     acronyms_enabled: bool = True  # acronym block under the panes
     acronym_packs: dict = field(default_factory=dict)  # pack id → on/off, missing = on
-    ai_enabled: bool = True  # AI group in the title bar; needs ~/.bonjur-epta/ai.json
-    ai_model: str = ""  # empty = whatever ai.json says
+    ai_enabled: bool = True  # AI group in the title bar; needs a working backend
+    ai_provider: str = "gateway"  # gateway | gemini
+    ai_model: str = ""  # empty = whatever ai.json says (gateway backend)
+    ai_gemini_model: str = ""  # empty = ai_config.gemini_model() default
     update_skip_version: str = ""  # version the user ticked "skip" on
     update_last_check: float = 0.0  # epoch seconds; gates the daily auto-check
 
@@ -59,6 +69,11 @@ class AppSettings:
         if theme not in ("light", "dark", "auto"):
             theme = "light"
         base.ui_theme = theme
+        # AI provider: unknown values fall back to the corporate gateway.
+        prov = str(base.ai_provider or "gateway").strip().lower()
+        if prov not in AI_PROVIDERS:
+            prov = "gateway"
+        base.ai_provider = prov
         # drop illegal combos (e.g. Ctrl+Z×2 saved by mistake)
         safe = sanitize_hotkey(HotkeySpec.from_dict(base.hotkey))
         base.hotkey = safe.to_dict()

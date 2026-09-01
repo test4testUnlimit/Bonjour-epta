@@ -65,6 +65,9 @@ class TrayIcon:
         def on_bug_describe(_icon, _item):
             self._marshal(lambda: bug_report.open_describe(self._app))
 
+        def on_dump_ui(_icon, _item):
+            self._marshal(self._dump_ui)
+
         def on_restart(_icon, _item):
             self._marshal(lambda: self._app._restart_client())
 
@@ -82,6 +85,7 @@ class TrayIcon:
             pystray.MenuItem("настройки", on_settings),
             pystray.MenuItem("страница повтора багов", on_repro),
             pystray.MenuItem("был баг", bug_menu),
+            pystray.MenuItem("дамп координат UI", on_dump_ui),
             pystray.Menu.SEPARATOR,
             # The title-bar ↻ now checks for updates, so restart moved here.
             pystray.MenuItem("перезапустить", on_restart),
@@ -105,6 +109,22 @@ class TrayIcon:
                 self._app.focus_force()
         except Exception:  # noqa: BLE001
             pass
+
+    def _dump_ui(self) -> None:
+        """Write the main window's widget tree to a file and open its folder."""
+        from . import devdump, logutil
+
+        try:
+            path = devdump.dump_window(self._app)
+            logutil.get().info("ui dump -> %s", path)
+            try:
+                import os
+
+                os.startfile(str(path.parent))  # noqa: S606
+            except Exception:  # noqa: BLE001
+                pass
+        except Exception:  # noqa: BLE001
+            logutil.exc("dump ui")
 
     def _open_repro(self) -> None:
         path = _repro_html_path()
