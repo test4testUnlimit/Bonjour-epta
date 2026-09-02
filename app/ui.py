@@ -19,6 +19,7 @@ from .acro_panel import AcronymPanel
 from .ai_panel import AiPanel
 from .restart import schedule_relaunch
 from .screen import center_on_screen
+from .selection import normalize_newlines
 from .settings_ui import SettingsWindow
 from .theme import apply_appearance, apply_theme, mdl2_font, ui_font
 from .app_icon import apply as apply_app_icon

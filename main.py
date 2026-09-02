@@ -118,6 +118,21 @@ def main() -> int:
         else:
             app._status.set("нет текста")
 
+    def on_chivoblya(text: str) -> None:
+        # chivoblya chip click: open the window with the text, then run AI
+        # function 2 (the "объясни" prompt) on it — the extended-translation
+        # action. Settings can turn the auto-run off (ai_chivoblya_fn2).
+        payload = (text or last_selection[0] or "").strip()
+        log.info("chivoblya → main+fn2 len=%s", len(payload))
+        if not payload:
+            app._status.set("нет текста")
+            return
+        app.bring_with_selection(payload)
+        if cfg.get().ai_chivoblya_fn2 and cfg.get().ai_enabled:
+            # bring_with_selection already fired instant_translate; explain runs
+            # on top and lands in the AI strip below the panes.
+            app.after(50, app.explain_now)
+
     # track popup visibility; do NOT pause watcher — outside-click dismiss +
     # should_ignore(over chip) keep UX clean, and new selection can replace chip/card
     popup_open = {"on": False}
@@ -130,6 +145,7 @@ def main() -> int:
         app,
         on_open_main=on_open_main,
         on_visibility=on_popup_vis,
+        on_chivoblya=on_chivoblya,
     )
     app.on_chip_style_changed = lambda _sid: popup.apply_style_now()
 

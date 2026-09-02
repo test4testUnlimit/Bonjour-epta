@@ -45,6 +45,7 @@ class AppSettings:
     ai_fn1_prompt: str = ""  # empty = built-in POLISH_PROMPT
     ai_fn2_title: str = "объясни"  # AI button 2 label
     ai_fn2_prompt: str = ""  # empty = built-in EXPLAIN_PROMPT
+    ai_chivoblya_fn2: bool = True  # chivoblya chip click runs AI function 2 (explain)
     update_skip_version: str = ""  # version the user ticked "skip" on
     update_last_check: float = 0.0  # epoch seconds; gates the daily auto-check
 

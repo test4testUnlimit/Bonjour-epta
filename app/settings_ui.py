@@ -441,6 +441,23 @@ class SettingsWindow(ctk.CTkToplevel):
         self._fn1_title, self._fn1_prompt = self._fn_fields(fn_box, 1)
         self._fn2_title, self._fn2_prompt = self._fn_fields(fn_box, 2)
 
+        # chivoblya chip → runs function 2 on the selection
+        self._chivo_fn2 = ctk.CTkSwitch(
+            fn_box,
+            text="чивобля при выделении сразу запускает кнопку 2",
+            **self._switch_kw(self._apply_ai),
+        )
+        self._chivo_fn2.pack(anchor="w", pady=(2, 0))
+        if cfg.get().ai_chivoblya_fn2:
+            self._chivo_fn2.select()
+        ctk.CTkLabel(
+            fn_box,
+            text="нажал «чивобля?» на выделенном тексте — откроется окно и "
+                 "сработает кнопка 2 с её промптом (расширенный перевод). "
+                 "выключи, если чивобля должна просто открывать окно.",
+            text_color=T.INK_FAINT, font=ui_font(10), wraplength=460, justify="left",
+        ).pack(anchor="w", pady=(2, 0))
+
         self._refresh_ai_models()
         self._sync_ai_state()
         ai_token.on_change(self._on_ai_token)
@@ -610,15 +627,20 @@ class SettingsWindow(ctk.CTkToplevel):
 
     def _apply_ai(self) -> None:
         picked = self._ai_model.get()
+        chivo_fn2 = (
+            bool(self._chivo_fn2.get()) if hasattr(self, "_chivo_fn2") else cfg.get().ai_chivoblya_fn2
+        )
         if self._current_ai_provider() == "gemini":
             cfg.update(
                 ai_enabled=bool(self._ai_on.get()),
                 ai_gemini_model="" if picked == self._ai_default else picked,
+                ai_chivoblya_fn2=chivo_fn2,
             )
         else:
             cfg.update(
                 ai_enabled=bool(self._ai_on.get()),
                 ai_model="" if picked == self._ai_default else picked,
+                ai_chivoblya_fn2=chivo_fn2,
             )
         self._status.configure(text="ИИ · применено")
 

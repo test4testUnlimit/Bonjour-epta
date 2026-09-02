@@ -65,10 +65,12 @@ class ChivoblyaPopup:
         *,
         on_open_main: Callable[[str], None] | None = None,
         on_visibility: Callable[[bool], None] | None = None,
+        on_chivoblya: Callable[[str], None] | None = None,
     ) -> None:
         self._master = master
         self._on_open_main = on_open_main
         self._on_visibility = on_visibility
+        self._on_chivoblya = on_chivoblya
         self._text = ""
         self._translation = ""
         self._anchor = (0, 0)
@@ -576,8 +578,9 @@ class ChivoblyaPopup:
         logutil.get().info("CHIVOBLYA click → main window len=%s", len(text))
         try:
             self.hide()
-            if text and self._on_open_main:
-                self._on_open_main(text)
+            cb = self._on_chivoblya or self._on_open_main
+            if text and cb:
+                cb(text)
         except Exception:  # noqa: BLE001
             logutil.exc("chivoblya → main")
         finally:
