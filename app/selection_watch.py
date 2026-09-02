@@ -183,24 +183,39 @@ class SelectionWatcher:
                 logutil.get().debug("watcher skip -- paused during settle")
                 return
 
-            try:
-                # NEVER inject from the chip path. Fake Ctrl+C on every
-                # drag raced ShareX/Caramba/AHK and the user's own copy.
-                # No settle_s: allow_inject=False returns before it is read
-                # (selection.py:533), so passing one only implied a budget
-                # this path never had.
-                text = get_selected_text(
-                    restore_clipboard=True,
-                    clipboard_fallback=False,
-                    # mouse-up stamp: a Ctrl+C after it is the user copying
-                    # what they just selected, not a stale clipboard
-                    since=since,
-                    allow_inject=False,
-                )
-            except Exception:
-                logutil.exc("watcher get_selected_text")
-                return
-            text = sanitize_selection(text)
+            # Right-to-left / end-to-start drags settle the selection a beat
+            # later than left-to-right ones (Firefox especially: the anchor
+            # flips only after mouse-up). One fixed SETTLE_S is too early for
+            # them, so an empty first read retries a few times before we give
+            # up on the chip. Cheap: each retry is a silent read, no inject.
+            text = ""
+            for attempt, wait in enumerate((0.0, 0.12, 0.2, 0.3)):
+                if wait:
+                    time.sleep(wait)
+                    if not self._enabled:
+                        break
+                try:
+                    # NEVER inject from the chip path. Fake Ctrl+C on every
+                    # drag raced ShareX/Caramba/AHK and the user's own copy.
+                    # No settle_s: allow_inject=False returns before it is read
+                    # (selection.py:533), so passing one only implied a budget
+                    # this path never had.
+                    text = get_selected_text(
+                        restore_clipboard=True,
+                        clipboard_fallback=False,
+                        # mouse-up stamp: a Ctrl+C after it is the user copying
+                        # what they just selected, not a stale clipboard
+                        since=since,
+                        allow_inject=False,
+                    )
+                except Exception:
+                    logutil.exc("watcher get_selected_text")
+                    return
+                text = sanitize_selection(text)
+                if text:
+                    if attempt:
+                        logutil.get().info("watcher capture ok on retry %s len=%s", attempt, len(text))
+                    break
             if not text or len(text) < MIN_CHARS or len(text) > MAX_CHARS:
                 logutil.get().info(
                     "watcher empty capture len=%s — no chip (silent miss, no inject)",
