@@ -18,6 +18,7 @@ from . import translators as tr
 from .acro_panel import AcronymPanel
 from .ai_panel import AiPanel
 from .restart import schedule_relaunch
+from .screen import center_on_screen
 from .settings_ui import SettingsWindow
 from .theme import apply_appearance, apply_theme, mdl2_font, ui_font
 from .app_icon import apply as apply_app_icon
@@ -80,6 +81,12 @@ class TranslatorApp(ctk.CTk):
         self._shell.pack(fill="both", expand=True)
 
         self._build(self._shell)
+        # Start dead-centre: a bare geometry() leaves the top-left to the
+        # window manager, which lands the window up-and-left of centre.
+        # Defer one tick: in __init__ the window is not yet mapped, so CTk's
+        # DPI scaling has not settled and center_on_screen would measure a
+        # pre-scale size and land off-centre (the 3.3.1 field report).
+        self.after(0, lambda: center_on_screen(self))
         # subscribed once, not per _build — a theme switch rebuilds every widget
         # but _sync_ai_group looks them up fresh each time it runs
         ai_token.on_change(self._on_token_change)
