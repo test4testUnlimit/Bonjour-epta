@@ -1352,7 +1352,13 @@ class TranslatorApp(ctk.CTk):
         provider_id = self._provider.get()
 
         def work() -> None:
-            result = tr.translate(text, source=source, target=target, provider_id=provider_id)
+            # Never let an exception strand _busy: a dead thread used to leave the
+            # translate button disabled and the progress frame up forever.
+            try:
+                result = tr.translate(text, source=source, target=target, provider_id=provider_id)
+            except Exception as exc:  # noqa: BLE001
+                logutil.exc("translate thread")
+                result = tr.TranslateResult(text="", provider=provider_id or "", error=str(exc))
             self.after(0, lambda: self._apply_result(result, job, _retry))
 
         threading.Thread(target=work, daemon=True).start()
