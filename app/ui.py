@@ -1445,8 +1445,16 @@ class TranslatorApp(ctk.CTk):
 
     # ── AI actions ────────────────────────────────────────────────────────
 
-    def _ai_start(self) -> bool:
-        """Common gate: refuse politely, then lock the toolbar for one request."""
+    def _ai_start(self, *, cancels_translate: bool = True) -> bool:
+        """Common gate: refuse politely, then lock the toolbar for one request.
+
+        cancels_translate=True (polish, which writes the target pane) invalidates
+        any in-flight translation so its result cannot land under the AI output.
+        explain() passes False: it lands in the AI strip below the panes and must
+        NOT cancel a translation the user is still waiting for (the chivoblya
+        flow runs translate + explain together; bumping the job killed the
+        translate and left "переводим" spinning forever).
+        """
         if not self._ai_configured():
             self._flash_foot("ИИ выключен — нет ai.json", False)
             return False
@@ -1455,7 +1463,8 @@ class TranslatorApp(ctk.CTk):
             self._flash_foot(why, False)
             self._sync_ai_group()
             return False
-        self._translate_job += 1  # a translation in flight must not land on top
+        if cancels_translate:
+            self._translate_job += 1  # a translation in flight must not land on top
         self._ai_job += 1
         self._busy = True
         self._btn_translate.configure(state="disabled")
@@ -1520,7 +1529,7 @@ class TranslatorApp(ctk.CTk):
     def explain_now(self) -> None:
         """What the phrase actually means — the target pane stays untouched."""
         text = self.get_source_text().strip()
-        if not text or not self._ai_start():
+        if not text or not self._ai_start(cancels_translate=False):
             return
         job = self._ai_job
         self._ai_panel.show_wait("разбираемся…")

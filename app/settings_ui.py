@@ -360,6 +360,18 @@ class SettingsWindow(ctk.CTkToplevel):
     def _build_ai(self, card) -> None:
         from . import ai_token
 
+        # The AI tab grew past any sensible window height (two prompt boxes +
+        # the chivoblya toggle), and the bottom was clipped on the laptop. Put
+        # the whole tab in a scrollable frame — the standard pattern for an
+        # over-tall settings page — so nothing is ever cut off and the window
+        # keeps a sane size.
+        scroll = ctk.CTkScrollableFrame(
+            card, fg_color="transparent", corner_radius=0,
+            scrollbar_button_color=T.LINE, scrollbar_button_hover_color=T.LINE_STRONG,
+        )
+        scroll.pack(fill="both", expand=True)
+        card = scroll
+
         inner_pad = T.INSET
         ctk.CTkLabel(
             card, text="ИИ-помощник", text_color=T.INK, font=ui_font(12, "bold")
