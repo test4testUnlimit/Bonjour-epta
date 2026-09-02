@@ -96,11 +96,15 @@ def work_area_at(x: int, y: int) -> tuple[int, int, int, int]:
     return work_area()
 
 
-def center_on_screen(win) -> None:
+def center_on_screen(win, *, _attempt: int = 0) -> None:
     """Put a Toplevel dead centre of the monitor work area (taskbar-safe).
 
     Windows of this app are expected in the middle of the display, not wherever
     the window manager felt like putting them or offset over the parent.
+
+    A not-yet-mapped window reports winfo_width()==1; centring on that puts the
+    TOP-LEFT corner in the middle of the screen (the 3.3.2 laptop report). When
+    the size is not real yet, re-arm briefly and try again instead of guessing.
     """
     try:
         win.update_idletasks()
@@ -110,6 +114,12 @@ def center_on_screen(win) -> None:
         # logical. Use the real on-screen rectangle to stay exact either way.
         w = int(win.winfo_width())
         h = int(win.winfo_height())
+        if (w <= 1 or h <= 1) and _attempt < 20:
+            try:
+                win.after(30, lambda: center_on_screen(win, _attempt=_attempt + 1))
+            except Exception:  # noqa: BLE001
+                pass
+            return
         if w <= 1 or h <= 1:
             w = int(win.winfo_reqwidth())
             h = int(win.winfo_reqheight())

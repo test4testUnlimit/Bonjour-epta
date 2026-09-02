@@ -83,10 +83,11 @@ class TranslatorApp(ctk.CTk):
         self._build(self._shell)
         # Start dead-centre: a bare geometry() leaves the top-left to the
         # window manager, which lands the window up-and-left of centre.
-        # Defer one tick: in __init__ the window is not yet mapped, so CTk's
-        # DPI scaling has not settled and center_on_screen would measure a
-        # pre-scale size and land off-centre (the 3.3.1 field report).
-        self.after(0, lambda: center_on_screen(self))
+        # Centre once the window is actually MAPPED, not on a fixed delay:
+        # before that winfo_width() is still 1, and centring on a 1px window
+        # puts the top-left corner in the middle of the screen (3.3.2 laptop).
+        self._centered_once = False
+        self.bind("<Map>", self._center_on_first_map, add="+")
         # subscribed once, not per _build — a theme switch rebuilds every widget
         # but _sync_ai_group looks them up fresh each time it runs
         ai_token.on_change(self._on_token_change)
@@ -108,6 +109,14 @@ class TranslatorApp(ctk.CTk):
         )
         if label:
             self._provider_combo.set(label)
+
+    def _center_on_first_map(self, event) -> None:
+        if event is not None and event.widget is not self:
+            return
+        if self._centered_once:
+            return
+        self._centered_once = True
+        center_on_screen(self)
 
     def _on_unmap(self, event) -> None:
         if event.widget is not self:
