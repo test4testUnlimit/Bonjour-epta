@@ -1358,14 +1358,29 @@ class TranslatorApp(ctk.CTk):
         text = self.get_source_text().strip()
         if not text:
             return
-        self._refresh_acronyms(text)  # local — lands before the network answers
         self._translate_job += 1
         job = self._translate_job
         self._busy = True
         self._btn_translate.configure(state="disabled")
-        self._show_translate_progress()
-        source, target = self._autopick_langs(text)
-        provider_id = self._provider.get()
+        # Watchdog: providers time out at ~14s, so if _busy is still set at 30s
+        # the result was lost somewhere — free the button rather than strand it.
+        self._arm_busy_watchdog(job)
+        try:
+            # Anything here runs BEFORE the worker starts; if it throws, the
+            # thread never launches and _busy would stay set forever (the
+            # provider-switch lockup). Reset synchronously on any failure.
+            self._refresh_acronyms(text)  # local — lands before the network answers
+            self._show_translate_progress()
+            source, target = self._autopick_langs(text)
+            provider_id = self._provider.get()
+        except Exception as exc:  # noqa: BLE001
+            logutil.exc("translate_now setup")
+            self._busy = False
+            self._btn_translate.configure(state="normal")
+            self._cancel_progress_anim()
+            self._end_translate_progress_ui()
+            self._flash_foot(f"не переведено: {exc}", False)
+            return
 
         def work() -> None:
             # Never let an exception strand _busy: a dead thread used to leave the
@@ -1378,6 +1393,22 @@ class TranslatorApp(ctk.CTk):
             self.after(0, lambda: self._apply_result(result, job, _retry))
 
         threading.Thread(target=work, daemon=True).start()
+
+    def _arm_busy_watchdog(self, job: int, timeout_ms: int = 30_000) -> None:
+        def check() -> None:
+            # Only free the button if THIS job never landed — a newer translate
+            # owns _busy now and must not be cancelled by an old watchdog.
+            if self._busy and job == self._translate_job:
+                logutil.get().warning("translate watchdog fired job=%s — freeing _busy", job)
+                self._cancel_progress_anim()
+                self._busy = False
+                self._btn_translate.configure(state="normal")
+                self._end_translate_progress_ui()
+                self._flash_foot("перевод не ответил вовремя", False)
+        try:
+            self.after(timeout_ms, check)
+        except Exception:  # noqa: BLE001
+            pass
 
     def _adopt_detected(self, result: TranslateResult, retried: bool) -> bool:
         """Learn the real language from the answer and re-aim if it hit the target.
