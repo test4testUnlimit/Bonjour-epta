@@ -41,6 +41,10 @@ class AppSettings:
     ai_provider: str = "gateway"  # gateway | gemini
     ai_model: str = ""  # empty = whatever ai.json says (gateway backend)
     ai_gemini_model: str = ""  # empty = ai_config.gemini_model() default
+    ai_fn1_title: str = "причесать"  # AI button 1 label (clamped in the toolbar)
+    ai_fn1_prompt: str = ""  # empty = built-in POLISH_PROMPT
+    ai_fn2_title: str = "объясни"  # AI button 2 label
+    ai_fn2_prompt: str = ""  # empty = built-in EXPLAIN_PROMPT
     update_skip_version: str = ""  # version the user ticked "skip" on
     update_last_check: float = 0.0  # epoch seconds; gates the daily auto-check
 

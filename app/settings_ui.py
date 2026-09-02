@@ -430,9 +430,79 @@ class SettingsWindow(ctk.CTkToplevel):
             anchor="w", justify="left", wraplength=460,
         )
         self._ai_state.pack(anchor="w", padx=inner_pad, pady=(6, inner_pad))
+
+        # two configurable AI functions (title + prompt each)
+        fn_box = ctk.CTkFrame(card, fg_color="transparent")
+        fn_box.pack(fill="x", padx=inner_pad, pady=(0, inner_pad))
+        ctk.CTkLabel(
+            fn_box, text="две кнопки-функции: подпись и свой промпт",
+            text_color=T.INK_FAINT, font=ui_font(11),
+        ).pack(anchor="w", pady=(0, 4))
+        self._fn1_title, self._fn1_prompt = self._fn_fields(fn_box, 1)
+        self._fn2_title, self._fn2_prompt = self._fn_fields(fn_box, 2)
+
         self._refresh_ai_models()
         self._sync_ai_state()
         ai_token.on_change(self._on_ai_token)
+
+    def _fn_fields(self, parent, n: int):
+        """One labelled title-entry + prompt-textbox pair. Returns (title, prompt)."""
+        from . import assistant
+
+        box = ctk.CTkFrame(parent, fg_color="transparent")
+        box.pack(fill="x", pady=(0, 8))
+        default_title = assistant.DEFAULT_FN1_TITLE if n == 1 else assistant.DEFAULT_FN2_TITLE
+        default_prompt = assistant.POLISH_PROMPT if n == 1 else assistant.EXPLAIN_PROMPT
+        title_val = getattr(cfg.get(), f"ai_fn{n}_title", "") or default_title
+        prompt_val = getattr(cfg.get(), f"ai_fn{n}_prompt", "")
+
+        row = ctk.CTkFrame(box, fg_color="transparent")
+        row.pack(fill="x")
+        ctk.CTkLabel(
+            row, text=f"кнопка {n}", text_color=T.INK, font=ui_font(11, "bold"), width=64, anchor="w"
+        ).pack(side="left")
+        title = ctk.CTkEntry(
+            row, height=T.CTRL_H, fg_color=T.FIELD, border_color=T.LINE,
+            text_color=T.INK, font=ui_font(12), placeholder_text=default_title,
+        )
+        title.pack(side="left", fill="x", expand=True, padx=(6, 0))
+        title.insert(0, title_val)
+
+        prompt = ctk.CTkTextbox(
+            box, height=80, fg_color=T.FIELD, border_color=T.LINE, border_width=1,
+            text_color=T.INK, font=ui_font(11), wrap="word", corner_radius=T.CORNER_SM,
+        )
+        prompt.pack(fill="x", pady=(3, 0))
+        prompt.insert("1.0", prompt_val if prompt_val.strip() else default_prompt)
+        # word-wrap never needs the horizontal bar CTkTextbox auto-packs, and that
+        # 10px misaligns the two prompt boxes. CTk schedules its own
+        # _check_if_scrollbars_needed 50ms after __init__ (and re-runs it on every
+        # insert), so hiding immediately gets undone — hide AFTER that timer fires.
+        def _no_h_scroll(pb=prompt) -> None:
+            try:
+                pb._hide_x_scrollbar = True
+                pb._create_grid_for_text_and_scrollbars(re_grid_x_scrollbar=True)
+            except Exception:  # noqa: BLE001
+                pass
+
+        try:
+            prompt.after(80, _no_h_scroll)
+        except Exception:  # noqa: BLE001
+            _no_h_scroll()
+
+        def save(_e=None) -> None:
+            t = title.get().strip() or default_title
+            praw = prompt.get("1.0", "end-1c").strip()
+            cfg.update(**{
+                f"ai_fn{n}_title": t,
+                # blank or untouched-default stores as "" → built-in stays the source of truth
+                f"ai_fn{n}_prompt": "" if (not praw or praw == default_prompt.strip()) else praw,
+            })
+            self._status.configure(text=f"ИИ · кнопка {n} сохранена")
+
+        title.bind("<FocusOut>", save)
+        prompt.bind("<FocusOut>", save)
+        return title, prompt
 
     def _current_ai_provider(self) -> str:
         return self._ai_provider_inv.get(self._ai_provider.get(), "gateway")

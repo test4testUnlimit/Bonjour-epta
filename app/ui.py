@@ -601,13 +601,21 @@ class TranslatorApp(ctk.CTk):
 
         # a floor, not the final size: CTkButton never renders narrower than its
         # own label plus padding, so the group ends up label-driven either way
-        self._btn_polish = self._ai_btn("причесать", self.polish_now, 64)
+        self._btn_polish = self._ai_btn(self._ai_title(1), self.polish_now, 64)
         self._btn_polish.pack(side="left", padx=(2, 0), pady=pad)
-        self._btn_explain = self._ai_btn("объясни", self.explain_now, 54)
+        self._btn_explain = self._ai_btn(self._ai_title(2), self.explain_now, 54)
         self._btn_explain.pack(side="left", padx=(2, 5), pady=pad)
 
         self._sync_ai_group()
         return self._ai_group
+
+    AI_TITLE_MAX = 14  # clamp so a long/empty label never inflates the toolbar
+
+    def _ai_title(self, n: int) -> str:
+        t = (assistant.fn1_title() if n == 1 else assistant.fn2_title()).strip()
+        if not t:
+            t = assistant.DEFAULT_FN1_TITLE if n == 1 else assistant.DEFAULT_FN2_TITLE
+        return t if len(t) <= self.AI_TITLE_MAX else t[: self.AI_TITLE_MAX - 1] + "…"
 
     def _ai_btn(self, text: str, cmd: Callable, w: int) -> ctk.CTkButton:
         return ctk.CTkButton(
@@ -667,8 +675,8 @@ class TranslatorApp(ctk.CTk):
             self._btn_token.configure(
                 state="normal" if self._ai_configured() else "disabled"
             )
-            self._btn_polish.configure(state=state)
-            self._btn_explain.configure(state=state)
+            self._btn_polish.configure(state=state, text=self._ai_title(1))
+            self._btn_explain.configure(state=state, text=self._ai_title(2))
             # inert group sinks into the toolbar; live one lifts off it
             self._ai_group.configure(fg_color=T.SURFACE if usable else T.BG)
         except Exception:  # noqa: BLE001
@@ -950,7 +958,7 @@ class TranslatorApp(ctk.CTk):
 
     def set_source_text(self, text: str) -> None:
         from . import logutil
-        from .selection import sanitize_selection
+        from .selection import normalize_newlines, sanitize_selection
 
         text = sanitize_selection(text)
         log = logutil.get()
@@ -1024,7 +1032,7 @@ class TranslatorApp(ctk.CTk):
             return self._src_box.get("1.0", "end-1c")
 
     def set_target_text(self, text: str) -> None:
-        text = text or ""
+        text = normalize_newlines(text)
         inner = self._inner(self._tgt_box)
         try:
             inner.configure(state="normal")
@@ -1480,7 +1488,7 @@ class TranslatorApp(ctk.CTk):
         import threading
 
         from . import logutil
-        from .selection import sanitize_selection
+        from .selection import normalize_newlines, sanitize_selection
 
         text = sanitize_selection(text)
         log = logutil.get()

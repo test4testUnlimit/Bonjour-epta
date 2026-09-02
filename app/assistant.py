@@ -4,6 +4,9 @@ Prompts live here so the transport stays dumb. Every answer comes back as JSON �
 markdown is a lot harder to parse reliably than a three-key object, and the
 model is happy to oblige. `_parse_json` still forgives a fenced block or a
 sentence of preamble, because sometimes it isn't.
+
+The two toolbar buttons are user-configurable: settings.ai_fn{1,2}_{title,prompt}
+override the built-in POLISH/EXPLAIN below. Empty prompt = the built-in default.
 """
 
 from __future__ import annotations
@@ -59,6 +62,38 @@ ACRONYM_PROMPT = (
     "automation, logistics, it, safety, hr, corp.\n" + _COMMON
 )
 
+# Built-in button labels — used when the user has not renamed a function.
+DEFAULT_FN1_TITLE = "причесать"
+DEFAULT_FN2_TITLE = "объясни"
+
+
+def _settings_get(attr: str, default: str = "") -> str:
+    """Read one AI-function field from settings; never raises (import order)."""
+    try:
+        from . import settings as cfg
+
+        return str(getattr(cfg.get(), attr, default) or "").strip()
+    except Exception:  # noqa: BLE001
+        return default
+
+
+def fn1_title() -> str:
+    return _settings_get("ai_fn1_title", DEFAULT_FN1_TITLE) or DEFAULT_FN1_TITLE
+
+
+def fn2_title() -> str:
+    return _settings_get("ai_fn2_title", DEFAULT_FN2_TITLE) or DEFAULT_FN2_TITLE
+
+
+def fn1_prompt() -> str:
+    """Button 1 system prompt: the user's override, else the built-in polish."""
+    return _settings_get("ai_fn1_prompt") or POLISH_PROMPT
+
+
+def fn2_prompt() -> str:
+    """Button 2 system prompt: the user's override, else the built-in explain."""
+    return _settings_get("ai_fn2_prompt") or EXPLAIN_PROMPT
+
 
 @dataclass
 class Polished:
@@ -77,7 +112,7 @@ class Candidate:
     confidence: str = ""
 
 
-_FENCE = re.compile(r"```(?:json)?\s*(.+?)```", re.S | re.I)
+_FENCE = re.compile(r"", re.S | re.I)
 
 
 def _parse_json(text: str):
@@ -115,7 +150,7 @@ def _clip(text: str) -> str:
 
 def polish(text: str) -> Polished:
     """Rough draft → professional English + Russian back-translation + why."""
-    reply = ai_client.ask(_clip(text), system=POLISH_PROMPT)
+    reply = ai_client.ask(_clip(text), system=fn1_prompt())
     data = _parse_json(reply)
     if isinstance(data, dict) and str(data.get("english") or "").strip():
         return Polished(
@@ -132,7 +167,7 @@ def polish(text: str) -> Polished:
 
 def explain_phrase(text: str) -> str:
     """What the phrase really means, in Russian."""
-    reply = ai_client.ask(_clip(text), system=EXPLAIN_PROMPT).strip()
+    reply = ai_client.ask(_clip(text), system=fn2_prompt()).strip()
     if not reply:
         raise ai_client.AiError("пустой ответ")
     return reply

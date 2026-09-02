@@ -21,6 +21,7 @@ from . import settings as cfg
 from . import theme as T
 from .app_icon import apply as apply_app_icon
 from . import translators as tr
+from .selection import normalize_newlines
 from .chip_styles import get_style
 from .screen import clamp_popup, max_popup_size_at
 
@@ -672,7 +673,7 @@ class ChivoblyaPopup:
                 self._arm_hide(15000)
                 return
 
-            self._translation = result.text or ""
+            self._translation = normalize_newlines(result.text)
             # header: the detected source language, not the word "translation"
             src_code = result.detected_source or cfg.get().source_lang or "auto"
             if getattr(self, "_lang_lbl", None):

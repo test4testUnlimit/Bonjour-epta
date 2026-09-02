@@ -389,11 +389,26 @@ def _is_marker(text: str | None) -> bool:
     return False
 
 
+def normalize_newlines(text: str | None) -> str:
+    """Collapse every newline flavour to "\n".
+
+    Sources disagree: RichEdit/native messages hand back a lone CR, UIA and
+    the clipboard give CRLF, Google gtx answers LF. Tk Text renders a line
+    break only for "\n" — a lone "\r" is drawn as nothing, so a multi-paragraph
+    selection visually collapses into one block in the translation pane.
+    Normalising here (the single entry point for all captured text) keeps the
+    source pane, the mini card and the translation itself paragraph-accurate.
+    """
+    if not text:
+        return ""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def sanitize_selection(text: str | None) -> str:
     """Strip + drop marker + peel a stray leading c (latin or U+0441), field bug #1."""
     if not text:
         return ""
-    t = text.strip("\x00").strip()
+    t = normalize_newlines(text).strip("\x00").strip()
     if not t or _is_marker(t):
         return ""
     first = t.splitlines()[0].strip() if t else ""
