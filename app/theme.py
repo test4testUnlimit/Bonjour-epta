@@ -88,6 +88,8 @@ _LIGHT = {
     "OK": "#1a7f4b",
     "WARN": "#b06f00",
     "ERR": "#b42318",
+    "OK_HOVER": "#14663a",
+    "ON_OK": "#ffffff",
     "TITLE_BG": "#ecece8",
     "TITLE_BTN_HOVER": "#e0e0da",
     "TITLE_CLOSE_HOVER": "#e81123",
@@ -128,6 +130,8 @@ _DARK = {
     "OK": "#3dba6e",
     "WARN": "#e0a63a",
     "ERR": "#e85a50",
+    "OK_HOVER": "#52d184",
+    "ON_OK": "#0a1f12",
     "TITLE_BG": "#222220",
     "TITLE_BTN_HOVER": "#32322e",
     "TITLE_CLOSE_HOVER": "#e81123",
@@ -168,6 +172,8 @@ CHIP_INK = _LIGHT["CHIP_INK"]
 OK = _LIGHT["OK"]
 WARN = _LIGHT["WARN"]
 ERR = _LIGHT["ERR"]
+OK_HOVER = _LIGHT["OK_HOVER"]
+ON_OK = _LIGHT["ON_OK"]
 TITLE_BG = _LIGHT["TITLE_BG"]
 TITLE_BTN_HOVER = _LIGHT["TITLE_BTN_HOVER"]
 TITLE_CLOSE_HOVER = _LIGHT["TITLE_CLOSE_HOVER"]

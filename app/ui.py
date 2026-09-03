@@ -245,9 +245,9 @@ class TranslatorApp(ctk.CTk):
             width=96,
             height=T.ROW_H,
             corner_radius=T.ROW_H // 2,
-            fg_color=T.ACCENT,
-            hover_color=T.ACCENT_HOVER,
-            text_color=T.ON_ACCENT,
+            fg_color=T.OK,
+            hover_color=T.OK_HOVER,
+            text_color=T.ON_OK,
             font=ui_font(13, "bold"),
             command=self.translate_now,
         )

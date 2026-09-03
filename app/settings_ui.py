@@ -554,8 +554,31 @@ class SettingsWindow(ctk.CTkToplevel):
         title.pack(side="left", fill="x", expand=True, padx=(6, 0))
         title.insert(0, title_val)
 
+        # Live preview of how the toolbar button will read. The prompt box used
+        # to be tall enough to show the whole default prompt, which pushed the
+        # second function and the chivoblya toggle off the tab on small screens.
+        # A compact box + this pill answers the only question the user actually
+        # has — "what will my button say" — without eating the layout.
+        preview = ctk.CTkButton(
+            row, text=title_val, width=110, height=T.CTRL_H,
+            corner_radius=T.CTRL_H // 2, fg_color=T.SURFACE, border_width=1,
+            border_color=T.LINE, hover_color=T.CHIP_HOVER, text_color=T.INK,
+            font=ui_font(11), state="disabled",
+        )
+        preview.pack(side="left", padx=(8, 0))
+
+        def _sync_preview(_e=None) -> None:
+            txt = title.get().strip() or default_title
+            try:
+                preview.configure(text=txt, state="normal")
+                preview.configure(state="disabled")
+            except Exception:  # noqa: BLE001
+                pass
+
+        title.bind("<KeyRelease>", _sync_preview)
+
         prompt = ctk.CTkTextbox(
-            box, height=80, fg_color=T.FIELD, border_color=T.LINE, border_width=1,
+            box, height=56, fg_color=T.FIELD, border_color=T.LINE, border_width=1,
             text_color=T.INK, font=ui_font(11), wrap="word", corner_radius=T.CORNER_SM,
         )
         prompt.pack(fill="x", pady=(3, 0))
