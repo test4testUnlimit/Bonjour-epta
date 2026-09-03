@@ -562,6 +562,11 @@ class TranslatorApp(ctk.CTk):
                 twin.tag_remove(spotlight.TAG, "1.0", "end")
                 return
             frag = me.get("sel.first", "sel.last").strip()
+            # char offsets of the selection inside the source pane + both full
+            # texts — the proportional fallback needs all three to map the span
+            src_whole = me.get("1.0", "end-1c")
+            sel_start = int(me.count("1.0", "sel.first", "chars")[0])
+            sel_end = int(me.count("1.0", "sel.last", "chars")[0])
         except Exception:  # noqa: BLE001
             return
         if not frag or not spotlight.words_only(frag):
@@ -579,29 +584,31 @@ class TranslatorApp(ctk.CTk):
         provider_id = self._provider.get()
 
         def work() -> None:
-            translated = spotlight.translate_fragment(frag, src_code, tgt_code, provider_id)
-            self.after(0, lambda: self._apply_spotlight(twin, translated, job))
+            cands = spotlight.candidates_for(frag, src_code, tgt_code, provider_id)
+            self.after(
+                0,
+                lambda: self._apply_spotlight(
+                    twin, cands, job, sel_start, sel_end, len(src_whole)
+                ),
+            )
 
         threading.Thread(target=work, daemon=True).start()
 
-    def _apply_spotlight(self, twin, translated: str, job: int) -> None:
+    def _apply_spotlight(self, twin, span, approximate: bool, job: int) -> None:
         if job != self._spot_job:
             return
         try:
             twin.tag_remove(spotlight.TAG, "1.0", "end")
-            if not translated:
+            if not span:
                 self._flash_foot("? не удалось сопоставить с переводом", False)
                 return
-            whole = twin.get("1.0", "end-1c")
-            hit = spotlight.find_fragment(whole, translated)
-            if not hit:
-                self._flash_foot("? перевод фрагмента не найден в тексте", False)
-                return
-            start, end = hit
+            start, end = span
             a = f"1.0+{start}c"
             b = f"1.0+{end}c"
             twin.tag_add(spotlight.TAG, a, b)
             twin.see(a)
+            if approximate:
+                self._flash_foot("≈ приблизительное место (движок перефразировал)", False)
         except Exception:  # noqa: BLE001
             logutil.exc("apply spotlight")
 
