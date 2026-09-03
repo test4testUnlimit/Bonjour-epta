@@ -552,6 +552,21 @@ class TranslatorApp(ctk.CTk):
                 self.after_cancel(self._spot_after)
             except Exception:  # noqa: BLE001
                 pass
+        # Drop the stale highlight NOW. Waiting for the new result to arrive
+        # (debounce + network) left the previous word lit for a visible beat,
+        # which read as the highlight being stuck. Both panes: the last hit may
+        # live in either one depending on which way the previous lookup went.
+        self._spot_job += 1  # invalidate any in-flight lookup
+        for w in (me, twin):
+            try:
+                w.tag_remove(spotlight.TAG, "1.0", "end")
+            except Exception:  # noqa: BLE001
+                pass
+        try:
+            if not me.tag_ranges("sel"):
+                return  # selection cleared — nothing to look up
+        except Exception:  # noqa: BLE001
+            pass
         self._spot_after = self.after(
             350, lambda: self._run_spotlight(me, twin, direction)
         )
@@ -613,15 +628,22 @@ class TranslatorApp(ctk.CTk):
             except Exception:  # noqa: BLE001
                 logutil.exc("spotlight align")
                 span, approx = None, False
-            self.after(0, lambda: self._apply_spotlight(twin, span, approx, job))
+            self.after(0, lambda: self._apply_spotlight(me, twin, span, approx, job))
 
         threading.Thread(target=work, daemon=True).start()
 
-    def _apply_spotlight(self, twin, span, approximate: bool, job: int) -> None:
+    def _apply_spotlight(self, me, twin, span, approximate: bool, job: int) -> None:
         if job != self._spot_job:
             return
         try:
             twin.tag_remove(spotlight.TAG, "1.0", "end")
+            # The answer may land after the user has already clicked the
+            # selection away; painting then is exactly the "stuck highlight".
+            try:
+                if not me.tag_ranges("sel"):
+                    return
+            except Exception:  # noqa: BLE001
+                pass
             if not span:
                 self._flash_foot("? не удалось сопоставить с переводом", False)
                 return
