@@ -7,6 +7,10 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>9.0</LangVersion>
     <AssemblyName>BonjourLauncher</AssemblyName>
+    <!-- Pinned: RootNamespace prefixes embedded resource names, so it
+         must match the namespace in the .cs files. Letting it default
+         to AssemblyName is how a rename broke ExtractEmbedded(). -->
+    <RootNamespace>BonjourLauncher</RootNamespace>
     <AssemblyTitle>BonjourLauncher</AssemblyTitle>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PlatformTarget>AnyCPU</PlatformTarget>

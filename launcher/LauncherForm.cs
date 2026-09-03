@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
 
-namespace BonjurLauncher
+namespace BonjourLauncher
 {
     internal sealed class LauncherForm : Form
     {
         private static readonly string AppVersion = ReadAssemblyVersion();
-        private const string ResourceName   = "BonjurLauncher.app.zip";
+        private const string ResourceName   = "BonjourLauncher.app.zip";
         private const string AppEntry       = "main.py";
         private const string AppName        = "bonjour epta";
 

@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
 
-namespace BonjurLauncher
+namespace BonjourLauncher
 {
     internal static class Program
     {
