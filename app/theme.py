@@ -75,6 +75,8 @@ _LIGHT = {
     "ACCENT": "#111111",
     "ACCENT_HOVER": "#2c2c2c",
     "ON_ACCENT": "#ffffff",
+    "ON_ERR": "#ffffff",
+    "ERR_HOVER": "#8f1d13",
     "CHIP_BG": "#f7f7f4",
     "CHIP_BORDER": "#d8d8d0",
     "CHIP_HOVER": "#ecece6",
@@ -115,6 +117,8 @@ _DARK = {
     "ACCENT": "#e8e8e2",
     "ACCENT_HOVER": "#ffffff",
     "ON_ACCENT": "#141414",
+    "ON_ERR": "#1c0b09",
+    "ERR_HOVER": "#f27b72",
     "CHIP_BG": "#2c2c28",
     "CHIP_BORDER": "#4a4a44",
     "CHIP_HOVER": "#363632",
@@ -153,6 +157,8 @@ INK_FAINT = _LIGHT["INK_FAINT"]
 ACCENT = _LIGHT["ACCENT"]
 ACCENT_HOVER = _LIGHT["ACCENT_HOVER"]
 ON_ACCENT = _LIGHT["ON_ACCENT"]
+ON_ERR = _LIGHT["ON_ERR"]
+ERR_HOVER = _LIGHT["ERR_HOVER"]
 CHIP_BG = _LIGHT["CHIP_BG"]
 CHIP_BORDER = _LIGHT["CHIP_BORDER"]
 CHIP_HOVER = _LIGHT["CHIP_HOVER"]

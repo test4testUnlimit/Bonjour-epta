@@ -226,7 +226,7 @@ class TranslatorApp(ctk.CTk):
         # — clear (7) hugs the west edge of its column, mirroring
         #   translate on the other side: both sit one TOOL_GAP off the ⇄
         #   (the gap is the ⇄ cell's own padx), whatever the window width —
-        self._ghost(east, "очистить", self.clear_all, w=80).pack(
+        self._ghost(east, "очистить", self.clear_all, w=80, danger=True).pack(
             side="left", pady=vpad,
         )
 
@@ -1030,7 +1030,26 @@ class TranslatorApp(ctk.CTk):
         except Exception:  # noqa: BLE001
             pass
 
-    def _ghost(self, parent, text: str, cmd: Callable, w: int = 88) -> ctk.CTkButton:
+    def _ghost(
+        self, parent, text: str, cmd: Callable, w: int = 88, danger: bool = False
+    ) -> ctk.CTkButton:
+        # danger=True → solid red "this wipes things" button. The default ghost
+        # look (white fill, faint red text) read as disabled, so the clear
+        # button was easy to miss.
+        if danger:
+            return ctk.CTkButton(
+                parent,
+                text=text,
+                width=w,
+                height=T.ROW_H,
+                corner_radius=T.ROW_H // 2,
+                fg_color=T.ERR,
+                border_width=0,
+                hover_color=T.ERR_HOVER,
+                text_color=T.ON_ERR,
+                font=ui_font(12, "bold"),
+                command=cmd,
+            )
         return ctk.CTkButton(
             parent,
             text=text,
