@@ -527,8 +527,11 @@ class TranslatorApp(ctk.CTk):
                 (tgt, src, "tgt2src"),
             ):
                 w.tag_config(
-                    spotlight.TAG, background=T.CHIP_HOVER, foreground=T.INK
+                    spotlight.TAG, background=T.SPOT_BG, foreground=T.SPOT_INK
                 )
+                # `sel` already exists on the widget, so our tag sits below it
+                # and the selection colour wins wherever they overlap. Raise it.
+                w.tag_raise(spotlight.TAG)
                 w.bind(
                     "<<Selection>>",
                     lambda e, me=w, twin=other, d=direction: self._on_spot_select(me, twin, d),
@@ -553,6 +556,22 @@ class TranslatorApp(ctk.CTk):
             350, lambda: self._run_spotlight(me, twin, direction)
         )
 
+    @staticmethod
+    def _char_offset(widget, index: str) -> int:
+        """Char distance from 1.0 to index, tolerant of Tk's return shape."""
+        try:
+            raw = widget.count("1.0", index, "chars")
+        except Exception:  # noqa: BLE001
+            return 0
+        if raw is None:
+            return 0
+        if isinstance(raw, (list, tuple)):
+            raw = raw[0] if raw else 0
+        try:
+            return int(raw)
+        except Exception:  # noqa: BLE001
+            return 0
+
     def _run_spotlight(self, me, twin, direction: str) -> None:
         self._spot_after = None
         self._spot_job += 1
@@ -562,14 +581,16 @@ class TranslatorApp(ctk.CTk):
                 twin.tag_remove(spotlight.TAG, "1.0", "end")
                 return
             frag = me.get("sel.first", "sel.last").strip()
-            # char offsets of the selection inside the source pane + both full
-            # texts — the proportional fallback needs all three to map the span
             src_whole = me.get("1.0", "end-1c")
-            sel_start = int(me.count("1.0", "sel.first", "chars")[0])
-            sel_end = int(me.count("1.0", "sel.last", "chars")[0])
+            # Tk returns a 1-tuple here on most builds but a bare int on some;
+            # normalising both keeps spotlight from dying silently.
+            sel_start = self._char_offset(me, "sel.first")
+            sel_end = self._char_offset(me, "sel.last")
+            tgt_whole = twin.get("1.0", "end-1c")
         except Exception:  # noqa: BLE001
+            logutil.exc("run spotlight read")
             return
-        if not frag or not spotlight.words_only(frag):
+        if not frag or not spotlight.words_only(frag) or not tgt_whole.strip():
             twin.tag_remove(spotlight.TAG, "1.0", "end")
             return
 
@@ -584,13 +605,15 @@ class TranslatorApp(ctk.CTk):
         provider_id = self._provider.get()
 
         def work() -> None:
-            cands = spotlight.candidates_for(frag, src_code, tgt_code, provider_id)
-            self.after(
-                0,
-                lambda: self._apply_spotlight(
-                    twin, cands, job, sel_start, sel_end, len(src_whole)
-                ),
-            )
+            try:
+                span, approx = spotlight.align(
+                    sel_start, sel_end, src_whole, tgt_whole,
+                    src_code, tgt_code, provider_id,
+                )
+            except Exception:  # noqa: BLE001
+                logutil.exc("spotlight align")
+                span, approx = None, False
+            self.after(0, lambda: self._apply_spotlight(twin, span, approx, job))
 
         threading.Thread(target=work, daemon=True).start()
 

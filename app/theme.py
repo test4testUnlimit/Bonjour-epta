@@ -78,6 +78,10 @@ _LIGHT = {
     "CHIP_BG": "#f7f7f4",
     "CHIP_BORDER": "#d8d8d0",
     "CHIP_HOVER": "#ecece6",
+    # spotlight: the twin-pane match must be obvious. CHIP_HOVER is only a
+    # hair off the field colour, so the highlight was invisible in practice.
+    "SPOT_BG": "#ffe27a",
+    "SPOT_INK": "#141414",
     "CHIP_INK": "#1a1a1a",
     "OK": "#1a7f4b",
     "WARN": "#b06f00",
@@ -114,6 +118,8 @@ _DARK = {
     "CHIP_BG": "#2c2c28",
     "CHIP_BORDER": "#4a4a44",
     "CHIP_HOVER": "#363632",
+    "SPOT_BG": "#7a5d18",
+    "SPOT_INK": "#fdf6e3",
     "CHIP_INK": "#f2f2ef",
     "OK": "#3dba6e",
     "WARN": "#e0a63a",
@@ -150,6 +156,8 @@ ON_ACCENT = _LIGHT["ON_ACCENT"]
 CHIP_BG = _LIGHT["CHIP_BG"]
 CHIP_BORDER = _LIGHT["CHIP_BORDER"]
 CHIP_HOVER = _LIGHT["CHIP_HOVER"]
+SPOT_BG = _LIGHT["SPOT_BG"]
+SPOT_INK = _LIGHT["SPOT_INK"]
 CHIP_INK = _LIGHT["CHIP_INK"]
 OK = _LIGHT["OK"]
 WARN = _LIGHT["WARN"]
