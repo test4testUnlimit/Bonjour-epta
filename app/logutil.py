@@ -1,6 +1,6 @@
 """File + stderr logging for copy-paste debug.
 
-Log file: ~/.bonjur-epta/bonjur.log  (also ./bonjur.log in project if writable)
+Log file: ~/.bonjour-epta/bonjour.log  (also ./bonjour.log in project if writable)
 
 Timestamps include the date so BUGMARK lookback across sleep/midnight works.
 Rotate when a file exceeds ~8 MiB (keeps *.log.prev).
@@ -53,16 +53,16 @@ def setup() -> logging.Logger:
     log.addHandler(sh)
 
     paths: list[Path] = []
-    home_dir = Path.home() / ".bonjur-epta"
+    home_dir = Path.home() / ".bonjour-epta"
     try:
         home_dir.mkdir(parents=True, exist_ok=True)
-        paths.append(home_dir / "bonjur.log")
+        paths.append(home_dir / "bonjour.log")
     except Exception:
         pass
     # project-local fallback (easy to find)
     try:
         root = Path(__file__).resolve().parent.parent
-        paths.append(root / "bonjur.log")
+        paths.append(root / "bonjour.log")
     except Exception:
         pass
 

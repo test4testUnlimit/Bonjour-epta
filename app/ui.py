@@ -850,7 +850,7 @@ class TranslatorApp(ctk.CTk):
         )
 
     # ── AI group ─────────────────────────────────────────────────────────
-    # One fenced-off block so it can grey out as a unit: without ~/.bonjur-epta/
+    # One fenced-off block so it can grey out as a unit: without ~/.bonjour-epta/
     # ai.json or without a live token there is nothing here that can work.
 
     AI_INNER_H = 22

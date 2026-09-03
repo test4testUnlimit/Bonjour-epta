@@ -537,7 +537,7 @@ def get_selected_text(
         )
     finally:
         _CLIP_LOCK.release()
-    # Auto reports OUTSIDE the clip lock — reading bonjur.log under the lock
+    # Auto reports OUTSIDE the clip lock — reading bonjour.log under the lock
     # froze the session (pythonw Responding=False) in the 2.2.0 field run.
     for item in deferred:
         try:

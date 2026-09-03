@@ -22,7 +22,7 @@ _installed = False
 
 
 def _bundle_path() -> Path:
-    base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "bonjur-epta"
+    base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "bonjour-epta"
     return base / "ca-bundle.pem"
 
 

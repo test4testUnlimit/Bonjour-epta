@@ -11,7 +11,7 @@ The Fernet key is derived with PBKDF2-HMAC-SHA256 from a stable per-machine
 seed (on Windows: HKLM\\...\\Cryptography\\MachineGuid), so the ciphertext is
 useless on any other machine and the app never asks for a passphrase.
 
-The ciphertext lives in ~/.bonjur-epta/ai_secrets.json — the whole folder is
+The ciphertext lives in ~/.bonjour-epta/ai_secrets.json — the whole folder is
 outside the repo and ai.json is already git-ignored, so the key cannot leak
 into git or a release. It is decrypted into memory only for the duration of a
 request and never written to logs.
@@ -29,8 +29,11 @@ from pathlib import Path
 
 from . import logutil
 
-SECRETS_PATH = Path.home() / ".bonjur-epta" / "ai_secrets.json"
+SECRETS_PATH = Path.home() / ".bonjour-epta" / "ai_secrets.json"
 _PBKDF2_ROUNDS = 200_000
+# DO NOT EDIT: this salt is mixed into the KDF that decrypts already-stored
+# secrets. It keeps the historical spelling on purpose — changing a single
+# byte here makes every saved Gemini key undecryptable.
 _SALT = b"bonjur-epta/ai-secrets/v1"  # not a secret — just domain separation
 
 _lock = threading.Lock()

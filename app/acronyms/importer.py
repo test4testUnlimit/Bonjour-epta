@@ -41,7 +41,7 @@ __all__ = [
 #
 # The shipped list is employer-agnostic on purpose. Your own site names,
 # product codenames, internal systems and line ids go in
-# ~/.bonjur-epta/internal_markers.json:
+# ~/.bonjour-epta/internal_markers.json:
 #
 #     [["site", "\\byour ?plant\\b|\\bYP\\d\\b"],
 #      ["codename", "\\bproject-?one\\b|\\bproject-?two\\b"]]

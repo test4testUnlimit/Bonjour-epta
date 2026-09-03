@@ -19,9 +19,9 @@ param(
     [string]$Bump,
     [switch]$Publish,
     [string[]]$Notes = @(),
-    # NOT origin: origin points at Bonjur-epta-private, which holds the old
+    # NOT origin: origin points at Bonjour-epta-private, which holds the old
     # history and must never receive a public release.
-    [string]$ReleaseRepo = "test4testUnlimit/Bonjur-epta"
+    [string]$ReleaseRepo = "test4testUnlimit/Bonjour-epta"
 )
 
 $ErrorActionPreference = "Stop"
@@ -129,7 +129,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory($staging, $payloadZip)
 
 # ── 3. dotnet publish launcher ────────────────────────────────────
-$launcherProj = Join-Path $root "launcher\BonjurLauncher.csproj"
+$launcherProj = Join-Path $root "launcher\BonjourLauncher.csproj"
 $publishDir = Join-Path $root "build\launcher-publish"
 if (Test-Path $publishDir) { Remove-Item $publishDir -Recurse -Force }
 Write-Host "dotnet publish $launcherProj"
@@ -138,16 +138,16 @@ dotnet publish $launcherProj -c Release -o $publishDir
 # ── 4. stage release ──────────────────────────────────────────────
 $releaseDir = Join-Path $root "release"
 if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null }
-$builtExe = Join-Path $publishDir "BonjurLauncher.exe"
+$builtExe = Join-Path $publishDir "BonjourLauncher.exe"
 if (-not (Test-Path $builtExe)) { throw "Build failed: $builtExe not found" }
 
 $ver = (Get-Content (Join-Path $root "VERSION") -First 1).Trim()
 # The published asset has NO version in its name — same as OpenWind and MyDash.
 # That is what makes /releases/latest/download/BonjurLauncher.exe a permanent
 # link. The versioned copy stays local, as an archive of what was shipped.
-$outName = "BonjurLauncher.exe"
+$outName = "BonjourLauncher.exe"
 $outPath = Join-Path $releaseDir $outName
-$verCopy = Join-Path $releaseDir "BonjurLauncher_$ver.exe"
+$verCopy = Join-Path $releaseDir "BonjourLauncher_$ver.exe"
 Copy-Item $builtExe $outPath -Force
 Copy-Item $builtExe $verCopy -Force
 Get-ChildItem $releaseDir -Filter "bonjour-epta-setup.exe" -ErrorAction SilentlyContinue |

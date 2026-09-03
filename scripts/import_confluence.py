@@ -44,7 +44,7 @@ def main() -> int:
     ap.add_argument("--pack", default="local", help="pack id for internal rows (default: local)")
     ap.add_argument("--title", default="", help="human title of the pack")
     ap.add_argument("--priority", type=int, default=30)
-    ap.add_argument("--out", type=Path, default=None, help="default: ~/.bonjur-epta/packs/<pack>.json")
+    ap.add_argument("--out", type=Path, default=None, help="default: ~/.bonjour-epta/packs/<pack>.json")
     ap.add_argument("--public-out", type=Path, default=None,
                     help="review file for public candidates (default: next to --out, _<pack>_public.json)")
     ap.add_argument("--overwrite", action="store_true", help="drop existing ru/where instead of keeping them")

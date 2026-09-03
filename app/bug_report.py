@@ -1,7 +1,7 @@
 """User-triggered bug marks — the tray's report-a-bug item.
 
-Writes a greppable BUGMARK into bonjur.log and a JSON sidecar under
-~/.bonjur-epta/bugs/ so the next session can pull context around that time.
+Writes a greppable BUGMARK into bonjour.log and a JSON sidecar under
+~/.bonjour-epta/bugs/ so the next session can pull context around that time.
 """
 
 from __future__ import annotations
@@ -201,7 +201,7 @@ class BugNoteDialog(ctk.CTkToplevel):
 
 
 def _bugs_dir() -> Path:
-    d = Path.home() / ".bonjur-epta" / "bugs"
+    d = Path.home() / ".bonjour-epta" / "bugs"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -220,9 +220,9 @@ def _write_json(rid: str, payload: dict) -> Path | None:
 
 
 def _log_paths() -> list[Path]:
-    paths = [Path.home() / ".bonjur-epta" / "bonjur.log"]
+    paths = [Path.home() / ".bonjour-epta" / "bonjour.log"]
     try:
-        paths.append(Path(__file__).resolve().parent.parent / "bonjur.log")
+        paths.append(Path(__file__).resolve().parent.parent / "bonjour.log")
     except Exception:  # noqa: BLE001
         pass
     return paths

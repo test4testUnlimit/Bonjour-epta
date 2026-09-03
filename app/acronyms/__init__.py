@@ -4,7 +4,7 @@
     acronyms.quick_scan("Send the PPAP by EOW")   # → 2
     acronyms.explain(text).hits                   # → ranked meanings
 
-Packs live in app/acronyms/data (public, in git) and ~/.bonjur-epta/packs
+Packs live in app/acronyms/data (public, in git) and ~/.bonjour-epta/packs
 (site-specific, never committed). Nothing here touches the network or Tk.
 """
 

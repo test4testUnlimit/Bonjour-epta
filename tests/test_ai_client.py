@@ -10,7 +10,7 @@ from app import ai_client
 @pytest.fixture(autouse=True)
 def _gateway_backend():
     """These tests exercise the corporate-gateway path; never read the real
-    ~/.bonjur-epta/settings.json (a leftover ai_provider=gemini breaks them)."""
+    ~/.bonjour-epta/settings.json (a leftover ai_provider=gemini breaks them)."""
     with patch.object(ai_client, "_provider", return_value="gateway"):
         yield
 

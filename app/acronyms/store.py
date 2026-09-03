@@ -2,7 +2,7 @@
 
 Two pack locations:
   * repo   — app/acronyms/data/*.json   (public industry terms, ships with the app)
-  * local  — ~/.bonjur-epta/packs/*.json (site-specific, never committed)
+  * local  — ~/.bonjour-epta/packs/*.json (site-specific, never committed)
 
 Pack file is either {"id","title","priority","entries":[...]} or a bare list.
 """
@@ -19,7 +19,7 @@ from pathlib import Path
 log = logging.getLogger("bonjur.acronyms")
 
 BUILTIN_DIR = Path(__file__).resolve().parent / "data"
-LOCAL_DIR = Path.home() / ".bonjur-epta" / "packs"
+LOCAL_DIR = Path.home() / ".bonjour-epta" / "packs"
 
 # pack id → default priority when the file does not declare one
 _DEFAULT_PRIORITY = {"user": 40, "local": 30}

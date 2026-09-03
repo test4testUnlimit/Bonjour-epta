@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bonjur-epta — Crow-style: hotkey → grab selection → open window with text.
+"""Bonjour epta — Crow-style: hotkey → grab selection → open window with text.
 
 Crow default: Ctrl+Alt+E translates selection (no floating chip required).
 We keep the optional chivoblya chip; a click uses cached text (no second Ctrl+C).
@@ -54,6 +54,15 @@ def main() -> int:
         # Second copy at login → quiet exit. Manual second launch → also exit
         # (tray already owns the session).
         return 0
+
+    # Before anything reads or creates the config dir: carry data over from the
+    # old misspelled ~/.bonjour-epta. logutil.setup() below would otherwise make
+    # the new folder first and migration would find a destination that already
+    # exists. Never fatal — see app/migrate.py.
+    from app import migrate
+
+    if migrate.run():
+        print("migrated settings to ~/.bonjour-epta", file=sys.stderr)
 
     dpi_mode = dpi.enable()
     from app.app_icon import set_app_user_model_id
@@ -324,7 +333,7 @@ def main() -> int:
 
         from pathlib import Path
 
-        log_path = Path.home() / ".bonjur-epta" / "bonjur.log"
+        log_path = Path.home() / ".bonjour-epta" / "bonjour.log"
         log.info("hooks ready %s log=%s", " · ".join(status_bits), log_path)
         log.info(
             "Crow usage: select text → press hotkey (now %s) → window fills. "

@@ -1,4 +1,4 @@
-"""Auto-update from the PUBLIC Bonjur-epta releases feed.
+"""Auto-update from the PUBLIC Bonjour-epta releases feed.
 
 Same shape as OpenWind and MyDash: a `latest.json` asset attached to the newest
 non-prerelease, fetched anonymously. No access token ever sits next to a shipped
@@ -21,10 +21,10 @@ from pathlib import Path
 from . import logutil
 
 FEED_URL = (
-    "https://github.com/test4testUnlimit/Bonjur-epta"
+    "https://github.com/test4testUnlimit/Bonjour-epta"
     "/releases/latest/download/latest.json"
 )
-RELEASES_PAGE = "https://github.com/test4testUnlimit/Bonjur-epta/releases/latest"
+RELEASES_PAGE = "https://github.com/test4testUnlimit/Bonjour-epta/releases/latest"
 
 # Outcomes. A manifest we cannot parse is "cannot tell", never "up to date":
 # silently doing nothing on a broken feed is how an app stops updating forever.
@@ -33,8 +33,12 @@ UP_TO_DATE = "current"
 DISMISSED = "dismissed"
 BAD_MANIFEST = "bad"
 
-_LAUNCHER_NAME = "BonjurLauncher.exe"
-_LAUNCHER_GLOB = "BonjurLauncher*.exe"
+_LAUNCHER_NAME = "BonjourLauncher.exe"
+_LEGACY_LAUNCHER_NAME = "BonjurLauncher.exe"  # pre-rename installs
+# Both spellings: installs from before the rename still hold a
+# BonjurLauncher*.exe, and leaving one behind is a loaded gun — clicking it
+# reinstalls its own embedded payload, i.e. a silent downgrade.
+_LAUNCHER_GLOBS = ("BonjourLauncher*.exe", "BonjurLauncher*.exe")
 
 
 # ── pure logic (unit-tested) ──────────────────────────────────────────
@@ -157,14 +161,20 @@ def launcher_path() -> Path | None:
     BonjurLauncher.exe. The unversioned one wins.
     """
     root = install_dir()
-    plain = root / _LAUNCHER_NAME
-    if plain.is_file():
-        return plain
-    try:
-        hits = sorted(root.glob(_LAUNCHER_GLOB))
-    except OSError:
-        return None
-    return hits[-1] if hits else None
+    # An unversioned launcher always wins, in either spelling: releases up to
+    # 3.1.4 carried the version in the name, and picking one of those would
+    # reinstall its embedded payload — a silent downgrade.
+    for name in (_LAUNCHER_NAME, _LEGACY_LAUNCHER_NAME):
+        plain = root / name
+        if plain.is_file():
+            return plain
+    hits: list[Path] = []
+    for pattern in _LAUNCHER_GLOBS:
+        try:
+            hits.extend(root.glob(pattern))
+        except OSError:
+            continue
+    return sorted(hits)[-1] if hits else None
 
 
 def fetch_manifest(url: str = FEED_URL, timeout: float = 12.0) -> dict | None:
@@ -275,13 +285,14 @@ def apply(info: dict) -> bool:
     # Sweep every other launcher, not just the one we happened to find. Releases
     # up to 3.1.4 were named per version, and a leftover one is a loaded gun:
     # clicking it reinstalls its own embedded payload, i.e. a silent downgrade.
-    for stale in target_dir.glob(_LAUNCHER_GLOB):
-        if stale.name == new_path.name:
-            continue
-        try:
-            stale.unlink()
-        except OSError:
-            log.info("could not remove old launcher %s", stale)
+    for pattern in _LAUNCHER_GLOBS:
+        for stale in target_dir.glob(pattern):
+            if stale.name == new_path.name:
+                continue
+            try:
+                stale.unlink()
+            except OSError:
+                log.info("could not remove old launcher %s", stale)
 
     from .restart import schedule_run
 

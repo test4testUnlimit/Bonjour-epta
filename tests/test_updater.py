@@ -205,6 +205,6 @@ def test_feed_is_anonymous_and_public():
     assert "Authorization" not in src
     assert "api.github.com" not in src
     assert "gho_" not in src and "ghp_" not in src
-    assert up.FEED_URL.startswith("https://github.com/test4testUnlimit/Bonjur-epta/")
+    assert up.FEED_URL.startswith("https://github.com/test4testUnlimit/Bonjour-epta/")
     # the private repo holds the poisoned history — never point a client at it
     assert "Bonjur-epta-private" not in src

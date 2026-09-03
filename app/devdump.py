@@ -14,7 +14,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-DUMP_PATH = Path.home() / ".bonjur-epta" / f"ui-dump-{time.strftime('%Y%m%d-%H%M%S')}.txt"
+DUMP_PATH = Path.home() / ".bonjour-epta" / f"ui-dump-{time.strftime('%Y%m%d-%H%M%S')}.txt"
 
 
 def _text_of(w) -> str:
@@ -151,7 +151,7 @@ def dump_all(app, path: Path | None = None) -> Path:
 
         info = {
             "version": "X.Y.Z",
-            "url": "https://example/BonjurLauncher.exe",
+            "url": "https://example/BonjourLauncher.exe",
             "notes": "- пример строки заметок",
             "date": "2026-01-01",
         }

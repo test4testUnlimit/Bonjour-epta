@@ -1,4 +1,4 @@
-"""Bonjur-epta — desktop online translator for selected text."""
+"""Bonjour epta — desktop online translator for selected text."""
 
 from pathlib import Path
 

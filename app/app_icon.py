@@ -54,7 +54,7 @@ def find_icon() -> Path | None:
 
 
 def _cache_dir() -> Path:
-    base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "bonjur-epta"
+    base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "bonjour-epta"
     base.mkdir(parents=True, exist_ok=True)
     return base
 

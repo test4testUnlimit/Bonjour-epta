@@ -112,7 +112,12 @@ class Candidate:
     confidence: str = ""
 
 
-_FENCE = re.compile(r"", re.S | re.I)
+# A fenced markdown block, language tag optional, contents in group 1.
+# \x60 is the backtick: writing three of them literally here has a habit of
+# getting mangled by whatever edits this file, and an empty pattern made
+# _slices() raise IndexError on m.group(1) for EVERY reply — the parser was
+# dead in all cases, not just fenced ones.
+_FENCE = re.compile(r"\x60{3}(?:[a-zA-Z]+)?[ \t]*\n(.*?)\x60{3}", re.S)
 
 
 def _parse_json(text: str):

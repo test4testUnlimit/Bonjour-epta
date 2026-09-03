@@ -6,8 +6,8 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>9.0</LangVersion>
-    <AssemblyName>BonjurLauncher</AssemblyName>
-    <AssemblyTitle>BonjurLauncher</AssemblyTitle>
+    <AssemblyName>BonjourLauncher</AssemblyName>
+    <AssemblyTitle>BonjourLauncher</AssemblyTitle>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <!-- Version comes from repo-root VERSION via Directory.Build.props -->

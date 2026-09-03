@@ -10,7 +10,7 @@ from pathlib import Path
 from . import translators as tr
 from .win_hotkeys import HotkeySpec, sanitize_hotkey
 
-CONFIG_DIR = Path.home() / ".bonjur-epta"
+CONFIG_DIR = Path.home() / ".bonjour-epta"
 CONFIG_PATH = CONFIG_DIR / "settings.json"
 
 # AI backends. "gateway" = the Bottlerocket corporate gateway (JWT, in-memory).

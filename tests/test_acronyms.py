@@ -2,7 +2,7 @@
 
 Everything here runs without Tk and without the local packs — tests that touch
 the index point LOCAL_DIR at an empty temp dir so results are the same on a
-machine that has ~/.bonjur-epta/packs/local.json and one that does not.
+machine that has ~/.bonjour-epta/packs/local.json and one that does not.
 """
 
 from __future__ import annotations

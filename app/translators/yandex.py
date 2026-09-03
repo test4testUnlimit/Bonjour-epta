@@ -55,7 +55,7 @@ class YandexTranslator(Translator):
         }
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Bonjur-epta/0.1 (desktop; QOnlineTranslator-compat)",
+            "User-Agent": "Bonjour-epta/0.1 (desktop; QOnlineTranslator-compat)",
         }
         try:
             with netcerts.client(timeout=12.0, follow_redirects=True) as client:

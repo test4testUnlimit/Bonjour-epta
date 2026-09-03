@@ -1,4 +1,4 @@
-"""Where the AI gateway lives — read from ~/.bonjur-epta/ai.json, never from git.
+"""Where the AI gateway lives — read from ~/.bonjour-epta/ai.json, never from git.
 
 The host, tenant and client id are site-specific, so they stay on the machine
 like a local acronym pack does. `ai.example.json` in the repo shows the shape.
@@ -18,7 +18,7 @@ from pathlib import Path
 
 from . import logutil
 
-CONFIG_PATH = Path.home() / ".bonjur-epta" / "ai.json"
+CONFIG_PATH = Path.home() / ".bonjour-epta" / "ai.json"
 
 # Plain vendor slugs — nothing site-specific, so they can live in git. A gateway
 # that serves something else lists its own under "models" in ai.json.
