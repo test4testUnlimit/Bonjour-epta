@@ -232,6 +232,20 @@ class SettingsWindow(ctk.CTkToplevel):
         if s.close_to_tray:
             self._close_tray.select()
 
+        self._sync_scroll = ctk.CTkSwitch(
+            card, text="синхронная прокрутка обоих окон", **switch_kw
+        )
+        self._sync_scroll.pack(anchor="w", padx=inner_pad, pady=(0, 4))
+        if s.sync_scroll:
+            self._sync_scroll.select()
+
+        self._spotlight = ctk.CTkSwitch(
+            card, text="подсветка перевода выделенного фрагмента", **switch_kw
+        )
+        self._spotlight.pack(anchor="w", padx=inner_pad, pady=(0, 4))
+        if s.spotlight:
+            self._spotlight.select()
+
         trow = ctk.CTkFrame(card, fg_color="transparent")
         trow.pack(fill="x", padx=inner_pad, pady=(6, 2))
         ctk.CTkLabel(trow, text="тема", text_color=T.INK_FAINT, font=ui_font(11)).pack(anchor="w")
@@ -840,6 +854,8 @@ class SettingsWindow(ctk.CTkToplevel):
             chivoblya_enabled=bool(self._chivo.get()),
             autostart=want_autostart,
             close_to_tray=bool(self._close_tray.get()),
+            sync_scroll=bool(self._sync_scroll.get()),
+            spotlight=bool(self._spotlight.get()),
             show_examples=False,
             provider_id=pid,
             ui_theme=self._ui_theme,

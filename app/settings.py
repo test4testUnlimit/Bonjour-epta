@@ -30,6 +30,8 @@ class AppSettings:
     target_lang: str = "ru"
     show_examples: bool = False  # off by default; setting removed from UI
     chivoblya_enabled: bool = True
+    sync_scroll: bool = True  # scroll both text panes together
+    spotlight: bool = True  # selecting text in one pane highlights its translation
     autostart: bool = False
     close_to_tray: bool = True  # X / Alt+F4 → tray; the tray's exit always quits
     ui_theme: str = "light"  # light | dark | auto

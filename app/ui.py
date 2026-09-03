@@ -20,6 +20,7 @@ from .ai_panel import AiPanel
 from .restart import schedule_relaunch
 from .screen import center_on_screen
 from .selection import normalize_newlines
+from . import spotlight
 from .settings_ui import SettingsWindow
 from .theme import apply_appearance, apply_theme, mdl2_font, ui_font
 from .app_icon import apply as apply_app_icon
@@ -82,6 +83,8 @@ class TranslatorApp(ctk.CTk):
         self._shell.pack(fill="both", expand=True)
 
         self._build(self._shell)
+        self._setup_sync_scroll()
+        self._setup_spotlight()
         # Start dead-centre: a bare geometry() leaves the top-left to the
         # window manager, which lands the window up-and-left of centre.
         # Centre once the window is actually MAPPED, not on a fixed delay:
@@ -506,6 +509,168 @@ class TranslatorApp(ctk.CTk):
 
         return frame
 
+    def _setup_spotlight(self) -> None:
+        """Selecting text in one pane highlights its translation in the other.
+
+        Debounced <<Selection>> → translate the fragment off-thread → tag the
+        matching substring in the twin pane. If the engine's rendering of the
+        fragment is not found verbatim (a name, a number, a reworded phrase),
+        the footer shows a "?" so the user knows the mapping failed.
+        """
+        self._spot_job = 0
+        self._spot_after = None
+        try:
+            src = self._inner(self._src_box)
+            tgt = self._inner(self._tgt_box)
+            for w, other, direction in (
+                (src, tgt, "src2tgt"),
+                (tgt, src, "tgt2src"),
+            ):
+                w.tag_config(
+                    spotlight.TAG, background=T.CHIP_HOVER, foreground=T.INK
+                )
+                w.bind(
+                    "<<Selection>>",
+                    lambda e, me=w, twin=other, d=direction: self._on_spot_select(me, twin, d),
+                    add="+",
+                )
+        except Exception:  # noqa: BLE001
+            logutil.exc("setup spotlight")
+
+    def _on_spot_select(self, me, twin, direction: str) -> None:
+        try:
+            if not cfg.get().spotlight:
+                return
+        except Exception:  # noqa: BLE001
+            return
+        # debounce: dragging a selection fires <<Selection>> constantly
+        if self._spot_after is not None:
+            try:
+                self.after_cancel(self._spot_after)
+            except Exception:  # noqa: BLE001
+                pass
+        self._spot_after = self.after(
+            350, lambda: self._run_spotlight(me, twin, direction)
+        )
+
+    def _run_spotlight(self, me, twin, direction: str) -> None:
+        self._spot_after = None
+        self._spot_job += 1
+        job = self._spot_job
+        try:
+            if not me.tag_ranges("sel"):
+                twin.tag_remove(spotlight.TAG, "1.0", "end")
+                return
+            frag = me.get("sel.first", "sel.last").strip()
+        except Exception:  # noqa: BLE001
+            return
+        if not frag or not spotlight.words_only(frag):
+            twin.tag_remove(spotlight.TAG, "1.0", "end")
+            return
+
+        if direction == "src2tgt":
+            src_code = self._source_lang.get()
+            tgt_code = self._target_lang.get()
+        else:
+            src_code = self._target_lang.get()
+            tgt_code = self._source_lang.get()
+            if tgt_code == "auto":
+                tgt_code = "en"
+        provider_id = self._provider.get()
+
+        def work() -> None:
+            translated = spotlight.translate_fragment(frag, src_code, tgt_code, provider_id)
+            self.after(0, lambda: self._apply_spotlight(twin, translated, job))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _apply_spotlight(self, twin, translated: str, job: int) -> None:
+        if job != self._spot_job:
+            return
+        try:
+            twin.tag_remove(spotlight.TAG, "1.0", "end")
+            if not translated:
+                self._flash_foot("? не удалось сопоставить с переводом", False)
+                return
+            whole = twin.get("1.0", "end-1c")
+            hit = spotlight.find_fragment(whole, translated)
+            if not hit:
+                self._flash_foot("? перевод фрагмента не найден в тексте", False)
+                return
+            start, end = hit
+            a = f"1.0+{start}c"
+            b = f"1.0+{end}c"
+            twin.tag_add(spotlight.TAG, a, b)
+            twin.see(a)
+        except Exception:  # noqa: BLE001
+            logutil.exc("apply spotlight")
+
+    def _setup_sync_scroll(self) -> None:
+        """Link the two panes' vertical scroll so comparing long text keeps them aligned.
+
+        Each inner tk.Text drives the other through yscrollcommand. A re-entry
+        flag stops the ping-pong: setting pane B from pane A would otherwise
+        fire B's command and loop forever. Proportional (first-visible-line)
+        sync, not absolute — the two texts have different line counts.
+        """
+        self._sync_lock = False
+        try:
+            src = self._inner(self._src_box)
+            tgt = self._inner(self._tgt_box)
+        except Exception:  # noqa: BLE001
+            return
+
+        def _enabled() -> bool:
+            try:
+                return bool(cfg.get().sync_scroll)
+            except Exception:  # noqa: BLE001
+                return True
+
+        def make_driver(other):
+            def driver(*args):
+                try:
+                    if not _enabled() or self._sync_lock:
+                        return
+                    self._sync_lock = True
+                    try:
+                        first = float(args[0])
+                        other.yview_moveto(first)
+                    finally:
+                        self._sync_lock = False
+                except Exception:  # noqa: BLE001
+                    self._sync_lock = False
+            return driver
+
+        try:
+            # Chain onto the existing scrollbar commands so the stock scrollbar
+            # still updates; we only mirror the position to the twin pane.
+            src_sb = src.cget("yscrollcommand")
+            tgt_sb = tgt.cget("yscrollcommand")
+
+            src_drive = make_driver(tgt)
+            tgt_drive = make_driver(src)
+
+            def src_cmd(*args):
+                if src_sb:
+                    try:
+                        src.tk.call(src_sb, *args)
+                    except Exception:  # noqa: BLE001
+                        pass
+                src_drive(*args)
+
+            def tgt_cmd(*args):
+                if tgt_sb:
+                    try:
+                        tgt.tk.call(tgt_sb, *args)
+                    except Exception:  # noqa: BLE001
+                        pass
+                tgt_drive(*args)
+
+            src.configure(yscrollcommand=src_cmd)
+            tgt.configure(yscrollcommand=tgt_cmd)
+        except Exception:  # noqa: BLE001
+            logutil.exc("setup sync scroll")
+
     def _textbox(self, parent) -> ctk.CTkTextbox:
         # low natural height on purpose — the pane grows by expand, so the
         # acronym strip below can always claim the height it asks for
@@ -884,6 +1049,8 @@ class TranslatorApp(ctk.CTk):
         self.configure(fg_color=T.BG)
         self._shell.configure(fg_color=T.BG)
         self._build(self._shell)
+        self._setup_sync_scroll()
+        self._setup_spotlight()
         self._source_lang.set(src_lang)
         self._target_lang.set(tgt_lang)
         self._provider.set(provider)
