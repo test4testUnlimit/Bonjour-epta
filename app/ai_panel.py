@@ -150,11 +150,17 @@ class AiPanel(ctk.CTkFrame):
     # ── public ───────────────────────────────────────────────
 
     def show_polish(self, russian: str, why: str) -> None:
-        """The English is already in the target pane; this is the rest of it."""
+        """The English is already in the target pane; this is the rest of it.
+
+        The title follows whatever the user renamed function 1 to (default:
+        «причесать») — never hardcode the old name here.
+        """
         if not (russian or "").strip() and not (why or "").strip():
             self.hide()
             return
-        self._begin("ИИ · причесал")
+        from . import assistant
+
+        self._begin(f"ИИ · {assistant.fn1_title()}")
         if russian.strip():
             self._blocks += 1
             self._line("по-русски", "lead", 11)

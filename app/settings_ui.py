@@ -392,7 +392,7 @@ class SettingsWindow(ctk.CTkToplevel):
         ).pack(anchor="w", padx=inner_pad, pady=(inner_pad, 0))
 
         self._ai_on = ctk.CTkSwitch(
-            card, text="кнопки «причесать» и «объясни» в главном окне",
+            card, text=self._ai_switch_text(),
             **self._switch_kw(self._apply_ai),
         )
         self._ai_on.pack(anchor="w", padx=inner_pad, pady=(4, 6))
@@ -470,7 +470,7 @@ class SettingsWindow(ctk.CTkToplevel):
         # chivoblya chip → runs function 2 on the selection
         self._chivo_fn2 = ctk.CTkSwitch(
             fn_box,
-            text="чивобля при выделении сразу запускает кнопку 2",
+            text=self._chivo_fn2_text(),
             **self._switch_kw(self._apply_ai),
         )
         self._chivo_fn2.pack(anchor="w", pady=(2, 0))
@@ -478,15 +478,58 @@ class SettingsWindow(ctk.CTkToplevel):
             self._chivo_fn2.select()
         ctk.CTkLabel(
             fn_box,
-            text="нажал «чивобля?» на выделенном тексте — откроется окно и "
-                 "сработает кнопка 2 с её промптом (расширенный перевод). "
-                 "выключи, если чивобля должна просто открывать окно.",
+            text=self._chivo_fn2_hint(),
             text_color=T.INK_FAINT, font=ui_font(10), wraplength=460, justify="left",
         ).pack(anchor="w", pady=(2, 0))
 
         self._refresh_ai_models()
         self._sync_ai_state()
         ai_token.on_change(self._on_ai_token)
+
+    def _ai_switch_text(self) -> str:
+        """Dynamic label for the AI on/off switch — shows the current button names."""
+        from . import assistant
+
+        t1 = assistant.fn1_title()
+        t2 = assistant.fn2_title()
+        return f"кнопки «{t1}» и «{t2}» в главном окне"
+
+    def _chivo_fn2_text(self) -> str:
+        """Dynamic label for the chivoblya→fn2 switch."""
+        from . import assistant
+
+        t2 = assistant.fn2_title()
+        return f"чивобля при выделении сразу запускает «{t2}»"
+
+    def _chivo_fn2_hint(self) -> str:
+        """Dynamic hint under the chivoblya→fn2 switch."""
+        from . import assistant
+
+        t2 = assistant.fn2_title()
+        return (
+            f"нажал «чивобля?» на выделенном тексте — откроется окно и "
+            f"сработает «{t2}» с её промптом. "
+            f"выключи, если чивобля должна просто открывать окно."
+        )
+
+    def _refresh_ai_switch_text(self) -> None:
+        """Re-read fn titles from settings and update all dependent labels."""
+        try:
+            self._ai_on.configure(text=self._ai_switch_text())
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            self._chivo_fn2.configure(text=self._chivo_fn2_text())
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            # The hint label is the next widget after the switch in fn_box.
+            for w in self._chivo_fn2.master.winfo_children():
+                if isinstance(w, ctk.CTkLabel) and w.cget("text").startswith("нажал «чивобля?»"):
+                    w.configure(text=self._chivo_fn2_hint())
+                    break
+        except Exception:  # noqa: BLE001
+            pass
 
     def _fn_fields(self, parent, n: int):
         """One labelled title-entry + prompt-textbox pair. Returns (title, prompt)."""
@@ -542,6 +585,8 @@ class SettingsWindow(ctk.CTkToplevel):
                 f"ai_fn{n}_prompt": "" if (not praw or praw == default_prompt.strip()) else praw,
             })
             self._status.configure(text=f"ИИ · кнопка {n} сохранена")
+            # Button names changed → refresh every label that quotes them.
+            self._refresh_ai_switch_text()
 
         title.bind("<FocusOut>", save)
         prompt.bind("<FocusOut>", save)
