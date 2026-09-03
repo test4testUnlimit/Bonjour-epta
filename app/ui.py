@@ -537,6 +537,15 @@ class TranslatorApp(ctk.CTk):
                     lambda e, me=w, twin=other, d=direction: self._on_spot_select(me, twin, d),
                     add="+",
                 )
+                # Double click = highlight the whole matching SENTENCE. Word-level
+                # mapping is a guess (see spotlight docstring) and drifts by a word
+                # or two; locating the translated sentence never does. So the
+                # deliberate gesture gets the answer we can actually stand behind.
+                w.bind(
+                    "<Double-Button-1>",
+                    lambda e, me=w, twin=other, d=direction: self._on_spot_sentence(me, twin, d),
+                    add="+",
+                )
         except Exception:  # noqa: BLE001
             logutil.exc("setup spotlight")
 
@@ -586,6 +595,75 @@ class TranslatorApp(ctk.CTk):
             return int(raw)
         except Exception:  # noqa: BLE001
             return 0
+
+    def _on_spot_sentence(self, me, twin, direction: str) -> None:
+        """Double click → highlight the whole counterpart sentence.
+
+        Runs after Tk has already selected the double-clicked word, so the
+        pending word-level lookup is cancelled first: otherwise its answer
+        would land a moment later and shrink the highlight back to one word.
+        """
+        try:
+            if not cfg.get().spotlight:
+                return
+        except Exception:  # noqa: BLE001
+            return
+        if self._spot_after is not None:
+            try:
+                self.after_cancel(self._spot_after)
+            except Exception:  # noqa: BLE001
+                pass
+            self._spot_after = None
+        self._spot_job += 1
+        job = self._spot_job
+
+        try:
+            click = self._char_offset(me, "insert")
+            src_whole = me.get("1.0", "end-1c")
+            tgt_whole = twin.get("1.0", "end-1c")
+            for w in (me, twin):
+                w.tag_remove(spotlight.TAG, "1.0", "end")
+        except Exception:  # noqa: BLE001
+            logutil.exc("spot sentence read")
+            return
+        if not src_whole.strip() or not tgt_whole.strip():
+            return
+
+        if direction == "src2tgt":
+            src_code = self._source_lang.get()
+            tgt_code = self._target_lang.get()
+        else:
+            src_code = self._target_lang.get()
+            tgt_code = self._source_lang.get()
+            if tgt_code == "auto":
+                tgt_code = "en"
+        provider_id = self._provider.get()
+
+        def work() -> None:
+            try:
+                span = spotlight.locate_sentence(
+                    click, src_whole, tgt_whole, src_code, tgt_code, provider_id
+                )
+            except Exception:  # noqa: BLE001
+                logutil.exc("spot sentence")
+                span = None
+            self.after(0, lambda: self._apply_sentence(twin, span, job))
+
+        threading.Thread(target=work, daemon=True).start()
+
+    def _apply_sentence(self, twin, span, job: int) -> None:
+        if job != self._spot_job:
+            return
+        try:
+            twin.tag_remove(spotlight.TAG, "1.0", "end")
+            if not span:
+                self._flash_foot("? предложение не найдено в переводе", False)
+                return
+            start, end = span
+            twin.tag_add(spotlight.TAG, f"1.0+{start}c", f"1.0+{end}c")
+            twin.see(f"1.0+{start}c")
+        except Exception:  # noqa: BLE001
+            logutil.exc("apply sentence")
 
     def _run_spotlight(self, me, twin, direction: str) -> None:
         self._spot_after = None

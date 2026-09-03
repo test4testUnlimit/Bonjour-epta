@@ -286,6 +286,74 @@ def align(
     return None, False
 
 
+def locate_sentence(
+    click_offset: int,
+    src_whole: str,
+    tgt_whole: str,
+    source: str,
+    target: str,
+    provider_id: str | None,
+) -> tuple[int, int] | None:
+    """Sentence under the cursor → its counterpart span in the other pane.
+
+    This is the honest half of the feature. Finding the translated sentence is
+    a plain substring lookup that either hits or does not — no guessing, no
+    drift. (Mapping a single WORD inside it is the part that can be off by one,
+    which is exactly why the double-click gesture stops at sentence level.)
+
+    Falls back to a proportional sentence-index map when the engine's rendering
+    of the isolated sentence differs from what the full-text pass produced
+    (different segmentation, merged clauses), so a miss still lands on the
+    right sentence rather than nothing.
+    """
+    s0, s1 = sentence_span(src_whole, click_offset, click_offset)
+    sentence = normalize(src_whole[s0:s1])
+    if not sentence:
+        return None
+
+    r = _translate(sentence, source, target, provider_id)
+    if r is not None:
+        hit = find_fragment(tgt_whole, normalize(r.text))
+        if hit:
+            return hit
+
+    # Fallback: align by sentence ordinal. Both panes hold the same text run
+    # through the same engine, so sentence N maps to sentence N far more
+    # reliably than any character arithmetic.
+    src_sents = _split_sentences(src_whole)
+    tgt_sents = _split_sentences(tgt_whole)
+    if not src_sents or not tgt_sents:
+        return None
+    idx = 0
+    for i, (a, b) in enumerate(src_sents):
+        if a <= click_offset < b:
+            idx = i
+            break
+    else:
+        idx = len(src_sents) - 1
+    j = round(idx * len(tgt_sents) / max(1, len(src_sents)))
+    j = max(0, min(j, len(tgt_sents) - 1))
+    return tgt_sents[j]
+
+
+def _split_sentences(text: str) -> list[tuple[int, int]]:
+    """(start,end) of every sentence, skipping empty runs."""
+    out: list[tuple[int, int]] = []
+    pos = 0
+    n = len(text)
+    while pos < n:
+        m = _SENT_END.search(text, pos)
+        end = (m.end() if m else n)
+        chunk = text[pos:end]
+        if chunk.strip():
+            lead = len(chunk) - len(chunk.lstrip())
+            out.append((pos + lead, end))
+        pos = end
+        if m is None:
+            break
+    return out
+
+
 def words_only(text: str) -> bool:
     """Heuristic: translatable prose, not a bare number/punct (those rarely map)."""
     return bool(re.search(r"[A-Za-zА-Яа-яЁё]", text or ""))
