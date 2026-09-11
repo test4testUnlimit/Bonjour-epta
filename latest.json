@@ -1,0 +1,7 @@
+{
+  "version": "4.0.4",
+  "url": "https://github.com/test4testUnlimit/Bonjour-epta/releases/download/v4.0.4/BonjourLauncher.exe",
+  "sha256": "ea84368eb27cb898b806019f4ccf78f870ba1b710f3a8af091cac3500d2d6926",
+  "notes": "- Fixed taskbar icon when pinning: launcher and app now share one AppUserModelID",
+  "date": "2026-09-08"
+}
